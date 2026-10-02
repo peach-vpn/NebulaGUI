@@ -1,693 +1,468 @@
---==================================================
--- AD MINI GUI
--- Roblox Studio / LocalScript
--- Лёгкий мобильный 2D интерфейс
---==================================================
+--// AD GUI
+--// Лёгкий интерфейс для Roblox Delta Executor
+--// Без внешних библиотек и картинок
 
 local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
 
---==================================================
--- НАСТРОЙКИ
---==================================================
-
-local GUI_NAME = "ADMiniGUI"
-
-local PURPLE = Color3.fromRGB(145, 92, 255)
-local DARK = Color3.fromRGB(15, 15, 22)
-local BUTTON = Color3.fromRGB(27, 27, 37)
-local TEXT = Color3.fromRGB(245, 245, 250)
-local MUTED = Color3.fromRGB(150, 150, 165)
-
---==================================================
--- УДАЛЯЕМ СТАРУЮ ВЕРСИЮ
---==================================================
-
-local oldGui = playerGui:FindFirstChild(GUI_NAME)
-
-if oldGui then
-    oldGui:Destroy()
+-- Удаляем старую версию
+local old = PlayerGui:FindFirstChild("AD_GUI")
+if old then
+    old:Destroy()
 end
 
 --==================================================
--- ОСНОВНОЙ SCREEN GUI
+-- ОСНОВА
 --==================================================
 
-local gui = Instance.new("ScreenGui")
-gui.Name = GUI_NAME
-gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
-gui.DisplayOrder = 999999
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-gui.Parent = playerGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AD_GUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.Parent = PlayerGui
 
 --==================================================
 -- КРУГЛАЯ КНОПКА AD
 --==================================================
 
-local adButton = Instance.new("TextButton")
+local OpenButton = Instance.new("TextButton")
+OpenButton.Name = "AD_Button"
+OpenButton.Size = UDim2.fromOffset(58, 58)
+OpenButton.Position = UDim2.new(0, 18, 0.5, -29)
+OpenButton.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+OpenButton.Text = "AD"
+OpenButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+OpenButton.TextSize = 18
+OpenButton.Font = Enum.Font.GothamBold
+OpenButton.AutoButtonColor = false
+OpenButton.Parent = ScreenGui
 
-adButton.Name = "ADButton"
+local ButtonCorner = Instance.new("UICorner")
+ButtonCorner.CornerRadius = UDim.new(1, 0)
+ButtonCorner.Parent = OpenButton
 
-adButton.AnchorPoint = Vector2.new(0, 0.5)
-
-adButton.Position = UDim2.new(
-    0,
-    15,
-    0.5,
-    0
-)
-
-adButton.Size = UDim2.fromOffset(58, 58)
-
-adButton.BackgroundColor3 = DARK
-adButton.BackgroundTransparency = 0
-
-adButton.BorderSizePixel = 0
-
-adButton.Text = "AD"
-adButton.TextColor3 = TEXT
-adButton.TextSize = 18
-adButton.Font = Enum.Font.GothamBold
-
-adButton.AutoButtonColor = false
-
-adButton.ZIndex = 100
-
-adButton.Parent = gui
+local ButtonStroke = Instance.new("UIStroke")
+ButtonStroke.Color = Color3.fromRGB(120, 70, 255)
+ButtonStroke.Thickness = 2
+ButtonStroke.Parent = OpenButton
 
 --==================================================
--- ДЕЛАЕМ ИКОНКУ КРУГОЙ
+-- ГЛАВНОЕ ОКНО
 --==================================================
 
-local adCorner = Instance.new("UICorner")
+local Main = Instance.new("Frame")
+Main.Name = "Main"
+Main.Size = UDim2.fromOffset(390, 285)
+Main.Position = UDim2.new(0.5, -195, 0.5, -142)
+Main.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
+Main.Visible = false
+Main.Parent = ScreenGui
 
-adCorner.CornerRadius = UDim.new(1, 0)
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 14)
+MainCorner.Parent = Main
 
-adCorner.Parent = adButton
-
---==================================================
--- ОБВОДКА
---==================================================
-
-local adStroke = Instance.new("UIStroke")
-
-adStroke.Color = PURPLE
-adStroke.Thickness = 2
-adStroke.Transparency = 0
-
-adStroke.Parent = adButton
-
---==================================================
--- ВНУТРЕННИЙ КРУГ
---==================================================
-
-local inner = Instance.new("Frame")
-
-inner.Name = "Inner"
-
-inner.AnchorPoint = Vector2.new(0.5, 0.5)
-
-inner.Position = UDim2.fromScale(0.5, 0.5)
-
-inner.Size = UDim2.fromOffset(48, 48)
-
-inner.BackgroundColor3 = Color3.fromRGB(20, 18, 30)
-
-inner.BorderSizePixel = 0
-
-inner.ZIndex = 101
-
-inner.Parent = adButton
-
-local innerCorner = Instance.new("UICorner")
-
-innerCorner.CornerRadius = UDim.new(1, 0)
-
-innerCorner.Parent = inner
-
---==================================================
--- ТЕКСТ AD
---==================================================
-
-local adText = Instance.new("TextLabel")
-
-adText.Name = "ADText"
-
-adText.BackgroundTransparency = 1
-
-adText.Size = UDim2.fromScale(1, 1)
-
-adText.Text = "AD"
-
-adText.TextColor3 = TEXT
-
-adText.TextSize = 17
-
-adText.Font = Enum.Font.GothamBold
-
-adText.TextXAlignment = Enum.TextXAlignment.Center
-adText.TextYAlignment = Enum.TextYAlignment.Center
-
-adText.ZIndex = 102
-
-adText.Parent = inner
-
---==================================================
--- ГЛАВНОЕ МЕНЮ
---==================================================
-
-local menu = Instance.new("Frame")
-
-menu.Name = "Menu"
-
-menu.AnchorPoint = Vector2.new(0, 0.5)
-
-menu.Position = UDim2.new(
-    0,
-    85,
-    0.5,
-    0
-)
-
-menu.Size = UDim2.fromOffset(
-    245,
-    315
-)
-
-menu.BackgroundColor3 = DARK
-
-menu.BorderSizePixel = 0
-
-menu.Visible = false
-
-menu.ZIndex = 200
-
-menu.Parent = gui
-
-local menuCorner = Instance.new("UICorner")
-
-menuCorner.CornerRadius = UDim.new(0, 18)
-
-menuCorner.Parent = menu
-
-local menuStroke = Instance.new("UIStroke")
-
-menuStroke.Color = Color3.fromRGB(60, 60, 75)
-
-menuStroke.Thickness = 1
-
-menuStroke.Parent = menu
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Color3.fromRGB(55, 55, 70)
+MainStroke.Thickness = 1
+MainStroke.Parent = Main
 
 --==================================================
 -- ЗАГОЛОВОК
 --==================================================
 
-local title = Instance.new("TextLabel")
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 55)
+Header.BackgroundTransparency = 1
+Header.Parent = Main
 
-title.BackgroundTransparency = 1
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -80, 1, 0)
+Title.Position = UDim2.fromOffset(18, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "AD  •  Панель"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 19
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Header
 
-title.Position = UDim2.new(
-    0,
-    17,
-    0,
-    12
-)
+local Close = Instance.new("TextButton")
+Close.Size = UDim2.fromOffset(38, 38)
+Close.Position = UDim2.new(1, -48, 0, 8)
+Close.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+Close.Text = "×"
+Close.TextColor3 = Color3.fromRGB(220, 220, 220)
+Close.TextSize = 25
+Close.Font = Enum.Font.Gotham
+Close.AutoButtonColor = false
+Close.Parent = Header
 
-title.Size = UDim2.new(
-    1,
-    -65,
-    0,
-    25
-)
-
-title.Text = "AD МЕНЮ"
-
-title.TextColor3 = TEXT
-title.TextSize = 17
-title.Font = Enum.Font.GothamBold
-
-title.TextXAlignment = Enum.TextXAlignment.Left
-
-title.ZIndex = 201
-
-title.Parent = menu
-
---==================================================
--- ПОДЗАГОЛОВОК
---==================================================
-
-local subtitle = Instance.new("TextLabel")
-
-subtitle.BackgroundTransparency = 1
-
-subtitle.Position = UDim2.new(
-    0,
-    18,
-    0,
-    36
-)
-
-subtitle.Size = UDim2.new(
-    1,
-    -70,
-    0,
-    18
-)
-
-subtitle.Text = "Мобильная панель"
-
-subtitle.TextColor3 = MUTED
-subtitle.TextSize = 10
-subtitle.Font = Enum.Font.Gotham
-
-subtitle.TextXAlignment = Enum.TextXAlignment.Left
-
-subtitle.ZIndex = 201
-
-subtitle.Parent = menu
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 10)
+CloseCorner.Parent = Close
 
 --==================================================
--- КНОПКА ЗАКРЫТИЯ
+-- БОКОВОЕ МЕНЮ
 --==================================================
 
-local close = Instance.new("TextButton")
+local Tabs = Instance.new("Frame")
+Tabs.Size = UDim2.fromOffset(105, 210)
+Tabs.Position = UDim2.fromOffset(12, 60)
+Tabs.BackgroundTransparency = 1
+Tabs.Parent = Main
 
-close.Size = UDim2.fromOffset(
-    34,
-    34
-)
+local TabLayout = Instance.new("UIListLayout")
+TabLayout.Padding = UDim.new(0, 7)
+TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+TabLayout.Parent = Tabs
 
-close.Position = UDim2.new(
-    1,
-    -46,
-    0,
-    12
-)
-
-close.BackgroundColor3 = BUTTON
-
-close.BorderSizePixel = 0
-
-close.Text = "×"
-
-close.TextColor3 = MUTED
-close.TextSize = 22
-close.Font = Enum.Font.Gotham
-
-close.AutoButtonColor = false
-
-close.ZIndex = 202
-
-close.Parent = menu
-
-local closeCorner = Instance.new("UICorner")
-
-closeCorner.CornerRadius = UDim.new(0, 10)
-
-closeCorner.Parent = close
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1, -130, 1, -70)
+Content.Position = UDim2.fromOffset(120, 60)
+Content.BackgroundTransparency = 1
+Content.Parent = Main
 
 --==================================================
--- КОНТЕЙНЕР
+-- ФУНКЦИИ
 --==================================================
 
-local container = Instance.new("Frame")
+local function MakeTab(text)
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(1, 0, 0, 40)
+    Button.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+    Button.Text = text
+    Button.TextColor3 = Color3.fromRGB(190, 190, 200)
+    Button.TextSize = 14
+    Button.Font = Enum.Font.GothamMedium
+    Button.AutoButtonColor = false
+    Button.Parent = Tabs
 
-container.BackgroundTransparency = 1
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 9)
+    Corner.Parent = Button
 
-container.Position = UDim2.new(
-    0,
-    10,
-    0,
-    70
-)
+    return Button
+end
 
-container.Size = UDim2.new(
-    1,
-    -20,
-    1,
-    -80
-)
+local function ClearContent()
+    for _, v in ipairs(Content:GetChildren()) do
+        v:Destroy()
+    end
+end
 
-container.ZIndex = 201
+local function MakeLabel(text, y)
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(1, 0, 0, 30)
+    Label.Position = UDim2.fromOffset(0, y)
+    Label.BackgroundTransparency = 1
+    Label.Text = text
+    Label.TextColor3 = Color3.fromRGB(230, 230, 235)
+    Label.TextSize = 15
+    Label.Font = Enum.Font.GothamMedium
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = Content
 
-container.Parent = menu
+    return Label
+end
 
-local layout = Instance.new("UIListLayout")
+local function MakeToggle(text, y, callback)
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(1, 0, 0, 43)
+    Button.Position = UDim2.fromOffset(0, y)
+    Button.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+    Button.Text = ""
+    Button.AutoButtonColor = false
+    Button.Parent = Content
 
-layout.Padding = UDim.new(
-    0,
-    8
-)
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 10)
+    Corner.Parent = Button
 
-layout.SortOrder = Enum.SortOrder.LayoutOrder
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(1, -65, 1, 0)
+    Label.Position = UDim2.fromOffset(13, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = text
+    Label.TextColor3 = Color3.fromRGB(225, 225, 230)
+    Label.TextSize = 14
+    Label.Font = Enum.Font.GothamMedium
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = Button
 
-layout.Parent = container
+    local Switch = Instance.new("Frame")
+    Switch.Size = UDim2.fromOffset(38, 21)
+    Switch.Position = UDim2.new(1, -50, 0.5, -10)
+    Switch.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
+    Switch.Parent = Button
 
---==================================================
--- СОЗДАНИЕ КНОПОК
---==================================================
+    local SwitchCorner = Instance.new("UICorner")
+    SwitchCorner.CornerRadius = UDim.new(1, 0)
+    SwitchCorner.Parent = Switch
 
-local function createButton(text, symbol)
+    local Dot = Instance.new("Frame")
+    Dot.Size = UDim2.fromOffset(17, 17)
+    Dot.Position = UDim2.fromOffset(2, 2)
+    Dot.BackgroundColor3 = Color3.fromRGB(220, 220, 225)
+    Dot.Parent = Switch
 
-    local button = Instance.new("TextButton")
+    local DotCorner = Instance.new("UICorner")
+    DotCorner.CornerRadius = UDim.new(1, 0)
+    DotCorner.Parent = Dot
 
-    button.Size = UDim2.new(
-        1,
-        0,
-        0,
-        45
-    )
+    local Enabled = false
 
-    button.BackgroundColor3 = BUTTON
+    Button.MouseButton1Click:Connect(function()
+        Enabled = not Enabled
 
-    button.BorderSizePixel = 0
-
-    button.Text = ""
-
-    button.AutoButtonColor = false
-
-    button.ZIndex = 202
-
-    button.Parent = container
-
-    local corner = Instance.new("UICorner")
-
-    corner.CornerRadius = UDim.new(
-        0,
-        12
-    )
-
-    corner.Parent = button
-
-    -- Символ
-
-    local icon = Instance.new("TextLabel")
-
-    icon.BackgroundTransparency = 1
-
-    icon.Position = UDim2.new(
-        0,
-        10,
-        0,
-        0
-    )
-
-    icon.Size = UDim2.fromOffset(
-        32,
-        45
-    )
-
-    icon.Text = symbol
-
-    icon.TextColor3 = PURPLE
-
-    icon.TextSize = 17
-
-    icon.Font = Enum.Font.GothamBold
-
-    icon.TextXAlignment = Enum.TextXAlignment.Center
-    icon.TextYAlignment = Enum.TextYAlignment.Center
-
-    icon.ZIndex = 203
-
-    icon.Parent = button
-
-    -- Текст
-
-    local label = Instance.new("TextLabel")
-
-    label.BackgroundTransparency = 1
-
-    label.Position = UDim2.new(
-        0,
-        50,
-        0,
-        0
-    )
-
-    label.Size = UDim2.new(
-        1,
-        -60,
-        1,
-        0
-    )
-
-    label.Text = text
-
-    label.TextColor3 = TEXT
-
-    label.TextSize = 12
-
-    label.Font = Enum.Font.GothamMedium
-
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.TextYAlignment = Enum.TextYAlignment.Center
-
-    label.ZIndex = 203
-
-    label.Parent = button
-
-    button.Activated:Connect(function()
-
-        local oldColor = button.BackgroundColor3
-
-        TweenService:Create(
-            button,
-            TweenInfo.new(0.08),
-            {
-                BackgroundColor3 = PURPLE
-            }
-        ):Play()
-
-        task.delay(0.08, function()
-
+        if Enabled then
             TweenService:Create(
-                button,
-                TweenInfo.new(0.12),
-                {
-                    BackgroundColor3 = oldColor
-                }
+                Switch,
+                TweenInfo.new(0.15),
+                {BackgroundColor3 = Color3.fromRGB(120, 70, 255)}
             ):Play()
 
-        end)
+            TweenService:Create(
+                Dot,
+                TweenInfo.new(0.15),
+                {Position = UDim2.fromOffset(19, 2)}
+            ):Play()
+        else
+            TweenService:Create(
+                Switch,
+                TweenInfo.new(0.15),
+                {BackgroundColor3 = Color3.fromRGB(55, 55, 65)}
+            ):Play()
 
-    end)
-
-    return button
-end
-
---==================================================
--- ПУНКТЫ
---==================================================
-
-createButton(
-    "Главная",
-    "⌂"
-)
-
-createButton(
-    "Функции",
-    "◆"
-)
-
-createButton(
-    "Настройки",
-    "⚙"
-)
-
-createButton(
-    "Информация",
-    "?"
-)
-
---==================================================
--- СТАТУС
---==================================================
-
-local status = Instance.new("TextLabel")
-
-status.BackgroundTransparency = 1
-
-status.Size = UDim2.new(
-    1,
-    0,
-    0,
-    25
-)
-
-status.Text = "●  Готово"
-
-status.TextColor3 = Color3.fromRGB(
-    100,
-    220,
-    150
-)
-
-status.TextSize = 9
-
-status.Font = Enum.Font.GothamBold
-
-status.TextXAlignment = Enum.TextXAlignment.Left
-
-status.ZIndex = 203
-
-status.Parent = container
-
---==================================================
--- ОТКРЫТИЕ МЕНЮ
---==================================================
-
-local opened = false
-
-local function openMenu()
-
-    if opened then
-        return
-    end
-
-    opened = true
-
-    menu.Visible = true
-
-    menu.Size = UDim2.fromOffset(
-        245,
-        0
-    )
-
-    TweenService:Create(
-        menu,
-        TweenInfo.new(
-            0.2,
-            Enum.EasingStyle.Quart,
-            Enum.EasingDirection.Out
-        ),
-        {
-            Size = UDim2.fromOffset(
-                245,
-                315
-            )
-        }
-    ):Play()
-
-end
-
---==================================================
--- ЗАКРЫТИЕ
---==================================================
-
-local function closeMenu()
-
-    if not opened then
-        return
-    end
-
-    opened = false
-
-    local animation = TweenService:Create(
-        menu,
-        TweenInfo.new(
-            0.16,
-            Enum.EasingStyle.Quart,
-            Enum.EasingDirection.In
-        ),
-        {
-            Size = UDim2.fromOffset(
-                245,
-                0
-            )
-        }
-    )
-
-    animation:Play()
-
-    animation.Completed:Once(function()
-
-        if not opened then
-            menu.Visible = false
+            TweenService:Create(
+                Dot,
+                TweenInfo.new(0.15),
+                {Position = UDim2.fromOffset(2, 2)}
+            ):Play()
         end
 
+        if callback then
+            callback(Enabled)
+        end
     end)
 
+    return Button
 end
 
 --==================================================
--- НАЖАТИЕ AD
+-- ВКЛАДКА: ГЛАВНАЯ
 --==================================================
 
-adButton.Activated:Connect(function()
+local function HomePage()
+    ClearContent()
 
-    if opened then
-        closeMenu()
+    MakeLabel("Добро пожаловать", 0)
+    MakeLabel("Выбери нужную функцию ниже.", 32)
+
+    MakeToggle("Пример функции", 75, function(state)
+        print("Пример функции:", state)
+    end)
+
+    MakeToggle("Уведомления", 125, function(state)
+        print("Уведомления:", state)
+    end)
+end
+
+--==================================================
+-- ВКЛАДКА: ИГРОК
+--==================================================
+
+local function PlayerPage()
+    ClearContent()
+
+    MakeLabel("Настройки игрока", 0)
+
+    MakeToggle("Быстрое перемещение", 45, function(state)
+        print("Быстрое перемещение:", state)
+    end)
+
+    MakeToggle("Прыжок", 95, function(state)
+        print("Прыжок:", state)
+    end)
+
+    MakeToggle("Авто-режим", 145, function(state)
+        print("Авто-режим:", state)
+    end)
+end
+
+--==================================================
+-- ВКЛАДКА: НАСТРОЙКИ
+--==================================================
+
+local function SettingsPage()
+    ClearContent()
+
+    MakeLabel("Настройки", 0)
+
+    MakeToggle("Анимации", 45, function(state)
+        print("Анимации:", state)
+    end)
+
+    MakeToggle("Компактный режим", 95, function(state)
+        print("Компактный режим:", state)
+    end)
+end
+
+--==================================================
+-- ВКЛАДКИ
+--==================================================
+
+local HomeTab = MakeTab("Главная")
+local PlayerTab = MakeTab("Игрок")
+local SettingsTab = MakeTab("Настройки")
+
+local function SelectTab(selected)
+    for _, v in ipairs(Tabs:GetChildren()) do
+        if v:IsA("TextButton") then
+            v.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+            v.TextColor3 = Color3.fromRGB(190, 190, 200)
+        end
+    end
+
+    selected.BackgroundColor3 = Color3.fromRGB(55, 40, 90)
+    selected.TextColor3 = Color3.fromRGB(255, 255, 255)
+end
+
+HomeTab.MouseButton1Click:Connect(function()
+    SelectTab(HomeTab)
+    HomePage()
+end)
+
+PlayerTab.MouseButton1Click:Connect(function()
+    SelectTab(PlayerTab)
+    PlayerPage()
+end)
+
+SettingsTab.MouseButton1Click:Connect(function()
+    SelectTab(SettingsTab)
+    SettingsPage()
+end)
+
+--==================================================
+-- ОТКРЫТИЕ / ЗАКРЫТИЕ
+--==================================================
+
+local function ShowMenu()
+    Main.Visible = true
+    Main.Size = UDim2.fromOffset(350, 250)
+
+    TweenService:Create(
+        Main,
+        TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        {Size = UDim2.fromOffset(390, 285)}
+    ):Play()
+end
+
+local function HideMenu()
+    Main.Visible = false
+end
+
+OpenButton.MouseButton1Click:Connect(function()
+    if Main.Visible then
+        HideMenu()
     else
-        openMenu()
+        ShowMenu()
     end
-
 end)
 
---==================================================
--- ЗАКРЫТИЕ
---==================================================
-
-close.Activated:Connect(function()
-
-    closeMenu()
-
-end)
+Close.MouseButton1Click:Connect(HideMenu)
 
 --==================================================
--- АНИМАЦИЯ КНОПКИ AD
+-- ПЕРЕТАСКИВАНИЕ ОКНА
 --==================================================
 
-adButton.InputBegan:Connect(function(input)
+local dragging = false
+local dragStart
+local startPos
 
-    if input.UserInputType == Enum.UserInputType.Touch
-    or input.UserInputType == Enum.UserInputType.MouseButton1 then
+Header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
 
-        TweenService:Create(
-            adButton,
-            TweenInfo.new(0.08),
-            {
-                Size = UDim2.fromOffset(
-                    52,
-                    52
-                )
-            }
-        ):Play()
+        dragging = true
+        dragStart = input.Position
+        startPos = Main.Position
 
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
     end
-
 end)
 
-adButton.InputEnded:Connect(function(input)
+UIS.InputChanged:Connect(function(input)
+    if dragging and (
+        input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch
+    ) then
 
-    if input.UserInputType == Enum.UserInputType.Touch
-    or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local delta = input.Position - dragStart
 
-        TweenService:Create(
-            adButton,
-            TweenInfo.new(0.1),
-            {
-                Size = UDim2.fromOffset(
-                    58,
-                    58
-                )
-            }
-        ):Play()
-
+        Main.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
     end
-
 end)
 
 --==================================================
--- ГОТОВО
+-- ПЕРЕТАСКИВАНИЕ КНОПКИ AD
 --==================================================
 
-print("[AD] Интерфейс загружен")
+local buttonDragging = false
+local buttonStart
+local buttonPos
 
-Важно: именно этот файл должен запускаться как LocalScript. Если ты просто вставляешь "GUI.lua" в обычный "Script" в "ServerScriptService", кнопка у игрока не появится.
+OpenButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
 
-Если через GitHub ты хочешь именно автоматически подтягивать этот GUI в своей игре, скажи — покажу безопасный вариант для Roblox Studio без Delta/эксплойтов.
+        buttonDragging = true
+        buttonStart = input.Position
+        buttonPos = OpenButton.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                buttonDragging = false
+            end
+        end)
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if buttonDragging and (
+        input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch
+    ) then
+
+        local delta = input.Position - buttonStart
+
+        OpenButton.Position = UDim2.new(
+            buttonPos.X.Scale,
+            buttonPos.X.Offset + delta.X,
+            buttonPos.Y.Scale,
+            buttonPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+--==================================================
+-- ЗАПУСК
+--==================================================
+
+HomePage()
+SelectTab(HomeTab)
+
+print("AD GUI загружен")
