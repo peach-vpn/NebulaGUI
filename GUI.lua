@@ -1,9 +1,7 @@
 --==================================================
--- NEBULA MINI GUI
+-- AD MINI GUI
 -- Roblox Studio / LocalScript
--- Mobile-first / Lightweight 2D
---
--- Для собственной Roblox-игры
+-- Лёгкий 2D интерфейс для телефона
 --==================================================
 
 local Players = game:GetService("Players")
@@ -13,13 +11,14 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 --==================================================
--- CONFIG
+-- НАСТРОЙКИ
 --==================================================
 
 local CONFIG = {
-    Name = "NebulaMini",
+    Name = "ADMiniGUI",
 
     Accent = Color3.fromRGB(145, 92, 255),
+
     Background = Color3.fromRGB(14, 14, 20),
     Button = Color3.fromRGB(24, 24, 33),
 
@@ -30,7 +29,7 @@ local CONFIG = {
 }
 
 --==================================================
--- REMOVE OLD VERSION
+-- УДАЛЕНИЕ СТАРОЙ ВЕРСИИ
 --==================================================
 
 local old = playerGui:FindFirstChild(CONFIG.Name)
@@ -40,17 +39,22 @@ if old then
 end
 
 --==================================================
--- HELPERS
+-- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 --==================================================
 
 local function corner(object, radius)
+
     local c = Instance.new("UICorner")
+
     c.CornerRadius = UDim.new(0, radius)
     c.Parent = object
+
     return c
+
 end
 
 local function tween(object, properties, duration)
+
     return TweenService:Create(
         object,
         TweenInfo.new(
@@ -60,69 +64,104 @@ local function tween(object, properties, duration)
         ),
         properties
     )
+
 end
 
-local function text(parent, value, size, color, font)
+local function makeText(
+    parent,
+    value,
+    size,
+    color,
+    font
+)
+
     local label = Instance.new("TextLabel")
 
     label.BackgroundTransparency = 1
+
     label.Text = value
+
     label.TextSize = size
+
     label.TextColor3 = color or CONFIG.Text
+
     label.Font = font or Enum.Font.Gotham
 
     label.Parent = parent
 
     return label
+
 end
 
 --==================================================
--- SCREEN GUI
+-- GUI
 --==================================================
 
 local gui = Instance.new("ScreenGui")
 
 gui.Name = CONFIG.Name
+
 gui.ResetOnSpawn = false
+
 gui.IgnoreGuiInset = true
+
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 gui.Parent = playerGui
 
 --==================================================
--- FLOATING ICON
+-- КРУГЛАЯ КНОПКА AD
 --==================================================
 
 local icon = Instance.new("TextButton")
 
-icon.Name = "OpenButton"
+icon.Name = "ADButton"
 
-icon.Size = UDim2.fromOffset(52, 52)
-icon.Position = UDim2.new(0, 16, 0.5, -26)
+icon.Size = UDim2.fromOffset(54, 54)
+
+icon.Position = UDim2.new(
+    0,
+    16,
+    0.5,
+    -27
+)
 
 icon.BackgroundColor3 = CONFIG.Background
 
-icon.Text = "N"
-icon.TextSize = 22
+icon.Text = "AD"
+
+icon.TextSize = 17
+
 icon.TextColor3 = CONFIG.Text
+
 icon.Font = Enum.Font.GothamBold
 
 icon.AutoButtonColor = false
 
 icon.Parent = gui
 
-corner(icon, 16)
+-- Полный круг
+
+local iconCorner = Instance.new("UICorner")
+
+iconCorner.CornerRadius = UDim.new(1, 0)
+
+iconCorner.Parent = icon
+
+-- Обводка
 
 local iconStroke = Instance.new("UIStroke")
 
 iconStroke.Color = CONFIG.Accent
+
 iconStroke.Thickness = 1.5
-iconStroke.Transparency = 0.2
+
+iconStroke.Transparency = 0.1
 
 iconStroke.Parent = icon
 
 --==================================================
--- MAIN MENU
+-- ГЛАВНОЕ МЕНЮ
 --==================================================
 
 local menu = Instance.new("Frame")
@@ -131,9 +170,17 @@ menu.Name = "Menu"
 
 menu.AnchorPoint = Vector2.new(0, 0.5)
 
-menu.Position = UDim2.new(0, 78, 0.5, 0)
+menu.Position = UDim2.new(
+    0,
+    82,
+    0.5,
+    0
+)
 
-menu.Size = UDim2.fromOffset(245, 0)
+menu.Size = UDim2.fromOffset(
+    235,
+    0
+)
 
 menu.BackgroundColor3 = CONFIG.Background
 
@@ -147,7 +194,12 @@ corner(menu, 18)
 
 local menuStroke = Instance.new("UIStroke")
 
-menuStroke.Color = Color3.fromRGB(55, 55, 70)
+menuStroke.Color = Color3.fromRGB(
+    55,
+    55,
+    70
+)
+
 menuStroke.Thickness = 1
 
 menuStroke.Transparency = 0.25
@@ -155,49 +207,95 @@ menuStroke.Transparency = 0.25
 menuStroke.Parent = menu
 
 --==================================================
--- HEADER
+-- ЗАГОЛОВОК
 --==================================================
 
 local header = Instance.new("Frame")
 
-header.Size = UDim2.new(1, 0, 0, 58)
+header.Size = UDim2.new(
+    1,
+    0,
+    0,
+    60
+)
 
 header.BackgroundTransparency = 1
 
 header.Parent = menu
 
-local title = text(
+-- Заголовок
+
+local title = makeText(
     header,
-    "NEBULA",
+    "AD МЕНЮ",
     17,
     CONFIG.Text,
     Enum.Font.GothamBold
 )
 
-title.Position = UDim2.new(0, 17, 0, 10)
-title.Size = UDim2.new(1, -55, 0, 22)
+title.Position = UDim2.new(
+    0,
+    17,
+    0,
+    10
+)
 
-local subtitle = text(
+title.Size = UDim2.new(
+    1,
+    -60,
+    0,
+    23
+)
+
+-- Подзаголовок
+
+local subtitle = makeText(
     header,
-    "Mobile Menu",
+    "Мобильная панель",
     10,
     CONFIG.Muted
 )
 
-subtitle.Position = UDim2.new(0, 17, 0, 31)
-subtitle.Size = UDim2.new(1, -55, 0, 17)
+subtitle.Position = UDim2.new(
+    0,
+    17,
+    0,
+    33
+)
+
+subtitle.Size = UDim2.new(
+    1,
+    -60,
+    0,
+    17
+)
+
+--==================================================
+-- КНОПКА ЗАКРЫТИЯ
+--==================================================
 
 local close = Instance.new("TextButton")
 
-close.Size = UDim2.fromOffset(34, 34)
+close.Size = UDim2.fromOffset(
+    34,
+    34
+)
 
-close.Position = UDim2.new(1, -44, 0, 12)
+close.Position = UDim2.new(
+    1,
+    -44,
+    0,
+    12
+)
 
 close.BackgroundColor3 = CONFIG.Button
 
 close.Text = "×"
+
 close.TextSize = 21
+
 close.TextColor3 = CONFIG.Muted
+
 close.Font = Enum.Font.Gotham
 
 close.AutoButtonColor = false
@@ -207,14 +305,24 @@ close.Parent = header
 corner(close, 11)
 
 --==================================================
--- BUTTON CONTAINER
+-- КОНТЕЙНЕР КНОПОК
 --==================================================
 
 local container = Instance.new("Frame")
 
-container.Position = UDim2.new(0, 10, 0, 62)
+container.Position = UDim2.new(
+    0,
+    10,
+    0,
+    64
+)
 
-container.Size = UDim2.new(1, -20, 1, -72)
+container.Size = UDim2.new(
+    1,
+    -20,
+    1,
+    -74
+)
 
 container.BackgroundTransparency = 1
 
@@ -222,21 +330,33 @@ container.Parent = menu
 
 local layout = Instance.new("UIListLayout")
 
-layout.Padding = UDim.new(0, 8)
+layout.Padding = UDim.new(
+    0,
+    8
+)
 
 layout.SortOrder = Enum.SortOrder.LayoutOrder
 
 layout.Parent = container
 
 --==================================================
--- MENU BUTTON
+-- СОЗДАНИЕ КНОПКИ
 --==================================================
 
-local function createButton(name, iconText, callback)
+local function createButton(
+    name,
+    iconText,
+    callback
+)
 
     local button = Instance.new("TextButton")
 
-    button.Size = UDim2.new(1, 0, 0, 46)
+    button.Size = UDim2.new(
+        1,
+        0,
+        0,
+        46
+    )
 
     button.BackgroundColor3 = CONFIG.Button
 
@@ -248,7 +368,9 @@ local function createButton(name, iconText, callback)
 
     corner(button, 13)
 
-    local iconLabel = text(
+    -- Иконка
+
+    local iconLabel = makeText(
         button,
         iconText,
         17,
@@ -256,13 +378,27 @@ local function createButton(name, iconText, callback)
         Enum.Font.GothamBold
     )
 
-    iconLabel.Position = UDim2.new(0, 13, 0, 0)
-    iconLabel.Size = UDim2.fromOffset(28, 46)
+    iconLabel.Position = UDim2.new(
+        0,
+        13,
+        0,
+        0
+    )
 
-    iconLabel.TextXAlignment = Enum.TextXAlignment.Center
-    iconLabel.TextYAlignment = Enum.TextYAlignment.Center
+    iconLabel.Size = UDim2.fromOffset(
+        28,
+        46
+    )
 
-    local nameLabel = text(
+    iconLabel.TextXAlignment =
+        Enum.TextXAlignment.Center
+
+    iconLabel.TextYAlignment =
+        Enum.TextYAlignment.Center
+
+    -- Название
+
+    local nameLabel = makeText(
         button,
         name,
         12,
@@ -270,22 +406,46 @@ local function createButton(name, iconText, callback)
         Enum.Font.GothamMedium
     )
 
-    nameLabel.Position = UDim2.new(0, 49, 0, 0)
-    nameLabel.Size = UDim2.new(1, -60, 0, 46)
+    nameLabel.Position = UDim2.new(
+        0,
+        49,
+        0,
+        0
+    )
 
-    nameLabel.TextYAlignment = Enum.TextYAlignment.Center
+    nameLabel.Size = UDim2.new(
+        1,
+        -60,
+        0,
+        46
+    )
+
+    nameLabel.TextYAlignment =
+        Enum.TextYAlignment.Center
+
+    -- Нажатие
 
     button.Activated:Connect(function()
 
-        tween(button, {
-            BackgroundColor3 = CONFIG.Accent
-        }, 0.08):Play()
+        tween(
+            button,
+            {
+                BackgroundColor3 =
+                    CONFIG.Accent
+            },
+            0.08
+        ):Play()
 
         task.wait(0.08)
 
-        tween(button, {
-            BackgroundColor3 = CONFIG.Button
-        }, 0.12):Play()
+        tween(
+            button,
+            {
+                BackgroundColor3 =
+                    CONFIG.Button
+            },
+            0.12
+        ):Play()
 
         if callback then
             callback()
@@ -294,55 +454,101 @@ local function createButton(name, iconText, callback)
     end)
 
     return button
+
 end
 
 --==================================================
--- BUTTONS
+-- ПУНКТЫ МЕНЮ
 --==================================================
 
-createButton("Home", "⌂", function()
-    print("Home")
-end)
+createButton(
+    "Главная",
+    "⌂",
+    function()
 
-createButton("Features", "◆", function()
-    print("Features")
-end)
+        print("Открыта главная")
 
-createButton("Settings", "⚙", function()
-    print("Settings")
-end)
+    end
+)
 
-createButton("About", "?", function()
-    print("Nebula Mini GUI")
-end)
+createButton(
+    "Функции",
+    "◆",
+    function()
+
+        print("Открыты функции")
+
+    end
+)
+
+createButton(
+    "Настройки",
+    "⚙",
+    function()
+
+        print("Открыты настройки")
+
+    end
+)
+
+createButton(
+    "Информация",
+    "?",
+    function()
+
+        print("AD — мобильное меню")
+
+    end
+)
 
 --==================================================
--- STATUS
+-- СТАТУС
 --==================================================
 
 local status = Instance.new("Frame")
 
-status.Size = UDim2.new(1, 0, 0, 34)
+status.Size = UDim2.new(
+    1,
+    0,
+    0,
+    34
+)
 
 status.BackgroundTransparency = 1
 
 status.Parent = container
 
-local statusText = text(
+local statusText = makeText(
     status,
-    "●  READY",
+    "●  Готово",
     9,
-    Color3.fromRGB(100, 220, 150),
+    Color3.fromRGB(
+        100,
+        220,
+        150
+    ),
     Enum.Font.GothamBold
 )
 
-statusText.Position = UDim2.new(0, 5, 0, 0)
-statusText.Size = UDim2.new(1, -10, 1, 0)
+statusText.Position = UDim2.new(
+    0,
+    5,
+    0,
+    0
+)
 
-statusText.TextYAlignment = Enum.TextYAlignment.Center
+statusText.Size = UDim2.new(
+    1,
+    -10,
+    1,
+    0
+)
+
+statusText.TextYAlignment =
+    Enum.TextYAlignment.Center
 
 --==================================================
--- OPEN
+-- ОТКРЫТИЕ / ЗАКРЫТИЕ
 --==================================================
 
 local opened = false
@@ -356,17 +562,24 @@ local function openMenu()
     opened = true
 
     menu.Visible = true
-    menu.Size = UDim2.fromOffset(245, 0)
 
-    tween(menu, {
-        Size = UDim2.fromOffset(245, 300)
-    }, 0.25):Play()
+    menu.Size = UDim2.fromOffset(
+        235,
+        0
+    )
+
+    tween(
+        menu,
+        {
+            Size = UDim2.fromOffset(
+                235,
+                300
+            )
+        },
+        0.24
+    ):Play()
 
 end
-
---==================================================
--- CLOSE
---==================================================
 
 local function closeMenu()
 
@@ -376,24 +589,32 @@ local function closeMenu()
 
     opened = false
 
-    local animation = tween(menu, {
-        Size = UDim2.fromOffset(245, 0)
-    }, 0.2)
+    tween(
+        menu,
+        {
+            Size = UDim2.fromOffset(
+                235,
+                0
+            )
+        },
+        0.18
+    ):Play()
 
-    animation:Play()
+    task.delay(
+        0.18,
+        function()
 
-    task.delay(0.2, function()
+            if not opened then
+                menu.Visible = false
+            end
 
-        if not opened then
-            menu.Visible = false
         end
-
-    end)
+    )
 
 end
 
 --==================================================
--- EVENTS
+-- СОБЫТИЯ
 --==================================================
 
 icon.Activated:Connect(function()
@@ -407,31 +628,47 @@ icon.Activated:Connect(function()
 end)
 
 close.Activated:Connect(function()
+
     closeMenu()
+
 end)
 
 --==================================================
--- ICON PRESS ANIMATION
+-- АНИМАЦИЯ AD
 --==================================================
 
 icon.MouseButton1Down:Connect(function()
 
-    tween(icon, {
-        Size = UDim2.fromOffset(47, 47)
-    }, 0.08):Play()
+    tween(
+        icon,
+        {
+            Size = UDim2.fromOffset(
+                49,
+                49
+            )
+        },
+        0.08
+    ):Play()
 
 end)
 
 icon.MouseButton1Up:Connect(function()
 
-    tween(icon, {
-        Size = UDim2.fromOffset(52, 52)
-    }, 0.1):Play()
+    tween(
+        icon,
+        {
+            Size = UDim2.fromOffset(
+                54,
+                54
+            )
+        },
+        0.1
+    ):Play()
 
 end)
 
 --==================================================
--- DONE
+-- ГОТОВО
 --==================================================
 
-print("[NebulaMini] GUI loaded successfully.")
+print("[AD] Интерфейс успешно загружен")
