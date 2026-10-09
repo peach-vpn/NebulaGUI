@@ -1,7 +1,6 @@
 --========================================================--
---              AD v4.0 — MAX AIM + MAX ESP               --
---       Client-side only. Camera-lock, NOT real aimbot.  --
---                   100 studs aim range                  --
+--        AD v4.1 — AIM + CHAR ROTATE + JUMP BOOST        --
+--   Client-side only. Не даёт серверного преимущества.   --
 --========================================================--
 
 if _G.__AD_CLEANUP then pcall(_G.__AD_CLEANUP) _G.__AD_CLEANUP = nil end
@@ -30,41 +29,47 @@ end))
 
 --// ---------------- THEME ----------------
 local T = {
-    Accent   = Color3.fromRGB(135, 80, 255),
-    Accent2  = Color3.fromRGB(180, 130, 255),
-    Bg       = Color3.fromRGB(14, 14, 20),
-    Sec      = Color3.fromRGB(23, 23, 31),
-    Text     = Color3.fromRGB(230, 230, 235),
+    Accent  = Color3.fromRGB(135, 80, 255),
+    Accent2 = Color3.fromRGB(180, 130, 255),
+    Bg      = Color3.fromRGB(14, 14, 20),
+    Sec     = Color3.fromRGB(23, 23, 31),
+    Text    = Color3.fromRGB(230, 230, 235),
+    Good    = Color3.fromRGB(60, 220, 100),
 }
 
 --// ---------------- SETTINGS ----------------
 local S = {
     -- AIM
-    Aim          = false,
-    AimRange     = 100,       -- жёсткий лимит 100 studs
-    AimFOV       = 90,
-    AimSmooth    = 0.35,
-    AimHead      = true,
-    TeamCheck    = true,
-    WallCheck    = true,
-    StickyTarget = true,
-    Prediction   = 0.12,      -- множитель предикции
-    HoldToAim    = false,     -- тап = кратковременный лок
+    Aim              = false,
+    AimRange         = 100,     -- НАСТРАИВАЕМАЯ дистанция
+    AimFOV           = 90,
+    AimSmooth        = 0.35,    -- плавность камеры
+    CharSmooth       = 0.25,    -- плавность поворота персонажа
+    AimHead          = true,
+    RotateCharacter  = false,   -- поворот тела в цель
+    TeamCheck        = true,
+    WallCheck        = true,
+    StickyTarget     = true,
+    Prediction       = 0.12,
+    HoldToAim        = false,
+
+    -- MOVEMENT
+    AutoJump         = false,
+    JumpPowerBoost   = false,
+    JumpPower        = 60,
+    Speed            = false,
+    SpeedValue       = 22,
 
     -- ESP
-    ESP          = false,
-    Box          = true,
-    Highlight    = true,
-    Name         = true,
-    Health       = true,
-    Distance     = true,
-    Tracer       = true,
-    Skeleton     = false,
-    MaxDistance  = 400,
-
-    -- Misc
-    Speed        = false,
-    SpeedValue   = 22,
+    ESP              = false,
+    Box              = true,
+    Highlight        = true,
+    Name             = true,
+    Health           = true,
+    Distance         = true,
+    Tracer           = true,
+    Skeleton         = false,
+    MaxDistance      = 400,
 }
 
 --// ---------------- GUI PARENT ----------------
@@ -74,7 +79,7 @@ local function guiParent()
     return PlayerGui
 end
 local PARENT = guiParent()
-local old = PARENT:FindFirstChild("AD_GUI_v4")
+local old = PARENT:FindFirstChild("AD_GUI_v41")
 if old then old:Destroy() end
 
 --// ---------------- BUILDERS ----------------
@@ -85,13 +90,13 @@ local function Create(class, props)
     o.Parent = p
     return o
 end
-local function Corner(p, r) return Create("UICorner", {CornerRadius = r or UDim.new(0, 8), Parent = p}) end
-local function Stroke(p, c, th, tr) return Create("UIStroke", {Color = c or T.Accent, Thickness = th or 1, Transparency = tr or 0, Parent = p}) end
+local function Corner(p, r) return Create("UICorner", { CornerRadius = r or UDim.new(0, 8), Parent = p }) end
+local function Stroke(p, c, th, tr) return Create("UIStroke", { Color = c or T.Accent, Thickness = th or 1, Transparency = tr or 0, Parent = p }) end
 local function Tween(o, i, pr) TweenService:Create(o, i, pr):Play() end
 
 --// ---------------- GUI ----------------
 local GUI = Create("ScreenGui", {
-    Name = "AD_GUI_v4", ResetOnSpawn = false, IgnoreGuiInset = true,
+    Name = "AD_GUI_v41", ResetOnSpawn = false, IgnoreGuiInset = true,
     ZIndexBehavior = Enum.ZIndexBehavior.Sibling, Parent = PARENT
 })
 bind(GUI.Destroying:Connect(disconnectAll))
@@ -105,7 +110,7 @@ Corner(AD, UDim.new(1, 0))
 local ADStroke = Stroke(AD, T.Accent, 2)
 
 local Main = Create("Frame", {
-    Size = UDim2.fromOffset(320, 300), Position = UDim2.new(0.5, -160, 0.5, -150),
+    Size = UDim2.fromOffset(320, 310), Position = UDim2.new(0.5, -160, 0.5, -155),
     BackgroundColor3 = T.Bg, Visible = false, ClipsDescendants = true, Parent = GUI
 })
 Corner(Main, UDim.new(0, 12))
@@ -228,7 +233,7 @@ local FOVDot = Create("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position =
 Corner(FOVDot, UDim.new(1, 0))
 local function UpdateFOV() FOV.Size = UDim2.fromOffset(S.AimFOV * 2, S.AimFOV * 2) end
 
---// ---------------- TRACER (нижняя центральная точка) ----------------
+--// ---------------- TRACER ----------------
 local TracerFrame = Create("Frame", {
     AnchorPoint = Vector2.new(0.5, 1),
     Position = UDim2.new(0.5, 0, 1, -60),
@@ -239,7 +244,7 @@ local TracerFrame = Create("Frame", {
     ZIndex = 90,
     Parent = GUI
 })
-local TracerGrad = Create("UIGradient", {
+Create("UIGradient", {
     Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, T.Accent),
         ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255)),
@@ -284,14 +289,8 @@ local function getRoot(char)
         or char:FindFirstChild("UpperTorso")
         or char:FindFirstChild("Head")
 end
-local function getHumanoid(char)
-    if not char then return nil end
-    return char:FindFirstChildOfClass("Humanoid")
-end
-local function getHead(char)
-    if not char then return nil end
-    return char:FindFirstChild("Head")
-end
+local function getHumanoid(char) return char and char:FindFirstChildOfClass("Humanoid") end
+local function getHead(char) return char and char:FindFirstChild("Head") end
 
 --// ---------------- TEAM / VISIBILITY ----------------
 local function isEnemy(plr)
@@ -315,9 +314,8 @@ local function isVisible(char, part)
     return hit.Instance:IsDescendantOf(char)
 end
 
---// ---------------- AIM (Camera Lock, 100 studs hard limit) ----------------
+--// ---------------- AIM ----------------
 local LockedTarget = nil
-local LockedAt = 0
 local HoldActive = false
 local LastTargetSwitch = 0
 local TARGET_SWITCH_CD = 0.15
@@ -334,11 +332,11 @@ local function predictPosition(part)
     if not part or S.Prediction <= 0 then return part and part.Position or nil end
     local vel = part.AssemblyLinearVelocity or part.Velocity or Vector3.zero
     local dist = (part.Position - Camera.CFrame.Position).Magnitude
-    local t = dist / math.max(400, 1) -- ~ проекция времени
+    local t = dist / math.max(400, 1)
     return part.Position + vel * (S.Prediction * t)
 end
 
-local function targetScore(player, part)
+local function targetScore(part)
     if not Camera then return math.huge end
     local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
     if not onScreen or pos.Z <= 0 then return math.huge end
@@ -360,9 +358,9 @@ local function findTarget()
                 local part = getAimPart(char)
                 if part then
                     local d3 = (part.Position - camPos).Magnitude
-                    if d3 <= S.AimRange then -- ЖЁСТКИЙ ЛИМИТ 100 studs
+                    if d3 <= S.AimRange then
                         if isVisible(char, part) then
-                            local sc = targetScore(plr, part)
+                            local sc = targetScore(part)
                             if sc < bestScore then
                                 bestScore = sc
                                 best = plr
@@ -388,12 +386,12 @@ local function validateTarget(plr)
 end
 
 --// ---------------- ESP ----------------
-local espFolder = Create("Folder", { Name = "AD_ESP_v4", Parent = PARENT })
+local espFolder = Create("Folder", { Name = "AD_ESP_v41", Parent = PARENT })
 local ESPData = {}
 
-local BOX_COLOR = Color3.fromRGB(255, 90, 90)
+local BOX_COLOR  = Color3.fromRGB(255, 90, 90)
 local NAME_COLOR = Color3.fromRGB(255, 240, 240)
-local HL_COLOR = Color3.fromRGB(255, 60, 60)
+local HL_COLOR   = Color3.fromRGB(255, 60, 60)
 local SKEL_COLOR = Color3.fromRGB(255, 255, 255)
 
 local function removeESP(plr)
@@ -405,128 +403,85 @@ local function removeESP(plr)
     ESPData[plr] = nil
 end
 
-local function makeLine(name, thickness)
+local function makeLine(name)
     local ln = Create("Frame", {
-        Name = name,
-        BackgroundColor3 = SKEL_COLOR,
-        BorderSizePixel = 0,
-        AnchorPoint = Vector2.new(0.5, 0),
-        Visible = false,
-        ZIndex = 5,
-        Parent = GUI
+        Name = name, BackgroundColor3 = SKEL_COLOR, BorderSizePixel = 0,
+        AnchorPoint = Vector2.new(0.5, 0), Visible = false, ZIndex = 5, Parent = GUI
     })
     Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = ln })
-    ln.Size = UDim2.fromOffset(thickness or 2, 0)
+    ln.Size = UDim2.fromOffset(2, 0)
     return ln
 end
 
 local function createESP(plr)
     if plr == LP or ESPData[plr] then return end
-
     local data = {}
 
-    -- Box (BoxHandleAdornment)
     local box = Create("BoxHandleAdornment", {
-        Name = "ESP_Box",
-        Size = Vector3.new(2, 3, 1),
-        AlwaysOnTop = true,
-        ZIndex = 6,
-        Transparency = 0.55,
-        Color3 = BOX_COLOR,
-        Visible = false,
-        Parent = espFolder
+        Name = "ESP_Box", Size = Vector3.new(2, 3, 1), AlwaysOnTop = true,
+        ZIndex = 6, Transparency = 0.55, Color3 = BOX_COLOR, Visible = false, Parent = espFolder
     })
     data.Box = box
 
-    -- Highlight
     local hl = Create("Highlight", {
-        Name = "ESP_HL",
-        FillColor = HL_COLOR,
-        FillTransparency = 0.7,
-        OutlineColor = Color3.fromRGB(255, 255, 255),
-        OutlineTransparency = 0.4,
-        DepthMode = Enum.HighlightDepthMode.AlwaysOnTop,
-        Enabled = false,
-        Parent = espFolder
+        Name = "ESP_HL", FillColor = HL_COLOR, FillTransparency = 0.7,
+        OutlineColor = Color3.fromRGB(255, 255, 255), OutlineTransparency = 0.4,
+        DepthMode = Enum.HighlightDepthMode.AlwaysOnTop, Enabled = false, Parent = espFolder
     })
     data.Highlight = hl
 
-    -- Name + Distance billboard
     local bb = Create("BillboardGui", {
-        Name = "ESP_Info",
-        Size = UDim2.fromOffset(140, 34),
+        Name = "ESP_Info", Size = UDim2.fromOffset(140, 34),
         StudsOffsetWorldSpace = Vector3.new(0, 3.4, 0),
-        AlwaysOnTop = true,
-        Enabled = false,
-        MaxDistance = S.MaxDistance,
-        Parent = espFolder
+        AlwaysOnTop = true, Enabled = false, MaxDistance = S.MaxDistance, Parent = espFolder
     })
     data.Info = bb
 
     local name = Create("TextLabel", {
-        Size = UDim2.new(1, 0, 0, 16),
-        BackgroundTransparency = 1,
-        TextColor3 = NAME_COLOR,
-        TextStrokeTransparency = 0.4,
-        TextStrokeColor3 = Color3.fromRGB(0, 0, 0),
-        Font = Enum.Font.GothamBold,
-        TextSize = 13,
-        Text = plr.Name,
-        Parent = bb
+        Size = UDim2.new(1, 0, 0, 16), BackgroundTransparency = 1,
+        TextColor3 = NAME_COLOR, TextStrokeTransparency = 0.4,
+        TextStrokeColor3 = Color3.fromRGB(0, 0, 0), Font = Enum.Font.GothamBold,
+        TextSize = 13, Text = plr.Name, Parent = bb
     })
     data.Name = name
 
     local dist = Create("TextLabel", {
-        Size = UDim2.new(1, 0, 0, 12),
-        Position = UDim2.fromOffset(0, 16),
-        BackgroundTransparency = 1,
-        TextColor3 = Color3.fromRGB(200, 240, 210),
-        TextStrokeTransparency = 0.4,
-        TextStrokeColor3 = Color3.fromRGB(0, 0, 0),
-        Font = Enum.Font.Gotham,
-        TextSize = 11,
-        Parent = bb
+        Size = UDim2.new(1, 0, 0, 12), Position = UDim2.fromOffset(0, 16),
+        BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(200, 240, 210),
+        TextStrokeTransparency = 0.4, TextStrokeColor3 = Color3.fromRGB(0, 0, 0),
+        Font = Enum.Font.Gotham, TextSize = 11, Parent = bb
     })
     data.Dist = dist
 
-    -- HP bar (под именем)
     local hpBack = Create("Frame", {
-        Size = UDim2.new(0.9, 0, 0, 3),
-        Position = UDim2.new(0.05, 0, 1, -6),
-        BackgroundColor3 = Color3.fromRGB(40, 40, 50),
-        BorderSizePixel = 0,
-        Parent = bb
+        Size = UDim2.new(0.9, 0, 0, 3), Position = UDim2.new(0.05, 0, 1, -6),
+        BackgroundColor3 = Color3.fromRGB(40, 40, 50), BorderSizePixel = 0, Parent = bb
     })
     Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = hpBack })
     local hpFill = Create("Frame", {
-        Size = UDim2.fromScale(1, 1),
-        BackgroundColor3 = Color3.fromRGB(60, 255, 100),
-        BorderSizePixel = 0,
-        Parent = hpBack
+        Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(60, 255, 100),
+        BorderSizePixel = 0, Parent = hpBack
     })
     Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = hpFill })
     data.HPBack = hpBack
     data.HPFill = hpFill
 
-    -- Skeleton bones
     local skel = {}
     for _, n in ipairs({ "Head", "Torso", "LA", "RA", "LL", "RL" }) do
-        skel[n] = makeLine("SKEL_" .. n, 2)
+        skel[n] = makeLine("SKEL_" .. n)
     end
     data.Skel = skel
 
     ESPData[plr] = data
 end
 
---// ---------------- SKELETON DRAW ----------------
 local function drawSkeleton(d, char)
     local function lineTo(ln, a, b)
         if not a or not b then ln.Visible = false return end
         local pa, onA = Camera:WorldToViewportPoint(a.Position)
         local pb, onB = Camera:WorldToViewportPoint(b.Position)
         if not onA or not onB or pa.Z <= 0 or pb.Z <= 0 then ln.Visible = false return end
-        local va = Vector2.new(pa.X, pa.Y)
-        local vb = Vector2.new(pb.X, pb.Y)
+        local va, vb = Vector2.new(pa.X, pa.Y), Vector2.new(pb.X, pb.Y)
         local len = (vb - va).Magnitude
         local mid = (va + vb) / 2
         local ang = math.deg(math.atan2(vb.Y - va.Y, vb.X - va.X)) - 90
@@ -534,7 +489,6 @@ local function drawSkeleton(d, char)
         ln.Position = UDim2.fromOffset(mid.X, mid.Y)
         ln.Rotation = ang
         ln.Visible = true
-        ln.BackgroundColor3 = SKEL_COLOR
     end
 
     local head = char:FindFirstChild("Head")
@@ -556,7 +510,6 @@ local function hideSkeleton(d)
     for _, ln in pairs(d.Skel) do ln.Visible = false end
 end
 
---// ---------------- TRACER DRAW (одна цель — ближайший) ----------------
 local function updateTracer(target)
     if not S.Tracer or not S.ESP or not target then
         TracerFrame.Visible = false
@@ -568,10 +521,8 @@ local function updateTracer(target)
     local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
     if not onScreen or pos.Z <= 0 then TracerFrame.Visible = false return end
     local vp = Camera.ViewportSize
-    local originX = vp.X / 2
-    local originY = vp.Y - 60
-    local dx = pos.X - originX
-    local dy = pos.Y - originY
+    local originX, originY = vp.X / 2, vp.Y - 60
+    local dx, dy = pos.X - originX, pos.Y - originY
     local len = math.sqrt(dx * dx + dy * dy)
     local ang = math.deg(math.atan2(dy, dx)) - 90
     TracerFrame.Size = UDim2.fromOffset(2, len)
@@ -579,37 +530,38 @@ local function updateTracer(target)
     TracerFrame.Rotation = ang
     TracerFrame.Visible = true
     TracerFrame.BackgroundColor3 = T.Accent
-    TracerGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, T.Accent),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255)),
-    })
 end
+
+--// ---------------- HOLD-TO-AIM ----------------
+bind(UIS.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if S.HoldToAim and (input.UserInputType == Enum.UserInputType.Touch
+        or input.UserInputType == Enum.UserInputType.MouseButton1) then
+        HoldActive = true
+    end
+end))
+bind(UIS.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch
+        or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        HoldActive = false
+    end
+end))
 
 --// ---------------- MAIN RENDER LOOP ----------------
 local accum = 0
 local UPDATE_STEP = 1/25
 local tracerTarget = nil
 
---// Hold-to-aim (тап по экрану без нажатия на UI)
-bind(UIS.InputBegan:Connect(function(input, processed)
-    if processed then return end
-    if S.HoldToAim and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1) then
-        HoldActive = true
-    end
-end))
-bind(UIS.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-        HoldActive = false
-    end
-end))
-
 bind(RunService.RenderStepped:Connect(function(dt)
-    -- AIM — каждый кадр
+    -- ============== AIM (каждый кадр) ==============
     local aimActive = S.Aim and (not S.HoldToAim or HoldActive)
     if aimActive and Camera then
+        -- Валидация залипшей цели
         if S.StickyTarget and LockedTarget then
             if not validateTarget(LockedTarget) then LockedTarget = nil end
         end
+
+        -- Смена цели с кулдауном
         local now = tick()
         if not LockedTarget or (now - LastTargetSwitch) > TARGET_SWITCH_CD then
             local nt = findTarget()
@@ -618,28 +570,47 @@ bind(RunService.RenderStepped:Connect(function(dt)
                 LastTargetSwitch = now
             end
         end
+
         if LockedTarget then
-            local char = getCharacter(LockedTarget)
-            local part = char and getAimPart(char)
-            if part then
-                local aimPos = predictPosition(part)
-                local desired = CFrame.lookAt(Camera.CFrame.Position, aimPos)
-                local smooth = math.clamp(S.AimSmooth * (dt * 60), 0.01, 1)
-                Camera.CFrame = Camera.CFrame:Lerp(desired, smooth)
+            local tchar = getCharacter(LockedTarget)
+            local tpart = tchar and getAimPart(tchar)
+            if tpart then
+                local aimPos = predictPosition(tpart)
+
+                -- 1) Поворот КАМЕРЫ
+                local desiredCam = CFrame.lookAt(Camera.CFrame.Position, aimPos)
+                local camSmooth = math.clamp(S.AimSmooth * (dt * 60), 0.01, 1)
+                Camera.CFrame = Camera.CFrame:Lerp(desiredCam, camSmooth)
+
+                -- 2) Поворот ПЕРСОНАЖА (если включено)
+                if S.RotateCharacter then
+                    local myChar = LP.Character
+                    local myHrp  = myChar and myChar:FindFirstChild("HumanoidRootPart")
+                    if myHrp then
+                        -- Поворачиваем ТОЛЬКО по оси Y, чтобы тело не наклонялось
+                        local myPos = myHrp.Position
+                        local lookTarget = Vector3.new(aimPos.X, myPos.Y, aimPos.Z)
+                        local desiredBody = CFrame.lookAt(myPos, lookTarget)
+                        local bodySmooth = math.clamp(S.CharSmooth * (dt * 60), 0.01, 1)
+                        -- Заменяем только rotation, сохраняем позицию
+                        local cur = myHrp.CFrame
+                        local newRot = cur.Rotation:Lerp(desiredBody.Rotation, bodySmooth)
+                        myHrp.CFrame = CFrame.new(cur.Position) * newRot
+                    end
+                end
             end
         end
     else
         LockedTarget = nil
     end
 
-    -- ESP — throttled
+    -- ============== ESP (throttled 25 Hz) ==============
     accum = accum + dt
     if accum >= UPDATE_STEP then
         accum = 0
         tracerTarget = nil
         if S.ESP then
             local camPos = Camera and Camera.CFrame.Position or Vector3.zero
-            local vp = Camera and Camera.ViewportSize or Vector2.new(1280, 720)
             local bestTracerDist = math.huge
 
             for plr, d in pairs(ESPData) do
@@ -651,7 +622,7 @@ bind(RunService.RenderStepped:Connect(function(dt)
                     hideSkeleton(d)
                 else
                     local root = getRoot(char)
-                    local hum = getHumanoid(char)
+                    local hum  = getHumanoid(char)
                     local head = getHead(char)
 
                     if root then
@@ -663,18 +634,13 @@ bind(RunService.RenderStepped:Connect(function(dt)
                             d.Box.Visible = false
                             hideSkeleton(d)
                         else
-                            -- Highlight
                             d.Highlight.Enabled = S.Highlight
                             if S.Highlight then
                                 d.Highlight.Adornee = char
-                                -- Динамический цвет: от зелёного (близко) к красному (далеко)
                                 local t = math.clamp(distance / S.MaxDistance, 0, 1)
-                                local r = 1
-                                local g = 1 - t
-                                d.Highlight.FillColor = Color3.new(r, g, 0.2)
+                                d.Highlight.FillColor = Color3.new(1, 1 - t, 0.2)
                             end
 
-                            -- Box
                             d.Box.Visible = S.Box
                             if S.Box then
                                 d.Box.Adornee = root
@@ -684,7 +650,6 @@ bind(RunService.RenderStepped:Connect(function(dt)
                                 d.Box.Adornee = nil
                             end
 
-                            -- Info (name + dist + hp)
                             d.Info.Enabled = true
                             d.Info.Adornee = head or root
                             d.Info.MaxDistance = S.MaxDistance
@@ -700,22 +665,19 @@ bind(RunService.RenderStepped:Connect(function(dt)
                                 d.HPBack.Visible = true
                                 local ratio = math.clamp(hum.Health / math.max(hum.MaxHealth, 1), 0, 1)
                                 d.HPFill.Size = UDim2.fromScale(ratio, 1)
-                                local col = ratio > 0.5 and Color3.fromRGB(60, 255, 100)
+                                d.HPFill.BackgroundColor3 = ratio > 0.5 and Color3.fromRGB(60, 255, 100)
                                     or ratio > 0.25 and Color3.fromRGB(255, 200, 60)
                                     or Color3.fromRGB(255, 60, 60)
-                                d.HPFill.BackgroundColor3 = col
                             else
                                 d.HPBack.Visible = false
                             end
 
-                            -- Skeleton
                             if S.Skeleton then
                                 drawSkeleton(d, char)
                             else
                                 hideSkeleton(d)
                             end
 
-                            -- Выбор цели для трейсера: самый близкий
                             if S.Tracer and distance < bestTracerDist then
                                 bestTracerDist = distance
                                 tracerTarget = plr
@@ -732,12 +694,9 @@ bind(RunService.RenderStepped:Connect(function(dt)
                 hideSkeleton(d)
             end
         end
-
-        -- Tracer рисуем каждый throttle-тик, но линия обновляется в RenderStepped.
-        -- Реальная отрисовка — ниже, в RenderStepped (каждый кадр).
     end
 
-    -- Tracer рисуем каждый кадр для плавности
+    -- Tracer каждый кадр для плавности
     if S.Tracer and S.ESP and tracerTarget then
         updateTracer(tracerTarget)
     else
@@ -745,32 +704,43 @@ bind(RunService.RenderStepped:Connect(function(dt)
     end
 end))
 
---// ---------------- SPEED (Heartbeat) ----------------
+--// ---------------- HEARTBEAT (Speed / Jump) ----------------
 bind(RunService.Heartbeat:Connect(function()
     local char = LP.Character
     if not char then return end
     local hum = char:FindFirstChildOfClass("Humanoid")
-    if hum and S.Speed then
+    if not hum then return end
+
+    if S.Speed then
         hum.WalkSpeed = S.SpeedValue
+    end
+
+    if S.JumpPowerBoost then
+        hum.UseJumpPower = true
+        hum.JumpPower = S.JumpPower
+    end
+
+    if S.AutoJump and hum.FloorMaterial ~= Enum.Material.Air then
+        hum.Jump = true
     end
 end))
 
 --// ---------------- PAGES ----------------
 local function MainPage()
     Clear()
-    Title.Text = "AD v4"
+    Title.Text = "AD v4.1"
     Back.Visible = false
     Section("ГЛАВНОЕ")
-    Button("AIM (100 studs)", function() AimPage() end)
+    Button("AIM", function() AimPage() end)
     Button("ESP MAX", function() ESPPage() end)
     Button("Misc", function() MiscPage() end)
 end
 
 function AimPage()
     Clear()
-    Title.Text = "AIM · 100m"
+    Title.Text = "AIM"
     Back.Visible = true
-    Info("Camera Lock: поворот камеры в цель. Урон зависит от серверной логики игры.")
+    Info("Camera Lock: реально поворачивает камеру и (опционально) тело персонажа. Урон зависит от игры.")
     Section("ОСНОВНОЕ")
     Toggle("Включить AIM", S.Aim, function(v) S.Aim = v FOV.Visible = v if not v then LockedTarget = nil end end)
     Toggle("Hold-to-aim", S.HoldToAim, function(v) S.HoldToAim = v end)
@@ -778,12 +748,16 @@ function AimPage()
     Toggle("Sticky", S.StickyTarget, function(v) S.StickyTarget = v end)
     Toggle("TeamCheck", S.TeamCheck, function(v) S.TeamCheck = v end)
     Toggle("WallCheck", S.WallCheck, function(v) S.WallCheck = v end)
-    Section("ПАРАМЕТРЫ")
+    Toggle("Rotate Character", S.RotateCharacter, function(v) S.RotateCharacter = v end)
+
+    Section("ДИСТАНЦИЯ И ПАРАМЕТРЫ")
+    Number("Range (studs)", S.AimRange, 10, 500, function(v) S.AimRange = v end)
     Number("FOV (пикс)", S.AimFOV, 20, 600, function(v) S.AimFOV = v UpdateFOV() end)
-    Number("Плавность", S.AimSmooth, 0.05, 1, function(v) S.AimSmooth = v end)
+    Number("Cam Smooth", S.AimSmooth, 0.05, 1, function(v) S.AimSmooth = v end)
+    Number("Body Smooth", S.CharSmooth, 0.05, 1, function(v) S.CharSmooth = v end)
     Number("Prediction", S.Prediction, 0, 0.5, function(v) S.Prediction = v end)
-    Section("ДИСТАНЦИЯ")
-    Info("Макс. дистанция AIM: 100 studs (жёстко). Дальше цель игнорируется.")
+
+    Info("Rotate Character физически поворачивает HumanoidRootPart. Может конфликтовать с движением.")
 end
 
 function ESPPage()
@@ -811,16 +785,19 @@ function MiscPage()
     Clear()
     Title.Text = "Misc"
     Back.Visible = true
-    Section("ДВИЖЕНИЕ")
-    Toggle("Скорость", S.Speed, function(v) S.Speed = v end)
-    Number("Значение", S.SpeedValue, 16, 120, function(v) S.SpeedValue = v end)
-    Info("WalkSpeed > ~22 может ловиться античитом.")
+    Section("СКОРОСТЬ")
+    Toggle("Speed", S.Speed, function(v) S.Speed = v end)
+    Number("WalkSpeed", S.SpeedValue, 16, 120, function(v) S.SpeedValue = v end)
+    Section("ПРЫЖОК")
+    Toggle("AutoJump", S.AutoJump, function(v) S.AutoJump = v end)
+    Toggle("JumpPower Boost", S.JumpPowerBoost, function(v) S.JumpPowerBoost = v end)
+    Number("JumpPower", S.JumpPower, 50, 300, function(v) S.JumpPower = v end)
+    Info("WalkSpeed > 22 и JumpPower > 50 обычно детектится античитом.")
 end
 
 --// ---------------- DRAG ----------------
 local function MakeDraggable(handle, target)
     local dragging, dragStart, startPos = false, nil, nil
-
     handle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1
             or input.UserInputType == Enum.UserInputType.Touch then
@@ -829,14 +806,12 @@ local function MakeDraggable(handle, target)
             startPos = target.Position
         end
     end)
-
     handle.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1
             or input.UserInputType == Enum.UserInputType.Touch then
             dragging = false
         end
     end)
-
     UIS.InputChanged:Connect(function(input)
         if not dragging then return end
         if input.UserInputType == Enum.UserInputType.MouseMovement
@@ -859,7 +834,7 @@ AD.MouseButton1Click:Connect(function()
     Main.Visible = not Main.Visible
     if Main.Visible then
         Main.Size = UDim2.fromOffset(0, 0)
-        Tween(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(320, 300) })
+        Tween(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(320, 310) })
         MainPage()
     end
 end)
@@ -885,4 +860,4 @@ end
 
 UpdateFOV()
 MainPage()
-print("[AD v4.0] loaded — aim range 100 studs")
+print("[AD v4.1] loaded")
