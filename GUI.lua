@@ -1,5 +1,6 @@
 --========================================================--
---   AD v4.4 — AIM + TRIGGER + NOCLIP + ESP + LANG(EN/RU)  --
+--   AD v4.6 — AIM + TRIGGER + ESP + NOCLIP + LANG(EN/RU)  --
+--   Dead-skip · Flick-release · Ping comp · Multi-ray     --
 --   Client-side only. Не даёт серверного преимущества.    --
 --========================================================--
 
@@ -33,172 +34,87 @@ end))
 --// =========================================================
 local Locale = {
     EN = {
-        -- Header
-        title_main         = "Main",
-        title_aim          = "AIM",
-        title_trigger      = "Trigger Bot",
-        title_esp          = "ESP MAX",
-        title_misc         = "Misc",
-        title_settings     = "Settings",
-
-        -- Main buttons
-        btn_aim            = "AIM",
-        btn_trigger        = "Trigger Bot",
-        btn_esp            = "ESP MAX",
-        btn_misc           = "Misc",
-        btn_settings       = "Settings",
-        btn_lang           = "Language",
-
-        -- Sections
-        sec_main           = "MAIN",
-        sec_settings       = "SETTINGS",
-
-        -- AIM page
-        aim_info           = "Camera Lock: rotates camera (and optionally body). Damage depends on the game.",
-        sec_aim_main       = "MAIN",
-        aim_enable         = "Enable AIM",
-        aim_hold           = "Hold-to-aim",
-        aim_head           = "Target Head",
-        aim_sticky         = "Sticky Target",
-        aim_teamcheck      = "TeamCheck",
-        aim_wallcheck      = "WallCheck",
-        aim_rotate_char    = "Rotate Character",
-        sec_aim_params     = "DISTANCE & PARAMS",
-        aim_range          = "Range (studs)",
-        aim_fov            = "FOV (pixels)",
-        aim_cam_smooth     = "Cam Smooth",
-        aim_body_smooth    = "Body Smooth",
-        aim_prediction     = "Prediction",
-
-        -- Trigger page
-        trig_info          = "Auto-fires when a valid target is under the crosshair. Client-side only.",
-        sec_trig_main      = "MAIN",
-        trig_enable        = "Enable Trigger",
-        trig_require_aim   = "Require AIM active",
-        trig_only_tool     = "Only with Tool equipped",
-        trig_auto_reload   = "Skip when reloading",
-        sec_trig_params    = "PARAMETERS",
-        trig_fov           = "Trigger FOV (px)",
-        trig_delay         = "Delay (sec)",
-        trig_hold          = "Hold time (sec)",
-        trig_miss          = "Miss chance (0..1)",
-
-        -- ESP page
-        sec_esp_show       = "DISPLAY",
-        esp_enable         = "Enable ESP",
-        esp_box            = "Box",
-        esp_highlight      = "Highlight",
-        esp_name           = "Name",
-        esp_health         = "HP bar",
-        esp_distance       = "Distance",
-        esp_tracer         = "Tracer",
-        esp_skeleton       = "Skeleton",
-        esp_teamcheck      = "TeamCheck",
-        sec_esp_params     = "PARAMETERS",
-        esp_max_dist       = "Max ESP dist",
-
-        -- Misc page
-        sec_speed          = "SPEED",
-        misc_speed         = "Speed",
-        misc_walkspeed     = "WalkSpeed",
-        sec_jump           = "JUMP",
-        misc_autojump      = "AutoJump",
-        misc_jumpboost     = "JumpPower Boost",
-        misc_jumppower     = "JumpPower",
-        sec_noclip         = "NOCLIP",
-        misc_noclip        = "NoClip (through walls)",
-        misc_noclip_info   = "NoClip: body passes through walls and floor. Doesn't work with server-side validation.",
-        misc_noclip_warn   = "Tip: don't enable NoClip together with AutoJump — you may fall out of the world.",
-        misc_speed_warn    = "WalkSpeed > 22 and JumpPower > 50 is usually detected by anti-cheat.",
-
-        -- Settings page
-        set_lang_label     = "Language",
-        set_lang_en        = "English",
-        set_lang_ru        = "Russian",
-        set_theme_label    = "Theme",
-        set_info           = "Changes apply instantly. Settings are kept when switching language.",
+        title_main="Main", title_aim="AIM", title_trigger="Trigger Bot",
+        title_esp="ESP MAX", title_misc="Misc", title_settings="Settings",
+        btn_aim="AIM", btn_trigger="Trigger Bot", btn_esp="ESP MAX",
+        btn_misc="Misc", btn_settings="Settings",
+        sec_main="MAIN", sec_settings="SETTINGS",
+        aim_info="Camera Lock: rotates camera (and optionally body). Damage depends on the game.",
+        sec_aim_main="MAIN",
+        aim_enable="Enable AIM", aim_hold="Hold-to-aim", aim_head="Target Head",
+        aim_sticky="Sticky Target", aim_teamcheck="TeamCheck", aim_wallcheck="WallCheck",
+        aim_rotate_char="Rotate Character",
+        sec_aim_params="DISTANCE & PARAMS",
+        aim_range="Range (studs)", aim_fov="FOV (pixels)",
+        aim_cam_smooth="Cam Smooth", aim_body_smooth="Body Smooth", aim_prediction="Prediction",
+        aim_priority="Priority Mode", aim_adaptive="Adaptive Smooth",
+        aim_humanize="Humanization (deg)", aim_pingcomp="Ping Compensation",
+        aim_flick="Flick-release", aim_flick_info="Flick 2 times to release target",
+        trig_info="Auto-fires when a valid target is under the crosshair. Head only. Doesn't block movement.",
+        sec_trig_main="MAIN",
+        trig_enable="Enable Trigger", trig_require_aim="Require AIM active",
+        trig_only_tool="Only with Tool equipped", trig_auto_reload="Skip when reloading",
+        sec_trig_params="PARAMETERS",
+        trig_fov="Trigger FOV (px)", trig_delay="Delay (sec)",
+        trig_hold="Hold time (sec)", trig_miss="Miss chance (0..1)",
+        sec_esp_show="DISPLAY",
+        esp_enable="Enable ESP", esp_box="Box", esp_highlight="Highlight",
+        esp_name="Name", esp_health="HP bar", esp_distance="Distance",
+        esp_tracer="Tracer", esp_skeleton="Skeleton", esp_teamcheck="TeamCheck",
+        sec_esp_params="PARAMETERS", esp_max_dist="Max ESP dist",
+        sec_speed="SPEED", misc_speed="Speed", misc_walkspeed="WalkSpeed",
+        sec_jump="JUMP", misc_autojump="AutoJump",
+        misc_jumpboost="JumpPower Boost", misc_jumppower="JumpPower",
+        sec_noclip="NOCLIP", misc_noclip="NoClip (through walls)",
+        misc_noclip_info="NoClip: body passes through walls and floor. Doesn't work with server-side validation.",
+        misc_noclip_warn="Tip: don't enable NoClip together with AutoJump — you may fall out of the world.",
+        misc_speed_warn="WalkSpeed > 22 and JumpPower > 50 is usually detected by anti-cheat.",
+        set_lang_label="Language", set_lang_en="English", set_lang_ru="Russian",
+        set_theme_label="Theme",
+        set_info="Changes apply instantly. Settings are kept when switching language.",
     },
     RU = {
-        title_main         = "Главное",
-        title_aim          = "АИМ",
-        title_trigger      = "Триггер",
-        title_esp          = "ESP MAX",
-        title_misc         = "Разное",
-        title_settings     = "Настройки",
-
-        btn_aim            = "АИМ",
-        btn_trigger        = "Триггер",
-        btn_esp            = "ESP MAX",
-        btn_misc           = "Разное",
-        btn_settings       = "Настройки",
-        btn_lang           = "Язык",
-
-        sec_main           = "ГЛАВНОЕ",
-        sec_settings       = "НАСТРОЙКИ",
-
-        aim_info           = "Camera Lock: поворачивает камеру и (опц.) тело. Урон зависит от игры.",
-        sec_aim_main       = "ОСНОВНОЕ",
-        aim_enable         = "Включить АИМ",
-        aim_hold           = "Hold-to-aim",
-        aim_head           = "В голову",
-        aim_sticky         = "Sticky",
-        aim_teamcheck      = "TeamCheck",
-        aim_wallcheck      = "WallCheck",
-        aim_rotate_char    = "Rotate Character",
-        sec_aim_params     = "ДИСТАНЦИЯ И ПАРАМЕТРЫ",
-        aim_range          = "Range (studs)",
-        aim_fov            = "FOV (пикс)",
-        aim_cam_smooth     = "Cam Smooth",
-        aim_body_smooth    = "Body Smooth",
-        aim_prediction     = "Prediction",
-
-        trig_info          = "Авто-выстрел, когда валидная цель под прицелом. Только клиентская сторона.",
-        sec_trig_main      = "ОСНОВНОЕ",
-        trig_enable        = "Включить триггер",
-        trig_require_aim   = "Требовать АИМ",
-        trig_only_tool     = "Только с Tool в руках",
-        trig_auto_reload   = "Пауза при перезарядке",
-        sec_trig_params    = "ПАРАМЕТРЫ",
-        trig_fov           = "Trigger FOV (пикс)",
-        trig_delay         = "Задержка (сек)",
-        trig_hold          = "Удержание (сек)",
-        trig_miss          = "Шанс промаха (0..1)",
-
-        sec_esp_show       = "ОТОБРАЖЕНИЕ",
-        esp_enable         = "Включить ESP",
-        esp_box            = "Бокс",
-        esp_highlight      = "Highlight",
-        esp_name           = "Имя",
-        esp_health         = "HP",
-        esp_distance       = "Дистанция",
-        esp_tracer         = "Tracer",
-        esp_skeleton       = "Skeleton",
-        esp_teamcheck      = "TeamCheck",
-        sec_esp_params     = "ПАРАМЕТРЫ",
-        esp_max_dist       = "Max ESP dist",
-
-        sec_speed          = "СКОРОСТЬ",
-        misc_speed         = "Скорость",
-        misc_walkspeed     = "WalkSpeed",
-        sec_jump           = "ПРЫЖОК",
-        misc_autojump      = "AutoJump",
-        misc_jumpboost     = "JumpPower Boost",
-        misc_jumppower     = "JumpPower",
-        sec_noclip         = "NOCLIP",
-        misc_noclip        = "NoClip (сквозь стены)",
-        misc_noclip_info   = "NoClip: тело проходит сквозь стены и пол. В играх с серверной валидацией не работает.",
-        misc_noclip_warn   = "Совет: не включай NoClip и AutoJump одновременно — можешь улететь в бездну.",
-        misc_speed_warn    = "WalkSpeed > 22 и JumpPower > 50 обычно ловится античитом.",
-
-        set_lang_label     = "Язык",
-        set_lang_en        = "Английский",
-        set_lang_ru        = "Русский",
-        set_theme_label    = "Тема",
-        set_info           = "Изменения применяются сразу. Настройки сохраняются при смене языка.",
+        title_main="Главное", title_aim="АИМ", title_trigger="Триггер",
+        title_esp="ESP MAX", title_misc="Разное", title_settings="Настройки",
+        btn_aim="АИМ", btn_trigger="Триггер", btn_esp="ESP MAX",
+        btn_misc="Разное", btn_settings="Настройки",
+        sec_main="ГЛАВНОЕ", sec_settings="НАСТРОЙКИ",
+        aim_info="Camera Lock: поворачивает камеру и (опц.) тело. Урон зависит от игры.",
+        sec_aim_main="ОСНОВНОЕ",
+        aim_enable="Включить АИМ", aim_hold="Hold-to-aim", aim_head="В голову",
+        aim_sticky="Sticky", aim_teamcheck="TeamCheck", aim_wallcheck="WallCheck",
+        aim_rotate_char="Rotate Character",
+        sec_aim_params="ДИСТАНЦИЯ И ПАРАМЕТРЫ",
+        aim_range="Range (studs)", aim_fov="FOV (пикс)",
+        aim_cam_smooth="Cam Smooth", aim_body_smooth="Body Smooth", aim_prediction="Prediction",
+        aim_priority="Приоритет", aim_adaptive="Adaptive Smooth",
+        aim_humanize="Humanization (°)", aim_pingcomp="Ping Comp",
+        aim_flick="Flick-release", aim_flick_info="2 рывка камерой = сброс цели",
+        trig_info="Авто-выстрел в голову, когда цель под прицелом. Не блокирует движение.",
+        sec_trig_main="ОСНОВНОЕ",
+        trig_enable="Включить триггер", trig_require_aim="Требовать АИМ",
+        trig_only_tool="Только с Tool в руках", trig_auto_reload="Пауза при перезарядке",
+        sec_trig_params="ПАРАМЕТРЫ",
+        trig_fov="Trigger FOV (пикс)", trig_delay="Задержка (сек)",
+        trig_hold="Удержание (сек)", trig_miss="Шанс промаха (0..1)",
+        sec_esp_show="ОТОБРАЖЕНИЕ",
+        esp_enable="Включить ESP", esp_box="Бокс", esp_highlight="Highlight",
+        esp_name="Имя", esp_health="HP", esp_distance="Дистанция",
+        esp_tracer="Tracer", esp_skeleton="Skeleton", esp_teamcheck="TeamCheck",
+        sec_esp_params="ПАРАМЕТРЫ", esp_max_dist="Max ESP dist",
+        sec_speed="СКОРОСТЬ", misc_speed="Скорость", misc_walkspeed="WalkSpeed",
+        sec_jump="ПРЫЖОК", misc_autojump="AutoJump",
+        misc_jumpboost="JumpPower Boost", misc_jumppower="JumpPower",
+        sec_noclip="NOCLIP", misc_noclip="NoClip (сквозь стены)",
+        misc_noclip_info="NoClip: тело проходит сквозь стены и пол. В играх с серверной валидацией не работает.",
+        misc_noclip_warn="Совет: не включай NoClip и AutoJump одновременно — можешь улететь в бездну.",
+        misc_speed_warn="WalkSpeed > 22 и JumpPower > 50 обычно ловится античитом.",
+        set_lang_label="Язык", set_lang_en="Английский", set_lang_ru="Русский",
+        set_theme_label="Тема",
+        set_info="Изменения применяются сразу. Настройки сохраняются при смене языка.",
     },
 }
-
-local CurrentLang = "EN"   -- стандарт — английский
+local CurrentLang = "EN"
 local function L(key)
     local pack = Locale[CurrentLang] or Locale.EN
     return pack[key] or Locale.EN[key] or key
@@ -224,14 +140,21 @@ local S = {
     AimSmooth        = 0.35,
     CharSmooth       = 0.25,
     AimHead          = true,
+    ForceHead        = true,
     RotateCharacter  = false,
     TeamCheck        = true,
     WallCheck        = true,
     StickyTarget     = true,
     Prediction       = 0.12,
     HoldToAim        = false,
+    PriorityMode     = "Crosshair",
+    AdaptiveSmooth   = true,
+    Humanization     = 0.35,
+    PingComp         = true,
+    Ping             = 0,
+    FlickRelease     = true,
 
-    -- TRIGGER BOT
+    -- TRIGGER
     Trigger          = false,
     TriggerFOV       = 8,
     TriggerDelay     = 0.05,
@@ -268,7 +191,7 @@ local function guiParent()
     return PlayerGui
 end
 local PARENT = guiParent()
-local old = PARENT:FindFirstChild("AD_GUI_v44")
+local old = PARENT:FindFirstChild("AD_GUI_v46")
 if old then old:Destroy() end
 
 --// ---------------- BUILDERS ----------------
@@ -285,7 +208,7 @@ local function Tween(o, i, pr) TweenService:Create(o, i, pr):Play() end
 
 --// ---------------- GUI ----------------
 local GUI = Create("ScreenGui", {
-    Name = "AD_GUI_v44", ResetOnSpawn = false, IgnoreGuiInset = true,
+    Name = "AD_GUI_v46", ResetOnSpawn = false, IgnoreGuiInset = true,
     ZIndexBehavior = Enum.ZIndexBehavior.Sibling, Parent = PARENT
 })
 bind(GUI.Destroying:Connect(disconnectAll))
@@ -299,7 +222,7 @@ Corner(AD, UDim.new(1, 0))
 local ADStroke = Stroke(AD, T.Accent, 2)
 
 local Main = Create("Frame", {
-    Size = UDim2.fromOffset(320, 320), Position = UDim2.new(0.5, -160, 0.5, -160),
+    Size = UDim2.fromOffset(320, 340), Position = UDim2.new(0.5, -160, 0.5, -170),
     BackgroundColor3 = T.Bg, Visible = false, ClipsDescendants = true, Parent = GUI
 })
 Corner(Main, UDim.new(0, 12))
@@ -310,7 +233,7 @@ Corner(Header, UDim.new(0, 12))
 
 local Title = Create("TextLabel", {
     Size = UDim2.new(1, -80, 1, 0), Position = UDim2.fromOffset(12, 0),
-    BackgroundTransparency = 1, Text = "AD v4.4", TextColor3 = T.Accent, TextSize = 16,
+    BackgroundTransparency = 1, Text = "AD v4.6", TextColor3 = T.Accent, TextSize = 16,
     Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left, Parent = Header
 })
 
@@ -410,11 +333,25 @@ local function Number(txt, initial, min, max, cb)
     return f
 end
 
---// Кнопка выбора языка (сегментированная)
+-- Селектор строки (для Priority Mode)
+local function CycleSelector(txt, options, initial, cb)
+    local idx = table.find(options, initial) or 1
+    local f = Create("Frame", { Size = UDim2.new(1, 0, 0, 28), BackgroundColor3 = T.Sec, Parent = Content })
+    Corner(f, UDim.new(0, 6))
+    Create("TextLabel", { Size = UDim2.new(1, -110, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, Text = txt, TextColor3 = T.Text, TextSize = 12, Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Left, Parent = f })
+    local btn = Create("TextButton", { Size = UDim2.fromOffset(95, 20), Position = UDim2.new(1, -100, 0.5, -10), BackgroundColor3 = T.Bg, Text = options[idx], TextColor3 = T.Accent, TextSize = 11, Font = Enum.Font.GothamBold, AutoButtonColor = false, Parent = f })
+    Corner(btn, UDim.new(0, 4))
+    btn.MouseButton1Click:Connect(function()
+        idx = (idx % #options) + 1
+        btn.Text = options[idx]
+        if cb then local ok, err = pcall(cb, options[idx]) if not ok then warn(err) end end
+    end)
+    return f
+end
+
 local function LanguageSelector()
     local row = Create("Frame", { Size = UDim2.new(1, 0, 0, 32), BackgroundColor3 = T.Sec, Parent = Content })
     Corner(row, UDim.new(0, 6))
-
     local left = Create("TextButton", {
         Size = UDim2.new(0.5, -3, 1, -4), Position = UDim2.fromOffset(2, 2),
         BackgroundColor3 = (CurrentLang == "EN") and T.Accent or Color3.fromRGB(35, 38, 46),
@@ -422,7 +359,6 @@ local function LanguageSelector()
         TextSize = 12, Font = Enum.Font.GothamBold, AutoButtonColor = false, Parent = row
     })
     Corner(left, UDim.new(0, 5))
-
     local right = Create("TextButton", {
         Size = UDim2.new(0.5, -3, 1, -4), Position = UDim2.new(0.5, 1, 0, 2),
         BackgroundColor3 = (CurrentLang == "RU") and T.Accent or Color3.fromRGB(35, 38, 46),
@@ -430,22 +366,11 @@ local function LanguageSelector()
         TextSize = 12, Font = Enum.Font.GothamBold, AutoButtonColor = false, Parent = row
     })
     Corner(right, UDim.new(0, 5))
-
-    left.MouseButton1Click:Connect(function()
-        if CurrentLang ~= "EN" then
-            CurrentLang = "EN"
-            SettingsPage()
-        end
-    end)
-    right.MouseButton1Click:Connect(function()
-        if CurrentLang ~= "RU" then
-            CurrentLang = "RU"
-            SettingsPage()
-        end
-    end)
+    left.MouseButton1Click:Connect(function() if CurrentLang ~= "EN" then CurrentLang = "EN" SettingsPage() end end)
+    right.MouseButton1Click:Connect(function() if CurrentLang ~= "RU" then CurrentLang = "RU" SettingsPage() end end)
 end
 
---// ---------------- FOV CIRCLE ----------------
+--// ---------------- FOV CIRCLES ----------------
 local FOV = Create("Frame", {
     AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
     Size = UDim2.fromOffset(180, 180), BackgroundTransparency = 1, Visible = false,
@@ -457,7 +382,6 @@ local FOVDot = Create("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position =
 Corner(FOVDot, UDim.new(1, 0))
 local function UpdateFOV() FOV.Size = UDim2.fromOffset(S.AimFOV * 2, S.AimFOV * 2) end
 
---// ---------------- TRIGGER FOV INDICATOR (маленький круг) ----------------
 local TriggerFOV = Create("Frame", {
     AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
     Size = UDim2.fromOffset(16, 16), BackgroundTransparency = 1, Visible = false,
@@ -466,8 +390,7 @@ local TriggerFOV = Create("Frame", {
 Corner(TriggerFOV, UDim.new(1, 0))
 local TriggerFOVStroke = Stroke(TriggerFOV, Color3.fromRGB(255, 100, 100), 1, 0.3)
 local function UpdateTriggerFOV()
-    local s = S.TriggerFOV * 2
-    TriggerFOV.Size = UDim2.fromOffset(s, s)
+    TriggerFOV.Size = UDim2.fromOffset(S.TriggerFOV * 2, S.TriggerFOV * 2)
 end
 
 --// ---------------- TRACER ----------------
@@ -492,12 +415,6 @@ Create("UIGradient", {
 
 --// ---------------- CHARACTER CACHE ----------------
 local CharCache = {}
-
-local function isAlive(char)
-    if not char or not char.Parent or not char:IsDescendantOf(workspace) then return false end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    return hum ~= nil and hum.Health > 0
-end
 
 local function setCharacter(player, char)
     CharCache[player] = char
@@ -529,6 +446,27 @@ end
 local function getHumanoid(char) return char and char:FindFirstChildOfClass("Humanoid") end
 local function getHead(char) return char and char:FindFirstChild("Head") end
 
+--// ---------------- STRICT TARGET CHECK ----------------
+local function isTargetable(plr)
+    if not plr or plr == LP then return false end
+    if not plr.Parent then return false end
+    local char = CharCache[plr]
+    if not char or not char.Parent or not char:IsDescendantOf(workspace) then return false end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return false end
+    if hum.Health <= 0 then return false end
+    local ok, st = pcall(function() return hum:GetState() end)
+    if ok and st == Enum.HumanoidStateType.Dead then return false end
+    return true
+end
+
+-- legacy isAlive (для ESP drawSkeleton)
+local function isAlive(char)
+    if not char or not char.Parent or not char:IsDescendantOf(workspace) then return false end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    return hum ~= nil and hum.Health > 0
+end
+
 --// ---------------- TEAM / VISIBILITY ----------------
 local function isEnemy(plr)
     if not plr or plr == LP then return false end
@@ -538,49 +476,108 @@ end
 
 local function isVisible(char, part)
     if not S.WallCheck then return true end
-    if not part or not Camera then return false end
-    local origin = Camera.CFrame.Position
-    local dir = part.Position - origin
-    local params = RaycastParams.new()
-    params.FilterType = Enum.RaycastFilterType.Exclude
+    if not char or not Camera then return false end
+    local points = {
+        part,
+        char:FindFirstChild("HumanoidRootPart"),
+        char:FindFirstChild("Head"),
+        char:FindFirstChild("Left Leg") or char:FindFirstChild("LeftUpperLeg"),
+        char:FindFirstChild("Right Leg") or char:FindFirstChild("RightUpperLeg"),
+    }
     local filter = { Camera }
     if LP.Character then table.insert(filter, LP.Character) end
-    params.FilterDescendantsInstances = filter
-    local hit = workspace:Raycast(origin, dir, params)
-    if not hit then return true end
-    return hit.Instance:IsDescendantOf(char)
+    for _, p in ipairs(points) do
+        if p then
+            local params = RaycastParams.new()
+            params.FilterType = Enum.RaycastFilterType.Exclude
+            params.FilterDescendantsInstances = filter
+            local hit = workspace:Raycast(Camera.CFrame.Position, p.Position - Camera.CFrame.Position, params)
+            if not hit or hit.Instance:IsDescendantOf(char) then return true end
+        end
+    end
+    return false
 end
 
---// ---------------- AIM ----------------
+--// =========================================================
+--// AIM (v4.6) — Dead-skip + Flick-release + Ping + Humanize
+--// =========================================================
 local LockedTarget = nil
 local HoldActive = false
 local LastTargetSwitch = 0
 local TARGET_SWITCH_CD = 0.15
+local humanizePhase = 0
+
+local UNLOCK_COOLDOWN = 1.0
+local FLICK_ANGLE_THRESHOLD = math.rad(25)
+local FLICK_WINDOW = 1.0
+local FLICKS_TO_UNLOCK = 2
+
+local lastCamDir = nil
+local flickCount = 0
+local lastFlickTime = 0
+local unlockUntil = 0
+
+-- Пинг
+task.spawn(function()
+    while GUI and GUI.Parent do
+        local ok, p = pcall(function() return LP:GetNetworkPing() end)
+        if ok and p then S.Ping = p end
+        task.wait(1)
+    end
+end)
 
 local function getAimPart(char)
     if not char then return nil end
-    if S.AimHead then
+    if S.ForceHead or S.AimHead then
         return char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
     end
     return char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Head")
 end
 
 local function predictPosition(part)
-    if not part or S.Prediction <= 0 then return part and part.Position or nil end
+    if not part then return nil end
+    if not S.PingComp and S.Prediction <= 0 then return part.Position end
     local vel = part.AssemblyLinearVelocity or part.Velocity or Vector3.zero
     local dist = (part.Position - Camera.CFrame.Position).Magnitude
-    local t = dist / math.max(400, 1)
-    return part.Position + vel * (S.Prediction * t)
+    local bulletSpeed = 600
+    local tool = LP.Character and LP.Character:FindFirstChildOfClass("Tool")
+    if tool then
+        local sv = tool:FindFirstChild("BulletSpeed") or tool:FindFirstChild("MuzzleVelocity") or tool:FindFirstChild("ProjectileSpeed")
+        if sv and (sv:IsA("NumberValue") or sv:IsA("IntValue")) and sv.Value > 0 then
+            bulletSpeed = sv.Value
+        end
+    end
+    local timeToTarget = dist / math.max(bulletSpeed, 50)
+    local pingBonus = S.PingComp and (S.Ping * 0.5) or 0
+    local totalTime = timeToTarget + pingBonus
+    return part.Position + vel * (totalTime * math.max(S.Prediction, 0.05) * 10)
 end
 
-local function targetScore(part, fovLimit)
+local function targetScore(part, fovLimit, targetPlr)
     if not Camera then return math.huge end
     local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
     if not onScreen or pos.Z <= 0 then return math.huge end
     local vp = Camera.ViewportSize
     local center = Vector2.new(vp.X / 2, vp.Y / 2)
     local pixelDist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
-    if pixelDist > fovLimit then return math.huge end
+    if pixelDist > fovLimit * 1.15 then return math.huge end
+    if S.PriorityMode == "Nearest" then
+        return pixelDist * 0.3 + (part.Position - Camera.CFrame.Position).Magnitude * 0.1
+    elseif S.PriorityMode == "LowHP" then
+        local char = targetPlr and targetPlr.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        local hpScore = hum and (hum.Health / math.max(hum.MaxHealth,1)) or 1
+        return pixelDist + hpScore * 500
+    elseif S.PriorityMode == "Threat" then
+        local char = targetPlr and targetPlr.Character
+        local head = char and char:FindFirstChild("Head")
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if head and hrp then
+            local dot = head.CFrame.LookVector:Dot((Camera.CFrame.Position - hrp.Position).Unit)
+            if dot > 0.5 then return pixelDist * 0.4 end
+        end
+        return pixelDist
+    end
     return pixelDist
 end
 
@@ -589,19 +586,16 @@ local function findTarget()
     local best, bestScore = nil, math.huge
     local camPos = Camera.CFrame.Position
     for _, plr in ipairs(Players:GetPlayers()) do
-        if isEnemy(plr) then
+        if isEnemy(plr) and isTargetable(plr) then
             local char = getCharacter(plr)
-            if char and isAlive(char) then
-                local part = getAimPart(char)
-                if part then
-                    local d3 = (part.Position - camPos).Magnitude
-                    if d3 <= S.AimRange then
-                        if isVisible(char, part) then
-                            local sc = targetScore(part, S.AimFOV)
-                            if sc < bestScore then
-                                bestScore = sc
-                                best = plr
-                            end
+            local part = char and getAimPart(char)
+            if part then
+                if (part.Position - camPos).Magnitude <= S.AimRange then
+                    if isVisible(char, part) then
+                        local sc = targetScore(part, S.AimFOV, plr)
+                        if sc < bestScore then
+                            bestScore = sc
+                            best = plr
                         end
                     end
                 end
@@ -613,34 +607,185 @@ end
 
 local function validateTarget(plr)
     if not plr then return false end
+    if not isTargetable(plr) then return false end
+    if not isEnemy(plr) then return false end
     local char = getCharacter(plr)
-    if not char or not isAlive(char) or not isEnemy(plr) then return false end
-    local part = getAimPart(char)
+    local part = char and getAimPart(char)
     if not part then return false end
     if (part.Position - Camera.CFrame.Position).Magnitude > S.AimRange then return false end
     if not isVisible(char, part) then return false end
     return true
 end
 
---// ---------------- TRIGGER BOT ----------------
--- Определяем цель для триггера по узкому FOV.
+local function updateFlick(dt)
+    if not S.FlickRelease then lastCamDir = Camera.CFrame.LookVector return end
+    if not Camera then return end
+    local currentDir = Camera.CFrame.LookVector
+    if lastCamDir then
+        local angleDelta = math.acos(math.clamp(lastCamDir:Dot(currentDir), -1, 1))
+        if angleDelta > FLICK_ANGLE_THRESHOLD then
+            local now = tick()
+            if now - lastFlickTime > FLICK_WINDOW then flickCount = 0 end
+            flickCount = flickCount + 1
+            lastFlickTime = now
+            if flickCount >= FLICKS_TO_UNLOCK then
+                LockedTarget = nil
+                unlockUntil = now + UNLOCK_COOLDOWN
+                flickCount = 0
+            end
+        end
+    end
+    lastCamDir = currentDir
+    if tick() - lastFlickTime > FLICK_WINDOW then flickCount = 0 end
+end
+
+local function aimApply(dt)
+    local aimActive = S.Aim and (not S.HoldToAim or HoldActive)
+    if not (aimActive and Camera) then
+        LockedTarget = nil
+        lastCamDir = nil
+        return
+    end
+    if LockedTarget and not validateTarget(LockedTarget) then
+        LockedTarget = nil
+    end
+    updateFlick(dt)
+    if tick() < unlockUntil then return end
+
+    local now = tick()
+    if not LockedTarget or (now - LastTargetSwitch) > TARGET_SWITCH_CD then
+        local nt = findTarget()
+        if nt and nt ~= LockedTarget then
+            LockedTarget = nt
+            LastTargetSwitch = now
+        end
+    end
+
+    if LockedTarget then
+        local tchar = getCharacter(LockedTarget)
+        local tpart = tchar and getAimPart(tchar)
+        if not isTargetable(LockedTarget) or not tpart then
+            LockedTarget = nil
+            return
+        end
+        local aimPos = predictPosition(tpart)
+        if S.Humanization > 0 then
+            humanizePhase = humanizePhase + dt * 6
+            local noiseY = math.sin(humanizePhase) * math.rad(S.Humanization)
+            local noiseX = math.cos(humanizePhase * 0.7) * math.rad(S.Humanization * 0.6)
+            local rnd = CFrame.Angles(noiseX, noiseY, 0)
+            aimPos = aimPos + (rnd.LookVector * 0.01)
+        end
+        local desiredCam = CFrame.lookAt(Camera.CFrame.Position, aimPos)
+        local currentDir = Camera.CFrame.LookVector
+        local targetDir = (aimPos - Camera.CFrame.Position).Unit
+        local dot = math.clamp(currentDir:Dot(targetDir), -1, 1)
+        local angle = math.acos(dot)
+        local smoothMult = S.AimSmooth
+        if S.AdaptiveSmooth then
+            local t = math.clamp(angle / math.rad(45), 0, 1)
+            smoothMult = S.AimSmooth * (0.4 + 0.6 * (1 - t))
+        end
+        local camSmooth = math.clamp(smoothMult * (dt * 60), 0.01, 1)
+        Camera.CFrame = Camera.CFrame:Lerp(desiredCam, camSmooth)
+
+        if S.RotateCharacter then
+            local myChar = LP.Character
+            local myHrp  = myChar and myChar:FindFirstChild("HumanoidRootPart")
+            if myHrp then
+                local myPos = myHrp.Position
+                local lookTarget = Vector3.new(aimPos.X, myPos.Y, aimPos.Z)
+                local desiredBody = CFrame.lookAt(myPos, lookTarget)
+                local bodySmooth = math.clamp(S.CharSmooth * (dt * 60), 0.01, 1)
+                local cur = myHrp.CFrame
+                local newRot = cur.Rotation:Lerp(desiredBody.Rotation, bodySmooth)
+                myHrp.CFrame = CFrame.new(cur.Position) * newRot
+            end
+        end
+    end
+end
+
+--// =========================================================
+--// TRIGGER BOT (v4.6) — Head-only, no movement block
+--// =========================================================
+local triggerBusy = false
+local lastFireTime = 0
+local FIRE_COOLDOWN = 0.05
+
+local function getEquippedTool()
+    local char = LP.Character
+    if not char then return nil end
+    return char:FindFirstChildOfClass("Tool")
+end
+
+local function isToolReady()
+    local tool = getEquippedTool()
+    if not tool then return not S.TriggerOnlyOnTool end
+    if S.TriggerAutoReload then
+        for _, name in ipairs({ "Reloading", "IsReloading", "Reload", "Reloaded" }) do
+            local v = tool:FindFirstChild(name)
+            if v and v:IsA("BoolValue") and v.Value then return false end
+        end
+        local ammo = tool:FindFirstChild("Ammo") or tool:FindFirstChild("AmmoValue") or tool:FindFirstChild("CurrentAmmo")
+        if ammo and (ammo:IsA("IntValue") or ammo:IsA("NumberValue")) and ammo.Value <= 0 then
+            return false
+        end
+    end
+    return true
+end
+
+local function fireWeapon()
+    local tool = getEquippedTool()
+    if not tool then return false end
+    local ok1 = pcall(function() tool:Activate() end)
+    if ok1 then return true end
+    local handle = tool:FindFirstChild("Handle")
+    if handle then
+        pcall(function() handle.MouseButton1Down:Fire() end)
+        return true
+    end
+    return false
+end
+
+local function isHeadUnderCrosshair(plr)
+    if not Camera or not plr then return false end
+    local char = getCharacter(plr)
+    if not char then return false end
+    local head = char:FindFirstChild("Head")
+    if not head then return false end
+    local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
+    if not onScreen or pos.Z <= 0 then return false end
+    local vp = Camera.ViewportSize
+    local center = Vector2.new(vp.X / 2, vp.Y / 2)
+    local pixelDist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+    return pixelDist <= S.TriggerFOV
+end
+
 local function findTriggerTarget()
     if not Camera then return nil end
     local best, bestScore = nil, math.huge
     local camPos = Camera.CFrame.Position
     for _, plr in ipairs(Players:GetPlayers()) do
-        if isEnemy(plr) then
+        if isEnemy(plr) and isTargetable(plr) then
             local char = getCharacter(plr)
-            if char and isAlive(char) then
-                local part = getAimPart(char)
-                if part then
-                    if (part.Position - camPos).Magnitude <= S.AimRange then
-                        if isVisible(char, part) then
-                            local sc = targetScore(part, S.TriggerFOV)
-                            if sc < bestScore then
-                                bestScore = sc
-                                best = plr
-                            end
+            local head = char and char:FindFirstChild("Head")
+            if head then
+                if (head.Position - camPos).Magnitude <= S.AimRange then
+                    local visible = true
+                    if S.WallCheck then
+                        local filter = { Camera }
+                        if LP.Character then table.insert(filter, LP.Character) end
+                        local params = RaycastParams.new()
+                        params.FilterType = Enum.RaycastFilterType.Exclude
+                        params.FilterDescendantsInstances = filter
+                        local hit = workspace:Raycast(camPos, head.Position - camPos, params)
+                        visible = (not hit) or hit.Instance:IsDescendantOf(char)
+                    end
+                    if visible then
+                        local sc = targetScore(head, S.TriggerFOV, plr)
+                        if sc < bestScore then
+                            bestScore = sc
+                            best = plr
                         end
                     end
                 end
@@ -650,85 +795,50 @@ local function findTriggerTarget()
     return best
 end
 
--- Проверяем, есть ли в руках Tool и он готов к выстрелу (не на перезарядке).
-local function isToolReady()
-    local char = LP.Character
-    if not char then return false end
-    local tool = char:FindFirstChildOfClass("Tool")
-    if not tool then return not S.TriggerOnlyOnTool end
-
-    if S.TriggerAutoReload then
-        -- Проверяем популярные имена значений у оружия
-        for _, name in ipairs({ "Reloading", "IsReloading", "Reload", "Reloaded" }) do
-            local v = tool:FindFirstChild(name)
-            if v and v:IsA("BoolValue") and v.Value then return false end
-        end
-        -- Ammo (если есть)
-        local ammo = tool:FindFirstChild("Ammo") or tool:FindFirstChild("AmmoValue")
-        if ammo and (ammo:IsA("IntValue") or ammo:IsA("NumberValue")) and ammo.Value <= 0 then
-            return false
-        end
-    end
-    return true
-end
-
--- Отправка нажатия ЛКМ — сначала пробуем mouse1press (Delta),
--- если нет — VirtualInputManager (fallback).
-local firedRecently = false
-local function fireMouseDown()
-    if firedRecently then return end
-    firedRecently = true
-    task.delay(0.02, function() firedRecently = false end)
-
-    if mouse1press then
-        pcall(function() mouse1press() end)
-        return
-    end
-    pcall(function()
-        VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-    end)
-end
-
-local function fireMouseUp()
-    if mouse1release then
-        pcall(function() mouse1release() end)
-        return
-    end
-    pcall(function()
-        VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-    end)
-end
-
--- Асинхронная очередь выстрела
-local triggerBusy = false
 local function triggerFire()
     if triggerBusy then return end
+    if tick() - lastFireTime < FIRE_COOLDOWN then return end
     triggerBusy = true
     task.spawn(function()
-        -- задержка
         if S.TriggerDelay > 0 then task.wait(S.TriggerDelay) end
-
-        -- шанс промаха
         if S.TriggerMissChance > 0 and math.random() < S.TriggerMissChance then
             triggerBusy = false
             return
         end
-
-        -- ещё раз проверим, что цель всё ещё валидна
         local t = findTriggerTarget()
         if not t then triggerBusy = false return end
-
-        fireMouseDown()
+        if not isHeadUnderCrosshair(t) then triggerBusy = false return end
+        fireWeapon()
+        lastFireTime = tick()
         task.wait(math.max(S.TriggerHold, 0.01))
-        fireMouseUp()
-
-        task.wait(0.01)
         triggerBusy = false
     end)
 end
 
---// ---------------- ESP ----------------
-local espFolder = Create("Folder", { Name = "AD_ESP_v44", Parent = PARENT })
+-- Авто-релоад
+task.spawn(function()
+    while GUI and GUI.Parent do
+        if S.Trigger and S.TriggerAutoReload then
+            local tool = getEquippedTool()
+            if tool then
+                local ammo = tool:FindFirstChild("Ammo") or tool:FindFirstChild("AmmoValue") or tool:FindFirstChild("CurrentAmmo")
+                if ammo and (ammo:IsA("IntValue") or ammo:IsA("NumberValue")) and ammo.Value <= 0 then
+                    if tool.Reload then
+                        pcall(function() tool:Reload() end)
+                    elseif tool:FindFirstChild("Reload") and tool:FindFirstChild("Reload"):IsA("RemoteEvent") then
+                        pcall(function() tool:FindFirstChild("Reload"):FireServer() end)
+                    end
+                end
+            end
+        end
+        task.wait(0.5)
+    end
+end)
+
+--// =========================================================
+--// ESP
+--// =========================================================
+local espFolder = Create("Folder", { Name = "AD_ESP_v46", Parent = PARENT })
 local ESPData = {}
 
 local BOX_COLOR  = Color3.fromRGB(255, 90, 90)
@@ -896,58 +1006,14 @@ local tracerTarget = nil
 
 bind(RunService.RenderStepped:Connect(function(dt)
     -- AIM
-    local aimActive = S.Aim and (not S.HoldToAim or HoldActive)
-    if aimActive and Camera then
-        if S.StickyTarget and LockedTarget then
-            if not validateTarget(LockedTarget) then LockedTarget = nil end
-        end
+    aimApply(dt)
 
-        local now = tick()
-        if not LockedTarget or (now - LastTargetSwitch) > TARGET_SWITCH_CD then
-            local nt = findTarget()
-            if nt and nt ~= LockedTarget then
-                LockedTarget = nt
-                LastTargetSwitch = now
-            end
-        end
-
-        if LockedTarget then
-            local tchar = getCharacter(LockedTarget)
-            local tpart = tchar and getAimPart(tchar)
-            if tpart then
-                local aimPos = predictPosition(tpart)
-
-                local desiredCam = CFrame.lookAt(Camera.CFrame.Position, aimPos)
-                local camSmooth = math.clamp(S.AimSmooth * (dt * 60), 0.01, 1)
-                Camera.CFrame = Camera.CFrame:Lerp(desiredCam, camSmooth)
-
-                if S.RotateCharacter then
-                    local myChar = LP.Character
-                    local myHrp  = myChar and myChar:FindFirstChild("HumanoidRootPart")
-                    if myHrp then
-                        local myPos = myHrp.Position
-                        local lookTarget = Vector3.new(aimPos.X, myPos.Y, aimPos.Z)
-                        local desiredBody = CFrame.lookAt(myPos, lookTarget)
-                        local bodySmooth = math.clamp(S.CharSmooth * (dt * 60), 0.01, 1)
-                        local cur = myHrp.CFrame
-                        local newRot = cur.Rotation:Lerp(desiredBody.Rotation, bodySmooth)
-                        myHrp.CFrame = CFrame.new(cur.Position) * newRot
-                    end
-                end
-            end
-        end
-    else
-        LockedTarget = nil
-    end
-
-    -- TRIGGER BOT (проверяем каждый кадр)
+    -- TRIGGER
     if S.Trigger then
         local aimOK = (not S.TriggerRequireAim) or S.Aim
         if aimOK and isToolReady() then
             local t = findTriggerTarget()
-            if t then
-                triggerFire()
-            end
+            if t then triggerFire() end
         end
     end
 
@@ -961,20 +1027,20 @@ bind(RunService.RenderStepped:Connect(function(dt)
             local bestTracerDist = math.huge
 
             for plr, d in pairs(ESPData) do
-                local char = getCharacter(plr)
-                if not char or not isAlive(char) or not isEnemy(plr) then
+                -- ✅ strict check: враг + живой
+                if not isEnemy(plr) or not isTargetable(plr) then
                     d.Info.Enabled = false
                     d.Highlight.Enabled = false
                     d.Box.Visible = false
                     hideSkeleton(d)
                 else
-                    local root = getRoot(char)
-                    local hum  = getHumanoid(char)
-                    local head = getHead(char)
+                    local char = getCharacter(plr)
+                    local root = char and getRoot(char)
+                    local hum  = char and getHumanoid(char)
+                    local head = char and getHead(char)
 
                     if root then
                         local distance = (root.Position - camPos).Magnitude
-
                         if distance > S.MaxDistance then
                             d.Info.Enabled = false
                             d.Highlight.Enabled = false
@@ -1073,7 +1139,7 @@ end))
 --// ---------------- PAGES ----------------
 local function MainPage()
     Clear()
-    Title.Text = "AD v4.4"
+    Title.Text = "AD v4.6"
     Back.Visible = false
     Section(L("sec_main"))
     Button(L("btn_aim"),       function() AimPage() end)
@@ -1089,13 +1155,15 @@ function AimPage()
     Back.Visible = true
     Info(L("aim_info"))
     Section(L("sec_aim_main"))
-    Toggle(L("aim_enable"),     S.Aim,             function(v) S.Aim = v FOV.Visible = v if not v then LockedTarget = nil end end)
-    Toggle(L("aim_hold"),       S.HoldToAim,       function(v) S.HoldToAim = v end)
-    Toggle(L("aim_head"),       S.AimHead,         function(v) S.AimHead = v end)
-    Toggle(L("aim_sticky"),     S.StickyTarget,    function(v) S.StickyTarget = v end)
-    Toggle(L("aim_teamcheck"),  S.TeamCheck,       function(v) S.TeamCheck = v end)
-    Toggle(L("aim_wallcheck"),  S.WallCheck,       function(v) S.WallCheck = v end)
-    Toggle(L("aim_rotate_char"),S.RotateCharacter, function(v) S.RotateCharacter = v end)
+    Toggle(L("aim_enable"),      S.Aim,             function(v) S.Aim = v FOV.Visible = v if not v then LockedTarget = nil end end)
+    Toggle(L("aim_hold"),        S.HoldToAim,       function(v) S.HoldToAim = v end)
+    Toggle(L("aim_head"),        S.AimHead,         function(v) S.AimHead = v end)
+    Toggle(L("aim_sticky"),      S.StickyTarget,    function(v) S.StickyTarget = v end)
+    Toggle(L("aim_teamcheck"),   S.TeamCheck,       function(v) S.TeamCheck = v end)
+    Toggle(L("aim_wallcheck"),   S.WallCheck,       function(v) S.WallCheck = v end)
+    Toggle(L("aim_rotate_char"), S.RotateCharacter, function(v) S.RotateCharacter = v end)
+    Toggle(L("aim_flick"),       S.FlickRelease,    function(v) S.FlickRelease = v end)
+    Info(L("aim_flick_info"))
 
     Section(L("sec_aim_params"))
     Number(L("aim_range"),       S.AimRange,  10, 500,  function(v) S.AimRange = v end)
@@ -1103,6 +1171,10 @@ function AimPage()
     Number(L("aim_cam_smooth"),  S.AimSmooth, 0.05, 1,  function(v) S.AimSmooth = v end)
     Number(L("aim_body_smooth"), S.CharSmooth,0.05, 1,  function(v) S.CharSmooth = v end)
     Number(L("aim_prediction"),  S.Prediction,0, 0.5,   function(v) S.Prediction = v end)
+    Number(L("aim_humanize"),    S.Humanization, 0, 2,  function(v) S.Humanization = v end)
+    Toggle(L("aim_adaptive"),    S.AdaptiveSmooth, function(v) S.AdaptiveSmooth = v end)
+    Toggle(L("aim_pingcomp"),    S.PingComp,       function(v) S.PingComp = v end)
+    CycleSelector(L("aim_priority"), { "Crosshair", "Nearest", "LowHP", "Threat" }, S.PriorityMode, function(v) S.PriorityMode = v end)
 end
 
 function TriggerPage()
@@ -1111,19 +1183,15 @@ function TriggerPage()
     Back.Visible = true
     Info(L("trig_info"))
     Section(L("sec_trig_main"))
-    Toggle(L("trig_enable"),      S.Trigger,           function(v)
-        S.Trigger = v
-        TriggerFOV.Visible = v
-    end)
+    Toggle(L("trig_enable"),      S.Trigger,           function(v) S.Trigger = v TriggerFOV.Visible = v end)
     Toggle(L("trig_require_aim"), S.TriggerRequireAim, function(v) S.TriggerRequireAim = v end)
     Toggle(L("trig_only_tool"),   S.TriggerOnlyOnTool, function(v) S.TriggerOnlyOnTool = v end)
     Toggle(L("trig_auto_reload"), S.TriggerAutoReload, function(v) S.TriggerAutoReload = v end)
-
     Section(L("sec_trig_params"))
-    Number(L("trig_fov"),   S.TriggerFOV,        2, 100,   function(v) S.TriggerFOV = v UpdateTriggerFOV() end)
-    Number(L("trig_delay"), S.TriggerDelay,      0, 1,     function(v) S.TriggerDelay = v end)
-    Number(L("trig_hold"),  S.TriggerHold,       0.01, 0.5,function(v) S.TriggerHold = v end)
-    Number(L("trig_miss"),  S.TriggerMissChance, 0, 1,     function(v) S.TriggerMissChance = v end)
+    Number(L("trig_fov"),   S.TriggerFOV,        2, 100,    function(v) S.TriggerFOV = v UpdateTriggerFOV() end)
+    Number(L("trig_delay"), S.TriggerDelay,      0, 1,      function(v) S.TriggerDelay = v end)
+    Number(L("trig_hold"),  S.TriggerHold,       0.01, 0.5, function(v) S.TriggerHold = v end)
+    Number(L("trig_miss"),  S.TriggerMissChance, 0, 1,      function(v) S.TriggerMissChance = v end)
 end
 
 function ESPPage()
@@ -1141,7 +1209,7 @@ function ESPPage()
     Toggle(L("esp_skeleton"),  S.Skeleton,   function(v) S.Skeleton = v end)
     Toggle(L("esp_teamcheck"), S.TeamCheck,  function(v) S.TeamCheck = v end)
     Section(L("sec_esp_params"))
-    Number(L("esp_max_dist"),  S.MaxDistance,50, 1000, function(v)
+    Number(L("esp_max_dist"), S.MaxDistance, 50, 1000, function(v)
         S.MaxDistance = v
         for _, d in pairs(ESPData) do d.Info.MaxDistance = v end
     end)
@@ -1152,12 +1220,12 @@ function MiscPage()
     Title.Text = L("title_misc")
     Back.Visible = true
     Section(L("sec_speed"))
-    Toggle(L("misc_speed"),     S.Speed,     function(v) S.Speed = v end)
-    Number(L("misc_walkspeed"), S.SpeedValue,16, 120, function(v) S.SpeedValue = v end)
+    Toggle(L("misc_speed"),     S.Speed,      function(v) S.Speed = v end)
+    Number(L("misc_walkspeed"), S.SpeedValue, 16, 120, function(v) S.SpeedValue = v end)
     Section(L("sec_jump"))
-    Toggle(L("misc_autojump"),  S.AutoJump,  function(v) S.AutoJump = v end)
+    Toggle(L("misc_autojump"),  S.AutoJump,   function(v) S.AutoJump = v end)
     Toggle(L("misc_jumpboost"), S.JumpPowerBoost, function(v) S.JumpPowerBoost = v end)
-    Number(L("misc_jumppower"), S.JumpPower, 50, 300, function(v) S.JumpPower = v end)
+    Number(L("misc_jumppower"), S.JumpPower,  50, 300, function(v) S.JumpPower = v end)
     Section(L("sec_noclip"))
     Toggle(L("misc_noclip"), S.NoClip, function(v)
         S.NoClip = v
@@ -1181,10 +1249,8 @@ function SettingsPage()
     Clear()
     Title.Text = L("title_settings")
     Back.Visible = true
-
     Section(L("set_lang_label"))
     LanguageSelector()
-
     Section(L("sec_settings"))
     Info(L("set_info"))
 end
@@ -1228,7 +1294,7 @@ AD.MouseButton1Click:Connect(function()
     Main.Visible = not Main.Visible
     if Main.Visible then
         Main.Size = UDim2.fromOffset(0, 0)
-        Tween(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(320, 320) })
+        Tween(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(320, 340) })
         MainPage()
     end
 end)
@@ -1263,4 +1329,4 @@ end
 UpdateFOV()
 UpdateTriggerFOV()
 MainPage()
-print("[AD v4.4] loaded — lang: " .. CurrentLang)
+print("[AD v4.6] loaded — lang: " .. CurrentLang)
