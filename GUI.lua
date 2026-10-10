@@ -1,6 +1,5 @@
 --========================================================--
---   AD v5.4 — Fixed Speed Boost + Better Animations       --
---   Auto TeamCheck/WallCheck · No Ripple · No bloat       --
+--   AD v5.5 — Fly fix + AIM always Head + WallCheck       --
 --========================================================--
 
 if _G.__AD_CLEANUP then pcall(_G.__AD_CLEANUP) _G.__AD_CLEANUP = nil end
@@ -36,10 +35,11 @@ local Locale = {
         btn_aim="AIM", btn_esp="ESP", btn_visuals="Visuals",
         btn_fly="Fly", btn_misc="Misc", btn_settings="Settings",
         sec_main="MAIN", sec_settings="SETTINGS",
-        aim_info="Camera Lock: rotates camera in target. Damage depends on the game.",
+        aim_info="Camera Lock: always targets Head. WallCheck filters visible targets.",
         sec_aim_main="MAIN",
-        aim_enable="Enable AIM", aim_hold="Hold-to-aim", aim_head="Target Head",
+        aim_enable="Enable AIM", aim_hold="Hold-to-aim",
         aim_sticky="Sticky Target", aim_rotate_char="Rotate Character",
+        aim_wallcheck="WallCheck (visible only)",
         aim_flick="Flick-release",
         aim_flick_info="Flick camera 2 times fast → releases target",
         sec_aim_params="DISTANCE & PARAMS",
@@ -71,10 +71,11 @@ local Locale = {
         btn_aim="АИМ", btn_esp="ESP", btn_visuals="Визуалы",
         btn_fly="Полёт", btn_misc="Разное", btn_settings="Настройки",
         sec_main="ГЛАВНОЕ", sec_settings="НАСТРОЙКИ",
-        aim_info="Camera Lock: поворачивает камеру в цель.",
+        aim_info="Camera Lock: всегда целится в голову. WallCheck фильтрует видимость.",
         sec_aim_main="ОСНОВНОЕ",
-        aim_enable="Включить АИМ", aim_hold="Hold-to-aim", aim_head="В голову",
+        aim_enable="Включить АИМ", aim_hold="Hold-to-aim",
         aim_sticky="Sticky", aim_rotate_char="Поворот тела",
+        aim_wallcheck="WallCheck (только видимых)",
         aim_flick="Flick-release",
         aim_flick_info="2 рывка камерой → сброс цели",
         sec_aim_params="ДИСТАНЦИЯ И ПАРАМЕТРЫ",
@@ -115,7 +116,6 @@ local Themes = {
 local CurrentTheme = "Purple"
 local T = Themes[CurrentTheme]
 
--- Все настраиваемые элементы регистрируются здесь
 local themedElements = {}
 local function reg(el, field, kind)
     table.insert(themedElements, { el = el, field = field, kind = kind })
@@ -137,13 +137,13 @@ end
 
 --// ---------------- SETTINGS ----------------
 local S = {
-    Aim=false, AimRange=100, AimFOV=90, AimSmooth=0.35, CharSmooth=0.25,
-    AimHead=true, ForceHead=true, RotateCharacter=false,
-    StickyTarget=true, Prediction=0.12, HoldToAim=false, FlickRelease=true,
+    Aim=false, AimRange=150, AimFOV=100, AimSmooth=0.5, CharSmooth=0.3,
+    RotateCharacter=true, WallCheck=true, StickyTarget=true, Prediction=0.15,
+    HoldToAim=false, FlickRelease=true,
 
     ShowFPS=false, ShowPing=false, ShowWatermark=false,
 
-    FlyEnabled=false, FlySpeed=60,
+    FlyEnabled=false, FlySpeed=70,
 
     NoClip=false,
     SpeedBoost=false, SpeedValue=80,
@@ -160,7 +160,7 @@ local function guiParent()
     return PlayerGui
 end
 local PARENT = guiParent()
-local old = PARENT:FindFirstChild("AD_GUI_v54")
+local old = PARENT:FindFirstChild("AD_GUI_v55")
 if old then old:Destroy() end
 
 --// ---------------- BUILDERS ----------------
@@ -177,7 +177,7 @@ local function Play(o, i, pr) TweenService:Create(o, i, pr):Play() end
 
 --// ---------------- GUI ----------------
 local GUI = Create("ScreenGui", {
-    Name="AD_GUI_v54", ResetOnSpawn=false, IgnoreGuiInset=true,
+    Name="AD_GUI_v55", ResetOnSpawn=false, IgnoreGuiInset=true,
     ZIndexBehavior=Enum.ZIndexBehavior.Sibling, Parent=PARENT
 })
 bind(GUI.Destroying:Connect(disconnectAll))
@@ -196,8 +196,6 @@ local Main = Create("Frame", {
 })
 Corner(Main, UDim.new(0,12))
 local MainStroke = Stroke(Main, T.Accent, 1.5, 0.3)
-
--- UIScale для анимации открытия меню
 local MainScale = Create("UIScale", { Scale = 1, Parent = Main })
 
 local Header = Create("Frame", { Size=UDim2.new(1,0,0,40), BackgroundColor3=T.Sec, Parent=Main })
@@ -205,7 +203,7 @@ Corner(Header, UDim.new(0,12))
 
 local Title = Create("TextLabel", {
     Size=UDim2.new(1,-80,1,0), Position=UDim2.fromOffset(12,0),
-    BackgroundTransparency=1, Text="AD v5.4", TextColor3=T.Accent, TextSize=16,
+    BackgroundTransparency=1, Text="AD v5.5", TextColor3=T.Accent, TextSize=16,
     Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, Parent=Header
 })
 
@@ -266,20 +264,15 @@ local function Button(txt, cb)
     Corner(b, UDim.new(0,6))
     local label = Create("TextLabel", { Size=UDim2.new(1,-30,1,0), Position=UDim2.fromOffset(10,0), BackgroundTransparency=1, Text=txt, TextColor3=T.Text, TextSize=13, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=b })
     local arrow = Create("TextLabel", { Size=UDim2.fromOffset(20,32), Position=UDim2.new(1,-25,0,0), BackgroundTransparency=1, Text="›", TextColor3=T.Accent, TextSize=16, Font=Enum.Font.GothamBold, Parent=b })
-
     reg(b, "BackgroundColor3", "Sec")
     reg(label, "TextColor3", "Text")
     reg(arrow, "TextColor3", "Accent")
 
     b.MouseEnter:Connect(function() Play(b, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(T.Sec.R*255+20, T.Sec.G*255+20, T.Sec.B*255+20) }) end)
     b.MouseLeave:Connect(function() Play(b, TweenInfo.new(0.15), { BackgroundColor3 = T.Sec }) end)
-
     b.MouseButton1Click:Connect(function()
-        -- Отдача при нажатии
         Play(label, TweenInfo.new(0.08), { Position = UDim2.fromOffset(14, 0) })
-        task.delay(0.08, function()
-            Play(label, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Position = UDim2.fromOffset(10, 0) })
-        end)
+        task.delay(0.08, function() Play(label, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Position = UDim2.fromOffset(10, 0) }) end)
         Play(b, TweenInfo.new(0.08), { BackgroundColor3 = T.Accent })
         task.delay(0.08, function() Play(b, TweenInfo.new(0.15), { BackgroundColor3 = T.Sec }) end)
         cb()
@@ -296,7 +289,6 @@ local function Toggle(txt, initial, cb)
     Corner(sw, UDim.new(1,0))
     local dot = Create("Frame", { Size=UDim2.fromOffset(12,12), Position=UDim2.fromOffset(2,2), BackgroundColor3=Color3.fromRGB(200,200,210), Parent=sw })
     Corner(dot, UDim.new(1,0))
-
     reg(b, "BackgroundColor3", "Sec")
     reg(lbl, "TextColor3", "Text")
 
@@ -310,11 +302,9 @@ local function Toggle(txt, initial, cb)
         end
     end
     apply(true)
-
     b.MouseButton1Click:Connect(function()
         state.v = not state.v
         apply(false)
-        -- лёгкая отдача тумблера
         Play(b, TweenInfo.new(0.08), { BackgroundColor3 = T.Accent })
         task.delay(0.08, function() Play(b, TweenInfo.new(0.15), { BackgroundColor3 = T.Sec }) end)
         if cb then local ok, err = pcall(cb, state.v) if not ok then warn(err) end end
@@ -330,15 +320,11 @@ local function Number(txt, initial, min, max, cb)
     local lbl = Create("TextLabel", { Size=UDim2.new(1,-70,1,0), Position=UDim2.fromOffset(10,0), BackgroundTransparency=1, Text=txt, TextColor3=T.Text, TextSize=12, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=f })
     local box = Create("TextBox", { Size=UDim2.fromOffset(55,20), Position=UDim2.new(1,-62,0.5,-10), BackgroundColor3=T.Bg, Text=tostring(initial), TextColor3=T.Accent, TextSize=11, Font=Enum.Font.GothamBold, ClearTextOnFocus=false, Parent=f })
     Corner(box, UDim.new(0,4))
-
     reg(f, "BackgroundColor3", "Sec")
     reg(lbl, "TextColor3", "Text")
     reg(box, "BackgroundColor3", "Bg")
     reg(box, "TextColor3", "Accent")
-
-    box.Focused:Connect(function() Play(box, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(T.Bg.R*255+15, T.Bg.G*255+15, T.Bg.B*255+15) }) end)
     box.FocusLost:Connect(function()
-        Play(box, TweenInfo.new(0.15), { BackgroundColor3 = T.Bg })
         local n = tonumber(box.Text)
         if not n then box.Text = tostring(initial) return end
         n = math.clamp(n, min, max)
@@ -361,7 +347,6 @@ local function Slider(txt, initial, min, max, cb)
     Corner(knob, UDim.new(1,0))
     Create("UIStroke", { Color=T.Accent, Thickness=2, Parent=knob })
     local hitbox = Create("TextButton", { Size=UDim2.new(1,0,0,32), Position=UDim2.new(0,0,0,-12), BackgroundTransparency=1, Text="", AutoButtonColor=false, Parent=track })
-
     reg(frame, "BackgroundColor3", "Sec")
     reg(lbl, "TextColor3", "Text")
     reg(valueLabel, "TextColor3", "Accent")
@@ -436,14 +421,9 @@ local function ThemeSelector()
     local colorRow = Create("Frame", { Size=UDim2.new(1,-20,0,22), Position=UDim2.fromOffset(10,20), BackgroundTransparency=1, Parent=row })
     Create("UIListLayout", { FillDirection=Enum.FillDirection.Horizontal, Padding=UDim.new(0,8), SortOrder=Enum.SortOrder.LayoutOrder, Parent=colorRow })
 
-    local names = {"Purple", "Ocean", "Crimson"}
-    for i, name in ipairs(names) do
+    for i, name in ipairs({"Purple", "Ocean", "Crimson"}) do
         local c = Themes[name]
-        local swatch = Create("TextButton", {
-            Size = UDim2.fromOffset(24,22), BackgroundColor3 = c.Accent,
-            Text = "", AutoButtonColor = false, LayoutOrder = i,
-            Parent = colorRow
-        })
+        local swatch = Create("TextButton", { Size = UDim2.fromOffset(24,22), BackgroundColor3 = c.Accent, Text = "", AutoButtonColor = false, LayoutOrder = i, Parent = colorRow })
         Corner(swatch, UDim.new(0,6))
         if CurrentTheme == name then Stroke(swatch, Color3.fromRGB(255,255,255), 2) end
         swatch.MouseButton1Click:Connect(function()
@@ -470,7 +450,6 @@ local function UpdateFOV() FOV.Size = UDim2.fromOffset(S.AimFOV*2, S.AimFOV*2) e
 local TracerFrame = Create("Frame", { AnchorPoint=Vector2.new(0.5,1), Position=UDim2.new(0.5,0,1,-60), Size=UDim2.fromOffset(2,0), BackgroundColor3=T.Accent, BorderSizePixel=0, Visible=false, ZIndex=90, Parent=GUI })
 reg(TracerFrame, "BackgroundColor3", "Accent")
 
---// ---------------- REGISTER THEME ELEMENTS ----------------
 reg(AD, "BackgroundColor3", "Bg")
 reg(AD, "TextColor3", "Accent")
 reg(ADStroke, "Color", "Accent")
@@ -518,27 +497,40 @@ local function isTargetable(plr)
     return true
 end
 
--- ✅ TeamCheck теперь автоматический (всегда включён)
 local function isEnemy(plr)
     if not plr or plr == LP then return false end
     if LP.Team and plr.Team and LP.Team == plr.Team then return false end
     return true
 end
 
--- ✅ WallCheck всегда включён
+-- ✅ Multi-ray WallCheck (3 точки головы: центр, верх, низ)
 local function isVisible(char, part)
+    if not S.WallCheck then return true end
     if not char or not Camera or not part then return false end
     local filter = { Camera }
     if LP.Character then table.insert(filter, LP.Character) end
-    local params = RaycastParams.new()
-    params.FilterType = Enum.RaycastFilterType.Exclude
-    params.FilterDescendantsInstances = filter
-    local hit = workspace:Raycast(Camera.CFrame.Position, part.Position - Camera.CFrame.Position, params)
-    if not hit then return true end
-    return hit.Instance:IsDescendantOf(char)
+
+    -- Проверяем 3 точки на голове (центр, верх, низ)
+    local points = {part}
+    if part.Name == "Head" then
+        table.insert(points, part.CFrame * CFrame.new(0, 0.5, 0))
+        table.insert(points, part.CFrame * CFrame.new(0, -0.5, 0))
+    end
+
+    for _, p in ipairs(points) do
+        local pos = typeof(p) == "CFrame" and p.Position or p.Position
+        local params = RaycastParams.new()
+        params.FilterType = Enum.RaycastFilterType.Exclude
+        params.FilterDescendantsInstances = filter
+        local hit = workspace:Raycast(Camera.CFrame.Position, pos - Camera.CFrame.Position, params)
+        if not hit or hit.Instance:IsDescendantOf(char) then
+            return true
+        end
+    end
+    return false
 end
 
---// ---------------- AIM ----------------
+--// ---------------- AIM (always Head) ----------------
 local LockedTarget, HoldActive, LastTargetSwitch = nil, false, 0
 local TARGET_SWITCH_CD = 0.15
 local UNLOCK_COOLDOWN = 1.0
@@ -547,20 +539,22 @@ local FLICK_WINDOW = 1.0
 local FLICKS_TO_UNLOCK = 2
 local lastCamDir, flickCount, lastFlickTime, unlockUntil = nil, 0, 0, 0
 
+-- ✅ ВСЕГДА в голову
 local function getAimPart(char)
     if not char then return nil end
-    if S.ForceHead or S.AimHead then return char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart") end
-    return char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Head")
+    return char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
 end
 
+-- Улучшенная предикция
 local function predictPosition(part)
-    if not part or S.Prediction <= 0 then return part and part.Position or nil end
+    if not part then return nil end
     local vel = part.AssemblyLinearVelocity or part.Velocity or Vector3.zero
     local dist = (part.Position - Camera.CFrame.Position).Magnitude
-    local t = dist / 400
+    local t = dist / 500
     return part.Position + vel * (S.Prediction * t)
 end
 
+-- Скор: чем ближе к прицелу + чем ближе цель — тем выше приоритет
 local function pixelScore(part, fovLimit)
     if not Camera then return math.huge end
     local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
@@ -569,7 +563,9 @@ local function pixelScore(part, fovLimit)
     local center = Vector2.new(vp.X/2, vp.Y/2)
     local d = (Vector2.new(pos.X, pos.Y) - center).Magnitude
     if d > fovLimit then return math.huge end
-    return d
+    -- небольшой бонус за близость
+    local distBonus = (part.Position - Camera.CFrame.Position).Magnitude * 0.05
+    return d + distBonus
 end
 
 local function findTarget()
@@ -579,10 +575,12 @@ local function findTarget()
     for _, plr in ipairs(Players:GetPlayers()) do
         if isEnemy(plr) and isTargetable(plr) then
             local char = getCharacter(plr)
-            local part = char and getAimPart(char)
-            if part and (part.Position - camPos).Magnitude <= S.AimRange and isVisible(char, part) then
-                local sc = pixelScore(part, S.AimFOV)
-                if sc < bestScore then bestScore = sc best = plr end
+            local head = char and char:FindFirstChild("Head")
+            if head and (head.Position - camPos).Magnitude <= S.AimRange then
+                if isVisible(char, head) then
+                    local sc = pixelScore(head, S.AimFOV)
+                    if sc < bestScore then bestScore = sc best = plr end
+                end
             end
         end
     end
@@ -592,10 +590,10 @@ end
 local function validateTarget(plr)
     if not plr or not isTargetable(plr) or not isEnemy(plr) then return false end
     local char = getCharacter(plr)
-    local part = char and getAimPart(char)
-    if not part then return false end
-    if (part.Position - Camera.CFrame.Position).Magnitude > S.AimRange then return false end
-    if not isVisible(char, part) then return false end
+    local head = char and char:FindFirstChild("Head")
+    if not head then return false end
+    if (head.Position - Camera.CFrame.Position).Magnitude > S.AimRange then return false end
+    if not isVisible(char, head) then return false end
     return true
 end
 
@@ -635,14 +633,16 @@ local function aimApply(dt)
 
     if LockedTarget then
         local char = getCharacter(LockedTarget)
-        local part = char and getAimPart(char)
-        if not isTargetable(LockedTarget) or not part then LockedTarget = nil return end
-        local aimPos = predictPosition(part)
+        local head = char and char:FindFirstChild("Head")
+        if not isTargetable(LockedTarget) or not head then LockedTarget = nil return end
+        local aimPos = predictPosition(head)
         local desiredCam = CFrame.lookAt(Camera.CFrame.Position, aimPos)
         if S.AimSmooth >= 0.99 then
             Camera.CFrame = desiredCam
         else
+            -- Более отзывчивый: формула smooth^1.5 (быстрее при больших smooth)
             local smooth = math.clamp(S.AimSmooth * (dt * 60), 0.01, 1)
+            smooth = smooth * (2 - smooth) -- ускорение
             Camera.CFrame = Camera.CFrame:Lerp(desiredCam, smooth)
         end
         if S.RotateCharacter then
@@ -662,7 +662,7 @@ local function aimApply(dt)
 end
 
 --// ---------------- ESP ----------------
-local espFolder = Create("Folder", { Name="AD_ESP_v54", Parent=PARENT })
+local espFolder = Create("Folder", { Name="AD_ESP_v55", Parent=PARENT })
 local ESPData = {}
 local BOX_COLOR = Color3.fromRGB(255,90,90)
 local NAME_COLOR = Color3.fromRGB(255,240,240)
@@ -713,7 +713,7 @@ end
 --// ---------------- VISUALS ----------------
 local fpsLabel = Create("TextLabel", { Size=UDim2.fromOffset(120,20), Position=UDim2.new(0,10,0,10), BackgroundTransparency=1, Text="FPS: --", TextColor3=Color3.fromRGB(0,255,0), TextSize=14, Font=Enum.Font.Code, TextXAlignment=Enum.TextXAlignment.Left, Visible=false, Parent=GUI })
 local pingLabel = Create("TextLabel", { Size=UDim2.fromOffset(120,20), Position=UDim2.new(0,10,0,30), BackgroundTransparency=1, Text="Ping: -- ms", TextColor3=Color3.fromRGB(255,255,0), TextSize=14, Font=Enum.Font.Code, TextXAlignment=Enum.TextXAlignment.Left, Visible=false, Parent=GUI })
-local watermarkLabel = Create("TextLabel", { Size=UDim2.fromOffset(200,20), Position=UDim2.new(1,-210,0,10), BackgroundTransparency=1, Text="AD v5.4 | Delta", TextColor3=Color3.fromRGB(200,200,255), TextSize=14, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Right, Visible=false, Parent=GUI })
+local watermarkLabel = Create("TextLabel", { Size=UDim2.fromOffset(200,20), Position=UDim2.new(1,-210,0,10), BackgroundTransparency=1, Text="AD v5.5 | Delta", TextColor3=Color3.fromRGB(200,200,255), TextSize=14, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Right, Visible=false, Parent=GUI })
 
 task.spawn(function()
     while GUI and GUI.Parent do
@@ -735,7 +735,7 @@ task.spawn(function()
     end
 end)
 
---// ---------------- FLY ----------------
+--// ---------------- FLY (FIXED) ----------------
 local flyBV, flyBG = nil, nil
 local flyLastVel = Vector3.zero
 
@@ -768,14 +768,23 @@ bind(RunService.Heartbeat:Connect(function(dt)
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         local hum = char and char:FindFirstChildOfClass("Humanoid")
         if hrp and hum and flyBV and flyBG then
-            local camCF = Camera.CFrame
             local move = hum.MoveDirection
-            local desiredDir = (camCF.LookVector * (-move.Z) + camCF.RightVector * move.X)
+            local look = Camera.CFrame.LookVector
+
             local targetVel = Vector3.zero
-            if desiredDir.Magnitude > 0.05 then targetVel = desiredDir.Unit * S.FlySpeed end
-            flyLastVel = flyLastVel:Lerp(targetVel, math.clamp(dt * 10, 0, 1))
+            if move.Magnitude > 0.05 then
+                -- ✅ Горизонтальное движение — уже учтено в MoveDirection (учитывает камеру)
+                targetVel = move.Unit * S.FlySpeed
+                -- ✅ Вертикальное движение — если игрок жмёт "вперёд" и смотрит вверх/вниз
+                local forwardDot = move:Dot(Vector3.new(look.X, 0, look.Z).Unit)
+                if forwardDot > 0.1 then
+                    targetVel = targetVel + Vector3.new(0, look.Y * S.FlySpeed * forwardDot, 0)
+                end
+            end
+
+            flyLastVel = flyLastVel:Lerp(targetVel, math.clamp(dt * 12, 0, 1))
             flyBV.Velocity = flyLastVel
-            flyBG.CFrame = camCF
+            flyBG.CFrame = Camera.CFrame
         end
     else
         if flyBV or flyBG then stopFly() end
@@ -849,24 +858,16 @@ bind(RunService.RenderStepped:Connect(function(dt)
     if S.Tracer and S.ESP and tracerTarget then updateTracer(tracerTarget) else TracerFrame.Visible = false end
 end))
 
---// ---------------- SPEED/JUMP BOOST (FIXED) ----------------
--- Используем Stepped (физический тик) + перезапись при изменении WalkSpeed/JumpPower
+--// ---------------- SPEED/JUMP BOOST ----------------
 local humanoidHooks = {}
-
 local function hookHumanoid(hum)
     if humanoidHooks[hum] then return end
     humanoidHooks[hum] = true
-
-    -- Если игра пытается изменить WalkSpeed — перезаписываем
     local c1 = hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-        if S.SpeedBoost and hum.WalkSpeed ~= S.SpeedValue then
-            hum.WalkSpeed = S.SpeedValue
-        end
+        if S.SpeedBoost and hum.WalkSpeed ~= S.SpeedValue then hum.WalkSpeed = S.SpeedValue end
     end)
     local c2 = hum:GetPropertyChangedSignal("JumpPower"):Connect(function()
-        if S.JumpBoost and hum.JumpPower ~= S.JumpValue then
-            hum.JumpPower = S.JumpValue
-        end
+        if S.JumpBoost and hum.JumpPower ~= S.JumpValue then hum.JumpPower = S.JumpValue end
     end)
     bind(c1) bind(c2)
 end
@@ -876,26 +877,18 @@ bind(RunService.Stepped:Connect(function()
     if not char then return end
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not hum then return end
-
     hookHumanoid(hum)
-
     if S.SpeedBoost then
-        if hum.WalkSpeed ~= S.SpeedValue then
-            hum.WalkSpeed = S.SpeedValue
-        end
+        if hum.WalkSpeed ~= S.SpeedValue then hum.WalkSpeed = S.SpeedValue end
     else
-        if hum.WalkSpeed ~= 16 then
-            hum.WalkSpeed = 16
-        end
+        if hum.WalkSpeed ~= 16 then hum.WalkSpeed = 16 end
     end
-
     hum.UseJumpPower = true
     if S.JumpBoost then
         if hum.JumpPower ~= S.JumpValue then hum.JumpPower = S.JumpValue end
     else
         if hum.JumpPower ~= 50 then hum.JumpPower = 50 end
     end
-
     if S.NoClip then
         for _, d in ipairs(char:GetDescendants()) do
             if d:IsA("BasePart") and d.CanCollide then pcall(function() d.CanCollide = false end) end
@@ -917,8 +910,7 @@ local function animatePageIn()
             task.delay((i-1) * 0.02, function()
                 if el and el.Parent then
                     Play(el, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                        Position = oldPos,
-                        BackgroundTransparency = oldTrans,
+                        Position = oldPos, BackgroundTransparency = oldTrans,
                     })
                 end
             end)
@@ -928,9 +920,7 @@ end
 
 --// ---------------- PAGES ----------------
 local function MainPage()
-    Clear()
-    Title.Text = "AD v5.4"
-    Back.Visible = false
+    Clear(); Title.Text = "AD v5.5"; Back.Visible = false
     Section(L("sec_main"))
     Button(L("btn_aim"),      function() AimPage() end)
     Button(L("btn_esp"),      function() ESPPage() end)
@@ -946,8 +936,8 @@ function AimPage()
     Info(L("aim_info")); Section(L("sec_aim_main"))
     Toggle(L("aim_enable"), S.Aim, function(v) S.Aim=v FOV.Visible=v if not v then LockedTarget=nil end end)
     Toggle(L("aim_hold"), S.HoldToAim, function(v) S.HoldToAim=v end)
-    Toggle(L("aim_head"), S.AimHead, function(v) S.AimHead=v end)
     Toggle(L("aim_sticky"), S.StickyTarget, function(v) S.StickyTarget=v end)
+    Toggle(L("aim_wallcheck"), S.WallCheck, function(v) S.WallCheck=v end)  -- ✅ вернул
     Toggle(L("aim_rotate_char"), S.RotateCharacter, function(v) S.RotateCharacter=v end)
     Toggle(L("aim_flick"), S.FlickRelease, function(v) S.FlickRelease=v end)
     Info(L("aim_flick_info"))
@@ -989,7 +979,7 @@ function FlyPage()
     Section(L("sec_fly"))
     Toggle(L("fly_enable"), S.FlyEnabled, function(v) S.FlyEnabled=v if v then startFly() else stopFly() end end)
     Slider(L("fly_speed"), S.FlySpeed, 10, 300, function(v) S.FlySpeed=v end)
-    Info("Fly follows your camera. Tilt camera up/down and press forward to climb/dive.")
+    Info("Joystick controls direction. Look up + press forward = climb. Look down + press forward = dive.")
     animatePageIn()
 end
 
@@ -1098,4 +1088,4 @@ end
 
 UpdateFOV()
 MainPage()
-print("[AD v5.4] loaded — speed fix + auto team/wall check")
+print("[AD v5.5] loaded — fly fix + always head + wallcheck back")
