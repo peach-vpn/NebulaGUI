@@ -1,6 +1,5 @@
 --========================================================--
---   AD v5.1 — AIM + ESP + VISUALS + FLY + NOCLIP + BOOSTS --
---   Misc: NoClip / Jump Boost / Speed Boost  (clean)      --
+--   AD v5.3 — Animations + 3 Themes                       --
 --========================================================--
 
 if _G.__AD_CLEANUP then pcall(_G.__AD_CLEANUP) _G.__AD_CLEANUP = nil end
@@ -54,17 +53,16 @@ local Locale = {
         visual_fps="Show FPS", visual_ping="Show Ping", visual_watermark="Watermark",
         sec_fly="FLY SETTINGS",
         fly_enable="Enable Fly", fly_speed="Fly Speed",
-        fly_load_gui="Load Fly GUI V3",
         sec_speed="SPEED",
-        misc_speed_boost="Speed Boost",
+        misc_speed_boost="Speed Boost", misc_speed_value="Speed value",
         sec_jump="JUMP",
-        misc_jump_boost="Jump Boost",
+        misc_jump_boost="Jump Boost", misc_jump_value="Jump value",
         sec_noclip="NOCLIP",
         misc_noclip="NoClip",
         misc_noclip_info="NoClip: body passes through walls. Off = collide restored.",
-        misc_warn="Speed/Jump boost is detected by anti-cheat in most games.",
+        misc_warn="Boost is detected by anti-cheat in most games.",
         set_lang_label="Language", set_lang_en="English", set_lang_ru="Russian",
-        set_info="Changes apply instantly.",
+        set_theme_label="Theme", set_info="Changes apply instantly.",
     },
     RU = {
         title_main="Главное", title_aim="АИМ", title_esp="ESP",
@@ -91,17 +89,16 @@ local Locale = {
         visual_fps="Показывать FPS", visual_ping="Показывать Ping", visual_watermark="Водяной знак",
         sec_fly="НАСТРОЙКИ ПОЛЁТА",
         fly_enable="Включить полёт", fly_speed="Скорость полёта",
-        fly_load_gui="Загрузить Fly GUI V3",
         sec_speed="СКОРОСТЬ",
-        misc_speed_boost="Буст скорости",
+        misc_speed_boost="Буст скорости", misc_speed_value="Значение скорости",
         sec_jump="ПРЫЖОК",
-        misc_jump_boost="Буст прыжка",
+        misc_jump_boost="Буст прыжка", misc_jump_value="Значение прыжка",
         sec_noclip="NOCLIP",
         misc_noclip="NoClip",
         misc_noclip_info="NoClip: тело проходит сквозь стены. Off = коллизии вернутся.",
-        misc_warn="Буст скорости и прыжка ловится античитом в большинстве игр.",
+        misc_warn="Буст ловится античитом в большинстве игр.",
         set_lang_label="Язык", set_lang_en="Английский", set_lang_ru="Русский",
-        set_info="Изменения применяются сразу.",
+        set_theme_label="Тема", set_info="Изменения применяются сразу.",
     },
 }
 local CurrentLang = "EN"
@@ -110,41 +107,71 @@ local function L(key)
     return pack[key] or Locale.EN[key] or key
 end
 
---// ---------------- THEME ----------------
-local T = {
-    Accent  = Color3.fromRGB(135, 80, 255),
-    Accent2 = Color3.fromRGB(180, 130, 255),
-    Bg      = Color3.fromRGB(14, 14, 20),
-    Sec     = Color3.fromRGB(23, 23, 31),
-    Text    = Color3.fromRGB(230, 230, 235),
+--// ---------------- THEMES ----------------
+local Themes = {
+    Purple = {
+        Accent=Color3.fromRGB(135,80,255), Accent2=Color3.fromRGB(180,130,255),
+        Bg=Color3.fromRGB(14,14,20), Sec=Color3.fromRGB(23,23,31),
+        Text=Color3.fromRGB(230,230,235),
+    },
+    Ocean = {
+        Accent=Color3.fromRGB(0,170,255), Accent2=Color3.fromRGB(90,200,255),
+        Bg=Color3.fromRGB(10,16,24), Sec=Color3.fromRGB(18,26,36),
+        Text=Color3.fromRGB(225,240,250),
+    },
+    Crimson = {
+        Accent=Color3.fromRGB(255,60,90), Accent2=Color3.fromRGB(255,120,140),
+        Bg=Color3.fromRGB(22,12,16), Sec=Color3.fromRGB(32,18,22),
+        Text=Color3.fromRGB(250,225,230),
+    },
 }
+local CurrentTheme = "Purple"
+local T = Themes[CurrentTheme]
 
---// ---------------- BOOST VALUES (меняй тут если надо) ----------------
-local SPEED_NORMAL  = 16
-local SPEED_BOOST   = 45
-local JUMP_NORMAL   = 50
-local JUMP_BOOST    = 100
+local function applyTheme()
+    T = Themes[CurrentTheme]
+    if not GUI then return end
+    -- Применяем ко всем элементам
+    for _, obj in ipairs(GUI:GetDescendants()) do
+        if obj:IsA("TextButton") or obj:IsA("TextLabel") or obj:IsA("Frame") then
+            if obj.Name == "AccentBg" or obj:GetAttribute("AccentBg") then
+                obj.BackgroundColor3 = T.Accent
+            end
+            if obj.Name == "BgElement" or obj:GetAttribute("BgElement") then
+                obj.BackgroundColor3 = T.Sec
+            end
+            if obj.Name == "AccentText" or obj:GetAttribute("AccentText") then
+                obj.TextColor3 = T.Accent
+            end
+            if obj.Name == "TextElement" or obj:GetAttribute("TextElement") then
+                obj.TextColor3 = T.Text
+            end
+        end
+    end
+    -- Точки/кружки
+    if FOVDot then FOVDot.BackgroundColor3 = T.Accent end
+    if ADStroke then ADStroke.Color = T.Accent end
+    if MainStroke then MainStroke.Color = T.Accent end
+    if Title then Title.TextColor3 = T.Accent end
+    if AD then AD.TextColor3 = T.Accent end
+    if TracerFrame then TracerFrame.BackgroundColor3 = T.Accent end
+end
 
 --// ---------------- SETTINGS ----------------
 local S = {
-    -- AIM
     Aim=false, AimRange=100, AimFOV=90, AimSmooth=0.35, CharSmooth=0.25,
     AimHead=true, ForceHead=true, RotateCharacter=false,
     TeamCheck=true, WallCheck=true, StickyTarget=true, Prediction=0.12,
     HoldToAim=false, FlickRelease=true,
 
-    -- VISUALS
     ShowFPS=false, ShowPing=false, ShowWatermark=false,
 
-    -- FLY
-    FlyEnabled=false, FlySpeed=50,
+    FlyEnabled=false, FlySpeed=60,
 
-    -- MOVEMENT (урезано)
     NoClip=false,
-    SpeedBoost=false,
-    JumpBoost=false,
+    SpeedBoost=false, SpeedValue=45,
+    JumpBoost=false, JumpValue=100,
 
-    -- ESP
     ESP=false, Box=true, Highlight=true, Name=true, Health=true,
     Distance=true, Tracer=true, MaxDistance=400,
 }
@@ -156,7 +183,7 @@ local function guiParent()
     return PlayerGui
 end
 local PARENT = guiParent()
-local old = PARENT:FindFirstChild("AD_GUI_v51")
+local old = PARENT:FindFirstChild("AD_GUI_v53")
 if old then old:Destroy() end
 
 --// ---------------- BUILDERS ----------------
@@ -169,11 +196,50 @@ local function Create(class, props)
 end
 local function Corner(p, r) return Create("UICorner", { CornerRadius = r or UDim.new(0, 8), Parent = p }) end
 local function Stroke(p, c, th, tr) return Create("UIStroke", { Color = c or T.Accent, Thickness = th or 1, Transparency = tr or 0, Parent = p }) end
-local function Tween(o, i, pr) TweenService:Create(o, i, pr):Play() end
+local function Tween(o, i, pr) return TweenService:Create(o, i, pr) end
+local function Play(o, i, pr) TweenService:Create(o, i, pr):Play() end
+
+-- Ripple эффект при тапе
+local function addRipple(parent, color)
+    local btn = parent:FindFirstChildOfClass("TextButton")
+    if not btn then return end
+    btn.MouseButton1Down:Connect(function()
+        local ripple = Instance.new("Frame")
+        ripple.BackgroundColor3 = color or T.Accent
+        ripple.BackgroundTransparency = 0.7
+        ripple.Size = UDim2.fromOffset(0, 0)
+        ripple.Position = UDim2.new(0.5, 0, 0.5, 0)
+        ripple.AnchorPoint = Vector2.new(0.5, 0.5)
+        ripple.ZIndex = 5
+        ripple.Parent = parent
+        Instance.new("UICorner", { CornerRadius = UDim.new(1,0), Parent = ripple })
+        local maxSize = math.max(parent.AbsoluteSize.X, parent.AbsoluteSize.Y) * 2
+        local tw = Tween(ripple, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.fromOffset(maxSize, maxSize),
+            BackgroundTransparency = 1,
+        })
+        tw:Play()
+        tw.Completed:Connect(function()
+            ripple:Destroy()
+        end)
+    end)
+end
+
+-- Hover-эффект
+local function addHover(parent, hoverColor, normalColor)
+    local btn = parent:FindFirstChildOfClass("TextButton")
+    if not btn then return end
+    btn.MouseEnter:Connect(function()
+        Play(parent, TweenInfo.new(0.15), { BackgroundColor3 = hoverColor })
+    end)
+    btn.MouseLeave:Connect(function()
+        Play(parent, TweenInfo.new(0.15), { BackgroundColor3 = normalColor })
+    end)
+end
 
 --// ---------------- GUI ----------------
 local GUI = Create("ScreenGui", {
-    Name="AD_GUI_v51", ResetOnSpawn=false, IgnoreGuiInset=true,
+    Name="AD_GUI_v53", ResetOnSpawn=false, IgnoreGuiInset=true,
     ZIndexBehavior=Enum.ZIndexBehavior.Sibling, Parent=PARENT
 })
 bind(GUI.Destroying:Connect(disconnectAll))
@@ -198,7 +264,7 @@ Corner(Header, UDim.new(0,12))
 
 local Title = Create("TextLabel", {
     Size=UDim2.new(1,-80,1,0), Position=UDim2.fromOffset(12,0),
-    BackgroundTransparency=1, Text="AD v5.1", TextColor3=T.Accent, TextSize=16,
+    BackgroundTransparency=1, Text="AD v5.3", TextColor3=T.Accent, TextSize=16,
     Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, Parent=Header
 })
 
@@ -233,6 +299,13 @@ local function Clear()
     end
 end
 
+local function fadeIn(el, delay)
+    el.BackgroundTransparency = 1
+    task.delay(delay or 0, function()
+        Play(el, TweenInfo.new(0.25), { BackgroundTransparency = 0.15 })
+    end)
+end
+
 local function Section(txt)
     return Create("TextLabel", {
         Size=UDim2.new(1,0,0,22), BackgroundTransparency=1, Text=txt,
@@ -252,9 +325,17 @@ end
 local function Button(txt, cb)
     local b = Create("TextButton", { Size=UDim2.new(1,0,0,32), BackgroundColor3=T.Sec, Text="", AutoButtonColor=false, Parent=Content })
     Corner(b, UDim.new(0,6))
-    Create("TextLabel", { Size=UDim2.new(1,-30,1,0), Position=UDim2.fromOffset(10,0), BackgroundTransparency=1, Text=txt, TextColor3=T.Text, TextSize=13, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=b })
+    local label = Create("TextLabel", { Size=UDim2.new(1,-30,1,0), Position=UDim2.fromOffset(10,0), BackgroundTransparency=1, Text=txt, TextColor3=T.Text, TextSize=13, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=b })
     Create("TextLabel", { Size=UDim2.fromOffset(20,32), Position=UDim2.new(1,-25,0,0), BackgroundTransparency=1, Text="›", TextColor3=T.Accent, TextSize=16, Font=Enum.Font.GothamBold, Parent=b })
-    b.MouseButton1Click:Connect(cb)
+
+    b.MouseEnter:Connect(function() Play(b, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(T.Sec.R*255+20, T.Sec.G*255+20, T.Sec.B*255+20) }) end)
+    b.MouseLeave:Connect(function() Play(b, TweenInfo.new(0.15), { BackgroundColor3 = T.Sec }) end)
+    b.MouseButton1Click:Connect(function()
+        Play(b, TweenInfo.new(0.1), { BackgroundColor3 = T.Accent })
+        task.delay(0.1, function() Play(b, TweenInfo.new(0.15), { BackgroundColor3 = T.Sec }) end)
+        cb()
+    end)
+    addRipple(b, T.Accent)
     return b
 end
 
@@ -267,11 +348,15 @@ local function Toggle(txt, initial, cb)
     Corner(sw, UDim.new(1,0))
     local dot = Create("Frame", { Size=UDim2.fromOffset(12,12), Position=UDim2.fromOffset(2,2), BackgroundColor3=Color3.fromRGB(200,200,210), Parent=sw })
     Corner(dot, UDim.new(1,0))
+
     local function apply(instant)
         local col = state.v and T.Accent or Color3.fromRGB(50,50,60)
         local pos = state.v and UDim2.fromOffset(18,2) or UDim2.fromOffset(2,2)
         if instant then sw.BackgroundColor3=col dot.Position=pos
-        else Tween(sw, TweenInfo.new(0.15), {BackgroundColor3=col}) Tween(dot, TweenInfo.new(0.15, Enum.EasingStyle.Back), {Position=pos}) end
+        else
+            Play(sw, TweenInfo.new(0.15), {BackgroundColor3=col})
+            Play(dot, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position=pos})
+        end
     end
     apply(true)
     b.MouseButton1Click:Connect(function()
@@ -279,6 +364,8 @@ local function Toggle(txt, initial, cb)
         apply(false)
         if cb then local ok, err = pcall(cb, state.v) if not ok then warn(err) end end
     end)
+    b.MouseEnter:Connect(function() Play(b, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(T.Sec.R*255+15, T.Sec.G*255+15, T.Sec.B*255+15) }) end)
+    b.MouseLeave:Connect(function() Play(b, TweenInfo.new(0.15), { BackgroundColor3 = T.Sec }) end)
     return b, state
 end
 
@@ -288,7 +375,9 @@ local function Number(txt, initial, min, max, cb)
     Create("TextLabel", { Size=UDim2.new(1,-70,1,0), Position=UDim2.fromOffset(10,0), BackgroundTransparency=1, Text=txt, TextColor3=T.Text, TextSize=12, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=f })
     local box = Create("TextBox", { Size=UDim2.fromOffset(55,20), Position=UDim2.new(1,-62,0.5,-10), BackgroundColor3=T.Bg, Text=tostring(initial), TextColor3=T.Accent, TextSize=11, Font=Enum.Font.GothamBold, ClearTextOnFocus=false, Parent=f })
     Corner(box, UDim.new(0,4))
+    box.Focused:Connect(function() Play(box, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(T.Bg.R*255+10, T.Bg.G*255+10, T.Bg.B*255+10) }) end)
     box.FocusLost:Connect(function()
+        Play(box, TweenInfo.new(0.15), { BackgroundColor3 = T.Bg })
         local n = tonumber(box.Text)
         if not n then box.Text = tostring(initial) return end
         n = math.clamp(n, min, max)
@@ -313,10 +402,17 @@ local function Slider(txt, initial, min, max, cb)
     local hitbox = Create("TextButton", { Size=UDim2.new(1,0,0,32), Position=UDim2.new(0,0,0,-12), BackgroundTransparency=1, Text="", AutoButtonColor=false, Parent=track })
     local value = math.clamp(initial, min, max)
     local dragging = false
-    local function updateVisual()
+    local function updateVisual(animate)
         local ratio = (value - min) / math.max(max - min, 1)
-        fill.Size = UDim2.new(ratio,0,1,0)
-        knob.Position = UDim2.new(ratio,0,0.5,0)
+        local tgtFill = UDim2.new(ratio,0,1,0)
+        local tgtKnob = UDim2.new(ratio,0,0.5,0)
+        if animate then
+            Play(fill, TweenInfo.new(0.12), { Size = tgtFill })
+            Play(knob, TweenInfo.new(0.12), { Position = tgtKnob })
+        else
+            fill.Size = tgtFill
+            knob.Position = tgtKnob
+        end
         valueLabel.Text = string.format("%d/%d", math.floor(value), max)
     end
     local function setFromX(x)
@@ -325,12 +421,13 @@ local function Slider(txt, initial, min, max, cb)
         if trackSize <= 0 then return end
         local rel = math.clamp((x - trackAbs.X) / trackSize, 0, 1)
         value = min + rel * (max - min)
-        updateVisual()
+        updateVisual(false)
         if cb then local ok, err = pcall(cb, value) if not ok then warn(err) end end
     end
     hitbox.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
+            Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(22,22) })
             setFromX(input.Position.X)
         end
     end)
@@ -342,10 +439,13 @@ local function Slider(txt, initial, min, max, cb)
     end))
     bind(UIS.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
+            if dragging then
+                dragging = false
+                Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(16,16) })
+            end
         end
     end))
-    updateVisual()
+    updateVisual(true)
     return frame
 end
 
@@ -360,7 +460,37 @@ local function LanguageSelector()
     right.MouseButton1Click:Connect(function() if CurrentLang ~= "RU" then CurrentLang = "RU" SettingsPage() end end)
 end
 
---// ---------------- FOV CIRCLES ----------------
+local function ThemeSelector()
+    local row = Create("Frame", { Size=UDim2.new(1,0,0,44), BackgroundColor3=T.Sec, Parent=Content })
+    Corner(row, UDim.new(0,6))
+    Create("TextLabel", { Size=UDim2.new(1,-10,0,16), Position=UDim2.fromOffset(10,4), BackgroundTransparency=1, Text=L("set_theme_label"), TextColor3=T.Text, TextSize=11, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=row })
+
+    local colorRow = Create("Frame", { Size=UDim2.new(1,-20,0,22), Position=UDim2.fromOffset(10,20), BackgroundTransparency=1, Parent=row })
+    Create("UIListLayout", { FillDirection=Enum.FillDirection.Horizontal, Padding=UDim.new(0,8), SortOrder=Enum.SortOrder.LayoutOrder, Parent=colorRow })
+
+    local names = {"Purple", "Ocean", "Crimson"}
+    for i, name in ipairs(names) do
+        local c = Themes[name]
+        local swatch = Create("TextButton", {
+            Size = UDim2.fromOffset(24,22), BackgroundColor3 = c.Accent,
+            Text = "", AutoButtonColor = false, LayoutOrder = i,
+            Parent = colorRow
+        })
+        Corner(swatch, UDim.new(0,6))
+        if CurrentTheme == name then
+            Stroke(swatch, Color3.fromRGB(255,255,255), 2)
+        end
+        swatch.MouseButton1Click:Connect(function()
+            if CurrentTheme ~= name then
+                CurrentTheme = name
+                applyTheme()
+                SettingsPage()
+            end
+        end)
+    end
+end
+
+--// ---------------- FOV ----------------
 local FOV = Create("Frame", { AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.fromScale(0.5,0.5), Size=UDim2.fromOffset(180,180), BackgroundTransparency=1, Visible=false, ZIndex=100, Active=false, Parent=GUI })
 Corner(FOV, UDim.new(1,0))
 Stroke(FOV, T.Accent, 1.5, 0.15)
@@ -396,7 +526,7 @@ end
 local function getHumanoid(char) return char and char:FindFirstChildOfClass("Humanoid") end
 local function getHead(char) return char and char:FindFirstChild("Head") end
 
---// ---------------- STRICT TARGET CHECK ----------------
+--// ---------------- TARGET CHECKS ----------------
 local function isTargetable(plr)
     if not plr or plr == LP then return false end
     if not plr.Parent then return false end
@@ -407,7 +537,6 @@ local function isTargetable(plr)
     return true
 end
 
---// ---------------- TEAM / VISIBILITY ----------------
 local function isEnemy(plr)
     if not plr or plr == LP then return false end
     if S.TeamCheck and LP.Team and plr.Team and LP.Team == plr.Team then return false end
@@ -551,7 +680,7 @@ local function aimApply(dt)
 end
 
 --// ---------------- ESP ----------------
-local espFolder = Create("Folder", { Name="AD_ESP_v51", Parent=PARENT })
+local espFolder = Create("Folder", { Name="AD_ESP_v53", Parent=PARENT })
 local ESPData = {}
 local BOX_COLOR = Color3.fromRGB(255,90,90)
 local NAME_COLOR = Color3.fromRGB(255,240,240)
@@ -603,7 +732,7 @@ end
 --// ---------------- VISUALS ----------------
 local fpsLabel = Create("TextLabel", { Size=UDim2.fromOffset(120,20), Position=UDim2.new(0,10,0,10), BackgroundTransparency=1, Text="FPS: --", TextColor3=Color3.fromRGB(0,255,0), TextSize=14, Font=Enum.Font.Code, TextXAlignment=Enum.TextXAlignment.Left, Visible=false, Parent=GUI })
 local pingLabel = Create("TextLabel", { Size=UDim2.fromOffset(120,20), Position=UDim2.new(0,10,0,30), BackgroundTransparency=1, Text="Ping: -- ms", TextColor3=Color3.fromRGB(255,255,0), TextSize=14, Font=Enum.Font.Code, TextXAlignment=Enum.TextXAlignment.Left, Visible=false, Parent=GUI })
-local watermarkLabel = Create("TextLabel", { Size=UDim2.fromOffset(200,20), Position=UDim2.new(1,-210,0,10), BackgroundTransparency=1, Text="AD v5.1 | Delta", TextColor3=Color3.fromRGB(200,200,255), TextSize=14, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Right, Visible=false, Parent=GUI })
+local watermarkLabel = Create("TextLabel", { Size=UDim2.fromOffset(200,20), Position=UDim2.new(1,-210,0,10), BackgroundTransparency=1, Text="AD v5.3 | Delta", TextColor3=Color3.fromRGB(200,200,255), TextSize=14, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Right, Visible=false, Parent=GUI })
 
 task.spawn(function()
     while GUI and GUI.Parent do
@@ -627,10 +756,12 @@ end)
 
 --// ---------------- FLY ----------------
 local flyBV, flyBG = nil, nil
+local flyLastVel = Vector3.zero
 
 local function stopFly()
     if flyBV then flyBV:Destroy() flyBV = nil end
     if flyBG then flyBG:Destroy() flyBG = nil end
+    flyLastVel = Vector3.zero
 end
 
 local function startFly()
@@ -639,26 +770,34 @@ local function startFly()
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     flyBV = Instance.new("BodyVelocity")
-    flyBV.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    flyBV.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+    flyBV.P = 5000
     flyBV.Velocity = Vector3.zero
     flyBV.Parent = hrp
     flyBG = Instance.new("BodyGyro")
-    flyBG.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-    flyBG.P = 10000
-    flyBG.D = 100
+    flyBG.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+    flyBG.P = 12000
+    flyBG.D = 200
     flyBG.Parent = hrp
 end
 
-bind(RunService.Heartbeat:Connect(function()
+bind(RunService.Heartbeat:Connect(function(dt)
     if S.FlyEnabled then
         local char = LP.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if hrp and hum and flyBV then
-            local moveDir = hum.MoveDirection
+        if hrp and hum and flyBV and flyBG then
             local camCF = Camera.CFrame
-            local flyDir = (camCF.LookVector * -moveDir.Z + camCF.RightVector * moveDir.X)
-            flyBV.Velocity = flyDir * S.FlySpeed
+            local move = hum.MoveDirection
+            local forward = camCF.LookVector
+            local right = camCF.RightVector
+            local desiredDir = (forward * (-move.Z) + right * move.X)
+            local targetVel = Vector3.zero
+            if desiredDir.Magnitude > 0.05 then
+                targetVel = desiredDir.Unit * S.FlySpeed
+            end
+            flyLastVel = flyLastVel:Lerp(targetVel, math.clamp(dt * 10, 0, 1))
+            flyBV.Velocity = flyLastVel
             flyBG.CFrame = camCF
         end
     else
@@ -733,29 +872,17 @@ bind(RunService.RenderStepped:Connect(function(dt)
     if S.Tracer and S.ESP and tracerTarget then updateTracer(tracerTarget) else TracerFrame.Visible = false end
 end))
 
---// ---------------- HEARTBEAT (Speed Boost / Jump Boost / NoClip) ----------------
+--// ---------------- HEARTBEAT ----------------
 bind(RunService.Heartbeat:Connect(function()
     local char = LP.Character
     if not char then return end
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not hum then return end
 
-    -- Speed Boost: ON = быстрый, OFF = обычный
-    if S.SpeedBoost then
-        hum.WalkSpeed = SPEED_BOOST
-    else
-        hum.WalkSpeed = SPEED_NORMAL
-    end
-
-    -- Jump Boost: ON = большой прыжок, OFF = обычный
+    hum.WalkSpeed = S.SpeedBoost and S.SpeedValue or 16
     hum.UseJumpPower = true
-    if S.JumpBoost then
-        hum.JumpPower = JUMP_BOOST
-    else
-        hum.JumpPower = JUMP_NORMAL
-    end
+    hum.JumpPower = S.JumpBoost and S.JumpValue or 50
 
-    -- NoClip
     if S.NoClip then
         for _, d in ipairs(char:GetDescendants()) do
             if d:IsA("BasePart") and d.CanCollide then pcall(function() d.CanCollide = false end) end
@@ -763,10 +890,27 @@ bind(RunService.Heartbeat:Connect(function()
     end
 end))
 
+--// ---------------- PAGE TRANSITION ----------------
+local function animatePageIn()
+    Content.CanvasPosition = Vector2.new(0, 0)
+    for _, el in ipairs(Content:GetChildren()) do
+        if el:IsA("GuiObject") then
+            local oldPos = el.Position
+            local oldTrans = el.BackgroundTransparency
+            el.Position = UDim2.new(oldPos.X.Scale, oldPos.X.Offset + 20, oldPos.Y.Scale, oldPos.Y.Offset)
+            if el.BackgroundTransparency < 1 then el.BackgroundTransparency = 1 end
+            Play(el, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Position = oldPos,
+                BackgroundTransparency = oldTrans,
+            })
+        end
+    end
+end
+
 --// ---------------- PAGES ----------------
 local function MainPage()
     Clear()
-    Title.Text = "AD v5.1"
+    Title.Text = "AD v5.3"
     Back.Visible = false
     Section(L("sec_main"))
     Button(L("btn_aim"),      function() AimPage() end)
@@ -775,6 +919,7 @@ local function MainPage()
     Button(L("btn_fly"),      function() FlyPage() end)
     Button(L("btn_misc"),     function() MiscPage() end)
     Button(L("btn_settings"), function() SettingsPage() end)
+    animatePageIn()
 end
 
 function AimPage()
@@ -795,6 +940,7 @@ function AimPage()
     Slider(L("aim_speed"), math.floor(S.AimSmooth*100), 0, 100, function(v) S.AimSmooth=math.clamp(v/100,0.01,1) end)
     Number(L("aim_body_smooth"), S.CharSmooth, 0.05, 1, function(v) S.CharSmooth=v end)
     Number(L("aim_prediction"), S.Prediction, 0, 0.5, function(v) S.Prediction=v end)
+    animatePageIn()
 end
 
 function ESPPage()
@@ -810,6 +956,7 @@ function ESPPage()
     Toggle(L("esp_teamcheck"), S.TeamCheck, function(v) S.TeamCheck=v end)
     Section(L("sec_esp_params"))
     Number(L("esp_max_dist"), S.MaxDistance, 50, 1000, function(v) S.MaxDistance=v for _,d in pairs(ESPData) do d.Info.MaxDistance=v end end)
+    animatePageIn()
 end
 
 function VisualsPage()
@@ -818,27 +965,26 @@ function VisualsPage()
     Toggle(L("visual_fps"), S.ShowFPS, function(v) S.ShowFPS=v fpsLabel.Visible=v end)
     Toggle(L("visual_ping"), S.ShowPing, function(v) S.ShowPing=v pingLabel.Visible=v end)
     Toggle(L("visual_watermark"), S.ShowWatermark, function(v) S.ShowWatermark=v watermarkLabel.Visible=v end)
+    animatePageIn()
 end
 
 function FlyPage()
     Clear(); Title.Text = L("title_fly"); Back.Visible = true
     Section(L("sec_fly"))
     Toggle(L("fly_enable"), S.FlyEnabled, function(v) S.FlyEnabled=v if v then startFly() else stopFly() end end)
-    Slider(L("fly_speed"), S.FlySpeed, 10, 200, function(v) S.FlySpeed=v end)
-    Button(L("fly_load_gui"), function()
-        local ok, err = pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
-        end)
-        if not ok then warn("Fly GUI V3 load failed: "..tostring(err)) end
-    end)
+    Slider(L("fly_speed"), S.FlySpeed, 10, 300, function(v) S.FlySpeed=v end)
+    Info("Fly follows your camera. Tilt camera up/down and press forward to climb/dive.")
+    animatePageIn()
 end
 
 function MiscPage()
     Clear(); Title.Text = L("title_misc"); Back.Visible = true
     Section(L("sec_speed"))
     Toggle(L("misc_speed_boost"), S.SpeedBoost, function(v) S.SpeedBoost=v end)
+    Number(L("misc_speed_value"), S.SpeedValue, 16, 200, function(v) S.SpeedValue=v end)
     Section(L("sec_jump"))
     Toggle(L("misc_jump_boost"), S.JumpBoost, function(v) S.JumpBoost=v end)
+    Number(L("misc_jump_value"), S.JumpValue, 50, 500, function(v) S.JumpValue=v end)
     Section(L("sec_noclip"))
     Toggle(L("misc_noclip"), S.NoClip, function(v)
         S.NoClip = v
@@ -849,14 +995,18 @@ function MiscPage()
     end)
     Info(L("misc_noclip_info"))
     Info(L("misc_warn"))
+    animatePageIn()
 end
 
 function SettingsPage()
     Clear(); Title.Text = L("title_settings"); Back.Visible = true
     Section(L("set_lang_label"))
     LanguageSelector()
+    Section(L("set_theme_label"))
+    ThemeSelector()
     Section(L("sec_settings"))
     Info(L("set_info"))
+    animatePageIn()
 end
 
 --// ---------------- DRAG ----------------
@@ -888,8 +1038,10 @@ AD.MouseButton1Click:Connect(function()
     Main.Visible = not Main.Visible
     if Main.Visible then
         Main.Size = UDim2.fromOffset(0,0)
-        Tween(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.fromOffset(320,370)})
+        Play(Main, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromOffset(320,370)})
         MainPage()
+    else
+        Play(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.fromOffset(0,0)})
     end
 end)
 
@@ -906,7 +1058,7 @@ _G.__AD_CLEANUP = function()
             if d:IsA("BasePart") then pcall(function() d.CanCollide=true end) end
         end
         local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum then pcall(function() hum.WalkSpeed = SPEED_NORMAL hum.JumpPower = JUMP_NORMAL end) end
+        if hum then pcall(function() hum.WalkSpeed = 16 hum.JumpPower = 50 end) end
     end
     disconnectAll()
     stopFly()
@@ -916,4 +1068,4 @@ end
 
 UpdateFOV()
 MainPage()
-print("[AD v5.1] loaded — clean misc")
+print("[AD v5.3] loaded — animations + 3 themes")
