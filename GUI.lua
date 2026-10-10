@@ -1,6 +1,6 @@
 --========================================================--
---   AD v5.0 — AIM + ESP + VISUALS + FLY + SPIN + BHOP     --
---   AutoJump · BunnyHop · Multi-Jump · NoClip · EN/RU     --
+--   AD v5.1 — AIM + ESP + VISUALS + FLY + NOCLIP + BOOSTS --
+--   Misc: NoClip / Jump Boost / Speed Boost  (clean)      --
 --========================================================--
 
 if _G.__AD_CLEANUP then pcall(_G.__AD_CLEANUP) _G.__AD_CLEANUP = nil end
@@ -55,16 +55,14 @@ local Locale = {
         sec_fly="FLY SETTINGS",
         fly_enable="Enable Fly", fly_speed="Fly Speed",
         fly_load_gui="Load Fly GUI V3",
-        sec_speed="SPEED", misc_speed="Speed", misc_walkspeed="WalkSpeed",
-        sec_jump="JUMP", misc_autojump="AutoJump",
-        misc_bunnyhop="Bunny Hop",
-        misc_multijump="Multi-Jump (in air)",
-        misc_multijump_count="Multi-Jump count",
-        misc_jumpboost="JumpPower Boost", misc_jumppower="JumpPower",
-        sec_spin="SPIN", misc_spin="Enable Spin", misc_spin_speed="Spin Speed",
-        sec_noclip="NOCLIP", misc_noclip="NoClip",
+        sec_speed="SPEED",
+        misc_speed_boost="Speed Boost",
+        sec_jump="JUMP",
+        misc_jump_boost="Jump Boost",
+        sec_noclip="NOCLIP",
+        misc_noclip="NoClip",
         misc_noclip_info="NoClip: body passes through walls. Off = collide restored.",
-        misc_warn="WalkSpeed > 22 is detected by anti-cheat in most games.",
+        misc_warn="Speed/Jump boost is detected by anti-cheat in most games.",
         set_lang_label="Language", set_lang_en="English", set_lang_ru="Russian",
         set_info="Changes apply instantly.",
     },
@@ -94,16 +92,14 @@ local Locale = {
         sec_fly="НАСТРОЙКИ ПОЛЁТА",
         fly_enable="Включить полёт", fly_speed="Скорость полёта",
         fly_load_gui="Загрузить Fly GUI V3",
-        sec_speed="СКОРОСТЬ", misc_speed="Скорость", misc_walkspeed="WalkSpeed",
-        sec_jump="ПРЫЖОК", misc_autojump="AutoJump",
-        misc_bunnyhop="Bunny Hop",
-        misc_multijump="Мульти-прыжок (в воздухе)",
-        misc_multijump_count="Кол-во прыжков",
-        misc_jumpboost="JumpPower Boost", misc_jumppower="JumpPower",
-        sec_spin="КРУТИЛКА", misc_spin="Включить крутилку", misc_spin_speed="Скорость вращения",
-        sec_noclip="NOCLIP", misc_noclip="NoClip",
+        sec_speed="СКОРОСТЬ",
+        misc_speed_boost="Буст скорости",
+        sec_jump="ПРЫЖОК",
+        misc_jump_boost="Буст прыжка",
+        sec_noclip="NOCLIP",
+        misc_noclip="NoClip",
         misc_noclip_info="NoClip: тело проходит сквозь стены. Off = коллизии вернутся.",
-        misc_warn="WalkSpeed > 22 ловится античитом в большинстве игр.",
+        misc_warn="Буст скорости и прыжка ловится античитом в большинстве игр.",
         set_lang_label="Язык", set_lang_en="Английский", set_lang_ru="Русский",
         set_info="Изменения применяются сразу.",
     },
@@ -123,6 +119,12 @@ local T = {
     Text    = Color3.fromRGB(230, 230, 235),
 }
 
+--// ---------------- BOOST VALUES (меняй тут если надо) ----------------
+local SPEED_NORMAL  = 16
+local SPEED_BOOST   = 45
+local JUMP_NORMAL   = 50
+local JUMP_BOOST    = 100
+
 --// ---------------- SETTINGS ----------------
 local S = {
     -- AIM
@@ -137,13 +139,10 @@ local S = {
     -- FLY
     FlyEnabled=false, FlySpeed=50,
 
-    -- MOVEMENT
-    AutoJump=false, JumpPowerBoost=false, JumpPower=60,
-    Speed=false, SpeedValue=22, NoClip=false,
-    BunnyHop=false, MultiJump=false, MultiJumpCount=3,
-
-    -- SPIN
-    Spin=false, SpinSpeed=10,
+    -- MOVEMENT (урезано)
+    NoClip=false,
+    SpeedBoost=false,
+    JumpBoost=false,
 
     -- ESP
     ESP=false, Box=true, Highlight=true, Name=true, Health=true,
@@ -157,7 +156,7 @@ local function guiParent()
     return PlayerGui
 end
 local PARENT = guiParent()
-local old = PARENT:FindFirstChild("AD_GUI_v50")
+local old = PARENT:FindFirstChild("AD_GUI_v51")
 if old then old:Destroy() end
 
 --// ---------------- BUILDERS ----------------
@@ -174,7 +173,7 @@ local function Tween(o, i, pr) TweenService:Create(o, i, pr):Play() end
 
 --// ---------------- GUI ----------------
 local GUI = Create("ScreenGui", {
-    Name="AD_GUI_v50", ResetOnSpawn=false, IgnoreGuiInset=true,
+    Name="AD_GUI_v51", ResetOnSpawn=false, IgnoreGuiInset=true,
     ZIndexBehavior=Enum.ZIndexBehavior.Sibling, Parent=PARENT
 })
 bind(GUI.Destroying:Connect(disconnectAll))
@@ -199,7 +198,7 @@ Corner(Header, UDim.new(0,12))
 
 local Title = Create("TextLabel", {
     Size=UDim2.new(1,-80,1,0), Position=UDim2.fromOffset(12,0),
-    BackgroundTransparency=1, Text="AD v5.0", TextColor3=T.Accent, TextSize=16,
+    BackgroundTransparency=1, Text="AD v5.1", TextColor3=T.Accent, TextSize=16,
     Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, Parent=Header
 })
 
@@ -552,7 +551,7 @@ local function aimApply(dt)
 end
 
 --// ---------------- ESP ----------------
-local espFolder = Create("Folder", { Name="AD_ESP_v50", Parent=PARENT })
+local espFolder = Create("Folder", { Name="AD_ESP_v51", Parent=PARENT })
 local ESPData = {}
 local BOX_COLOR = Color3.fromRGB(255,90,90)
 local NAME_COLOR = Color3.fromRGB(255,240,240)
@@ -604,7 +603,7 @@ end
 --// ---------------- VISUALS ----------------
 local fpsLabel = Create("TextLabel", { Size=UDim2.fromOffset(120,20), Position=UDim2.new(0,10,0,10), BackgroundTransparency=1, Text="FPS: --", TextColor3=Color3.fromRGB(0,255,0), TextSize=14, Font=Enum.Font.Code, TextXAlignment=Enum.TextXAlignment.Left, Visible=false, Parent=GUI })
 local pingLabel = Create("TextLabel", { Size=UDim2.fromOffset(120,20), Position=UDim2.new(0,10,0,30), BackgroundTransparency=1, Text="Ping: -- ms", TextColor3=Color3.fromRGB(255,255,0), TextSize=14, Font=Enum.Font.Code, TextXAlignment=Enum.TextXAlignment.Left, Visible=false, Parent=GUI })
-local watermarkLabel = Create("TextLabel", { Size=UDim2.fromOffset(200,20), Position=UDim2.new(1,-210,0,10), BackgroundTransparency=1, Text="AD v5.0 | Delta", TextColor3=Color3.fromRGB(200,200,255), TextSize=14, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Right, Visible=false, Parent=GUI })
+local watermarkLabel = Create("TextLabel", { Size=UDim2.fromOffset(200,20), Position=UDim2.new(1,-210,0,10), BackgroundTransparency=1, Text="AD v5.1 | Delta", TextColor3=Color3.fromRGB(200,200,255), TextSize=14, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Right, Visible=false, Parent=GUI })
 
 task.spawn(function()
     while GUI and GUI.Parent do
@@ -734,73 +733,40 @@ bind(RunService.RenderStepped:Connect(function(dt)
     if S.Tracer and S.ESP and tracerTarget then updateTracer(tracerTarget) else TracerFrame.Visible = false end
 end))
 
---// ---------------- HEARTBEAT (Speed / Jump / Bhop / MultiJump / NoClip / Spin) ----------------
-local lastAutoJump = 0
-local multiJumpUsed = 0
-local wasOnGround = true
-
+--// ---------------- HEARTBEAT (Speed Boost / Jump Boost / NoClip) ----------------
 bind(RunService.Heartbeat:Connect(function()
     local char = LP.Character
     if not char then return end
     local hum = char:FindFirstChildOfClass("Humanoid")
-    local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hum then return end
 
-    if S.Speed then hum.WalkSpeed = S.SpeedValue end
-    if S.JumpPowerBoost then hum.UseJumpPower = true hum.JumpPower = S.JumpPower end
-
-    -- AutoJump
-    if S.AutoJump then
-        local now = tick()
-        if hum.FloorMaterial ~= Enum.Material.Air and now - lastAutoJump > 0.3 then
-            hum.Jump = true
-            lastAutoJump = now
-        end
+    -- Speed Boost: ON = быстрый, OFF = обычный
+    if S.SpeedBoost then
+        hum.WalkSpeed = SPEED_BOOST
+    else
+        hum.WalkSpeed = SPEED_NORMAL
     end
 
-    -- Bunny Hop
-    local onGround = hum.FloorMaterial ~= Enum.Material.Air
-    if S.BunnyHop then
-        if onGround and hum:GetState() ~= Enum.HumanoidStateType.Jumping then
-            hum.Jump = true
-        end
-    end
-    wasOnGround = onGround
-
-    -- Multi-Jump (mobile-friendly)
-    if S.MultiJump then
-        if onGround then
-            multiJumpUsed = 0
-        else
-            local now = tick()
-            if hum:GetState() == Enum.HumanoidStateType.Jumping and multiJumpUsed < S.MultiJumpCount then
-                if now - (lastAutoJump or 0) > 0.15 then
-                    multiJumpUsed = multiJumpUsed + 1
-                    lastAutoJump = now
-                    if hrp then
-                        hrp.Velocity = Vector3.new(hrp.Velocity.X, 60, hrp.Velocity.Z)
-                    end
-                end
-            end
-        end
+    -- Jump Boost: ON = большой прыжок, OFF = обычный
+    hum.UseJumpPower = true
+    if S.JumpBoost then
+        hum.JumpPower = JUMP_BOOST
+    else
+        hum.JumpPower = JUMP_NORMAL
     end
 
+    -- NoClip
     if S.NoClip then
         for _, d in ipairs(char:GetDescendants()) do
             if d:IsA("BasePart") and d.CanCollide then pcall(function() d.CanCollide = false end) end
         end
-    end
-
-    -- Spin
-    if S.Spin and hrp then
-        hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(S.SpinSpeed * 60) * (1/60), 0)
     end
 end))
 
 --// ---------------- PAGES ----------------
 local function MainPage()
     Clear()
-    Title.Text = "AD v5.0"
+    Title.Text = "AD v5.1"
     Back.Visible = false
     Section(L("sec_main"))
     Button(L("btn_aim"),      function() AimPage() end)
@@ -870,18 +836,9 @@ end
 function MiscPage()
     Clear(); Title.Text = L("title_misc"); Back.Visible = true
     Section(L("sec_speed"))
-    Toggle(L("misc_speed"), S.Speed, function(v) S.Speed=v end)
-    Number(L("misc_walkspeed"), S.SpeedValue, 16, 120, function(v) S.SpeedValue=v end)
+    Toggle(L("misc_speed_boost"), S.SpeedBoost, function(v) S.SpeedBoost=v end)
     Section(L("sec_jump"))
-    Toggle(L("misc_autojump"), S.AutoJump, function(v) S.AutoJump=v end)
-    Toggle(L("misc_bunnyhop"), S.BunnyHop, function(v) S.BunnyHop=v end)
-    Toggle(L("misc_multijump"), S.MultiJump, function(v) S.MultiJump=v end)
-    Number(L("misc_multijump_count"), S.MultiJumpCount, 1, 10, function(v) S.MultiJumpCount=v end)
-    Toggle(L("misc_jumpboost"), S.JumpPowerBoost, function(v) S.JumpPowerBoost=v end)
-    Number(L("misc_jumppower"), S.JumpPower, 50, 300, function(v) S.JumpPower=v end)
-    Section(L("sec_spin"))
-    Toggle(L("misc_spin"), S.Spin, function(v) S.Spin=v end)
-    Number(L("misc_spin_speed"), S.SpinSpeed, 1, 100, function(v) S.SpinSpeed=v end)
+    Toggle(L("misc_jump_boost"), S.JumpBoost, function(v) S.JumpBoost=v end)
     Section(L("sec_noclip"))
     Toggle(L("misc_noclip"), S.NoClip, function(v)
         S.NoClip = v
@@ -944,7 +901,13 @@ bind(Players.PlayerRemoving:Connect(removeESP))
 --// ---------------- CLEANUP ----------------
 _G.__AD_CLEANUP = function()
     local char = LP.Character
-    if char then for _,d in ipairs(char:GetDescendants()) do if d:IsA("BasePart") then pcall(function() d.CanCollide=true end) end end end
+    if char then
+        for _,d in ipairs(char:GetDescendants()) do
+            if d:IsA("BasePart") then pcall(function() d.CanCollide=true end) end
+        end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then pcall(function() hum.WalkSpeed = SPEED_NORMAL hum.JumpPower = JUMP_NORMAL end) end
+    end
     disconnectAll()
     stopFly()
     pcall(function() GUI:Destroy() end)
@@ -953,4 +916,4 @@ end
 
 UpdateFOV()
 MainPage()
-print("[AD v5.0] loaded — bhop + multijump added")
+print("[AD v5.1] loaded — clean misc")
