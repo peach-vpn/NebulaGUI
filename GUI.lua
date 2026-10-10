@@ -1,6 +1,6 @@
 --========================================================--
---   AD v4.7 — AIM + TRIGGER + ESP + NOCLIP + LANG(EN/RU)  --
---   Clean build. Dead-skip · Flick-release · Head trigger --
+--   AD v4.8 — AIM + TRIGGER + ESP + NOCLIP + LANG(EN/RU)  --
+--   + Aim Speed slider (35/100 default, 100 = instant)    --
 --========================================================--
 
 if _G.__AD_CLEANUP then pcall(_G.__AD_CLEANUP) _G.__AD_CLEANUP = nil end
@@ -45,7 +45,7 @@ local Locale = {
         aim_flick_info="Flick camera 2 times fast → releases target",
         sec_aim_params="DISTANCE & PARAMS",
         aim_range="Range (studs)", aim_fov="FOV (pixels)",
-        aim_cam_smooth="Cam Smooth", aim_body_smooth="Body Smooth", aim_prediction="Prediction",
+        aim_speed="Aim Speed", aim_body_smooth="Body Smooth", aim_prediction="Prediction",
         trig_info="Auto-fires in head when target under crosshair. Movement is not blocked.",
         sec_trig_main="MAIN",
         trig_enable="Enable Trigger", trig_require_aim="Require AIM active",
@@ -80,7 +80,7 @@ local Locale = {
         aim_flick_info="2 рывка камерой → сброс цели",
         sec_aim_params="ДИСТАНЦИЯ И ПАРАМЕТРЫ",
         aim_range="Range (studs)", aim_fov="FOV (пикс)",
-        aim_cam_smooth="Cam Smooth", aim_body_smooth="Body Smooth", aim_prediction="Prediction",
+        aim_speed="Скорость прицела", aim_body_smooth="Body Smooth", aim_prediction="Prediction",
         trig_info="Авто-выстрел в голову, когда цель под прицелом. Движение не блокируется.",
         sec_trig_main="ОСНОВНОЕ",
         trig_enable="Включить триггер", trig_require_aim="Требовать АИМ",
@@ -123,7 +123,7 @@ local S = {
     Aim              = false,
     AimRange         = 100,
     AimFOV           = 90,
-    AimSmooth        = 0.35,
+    AimSmooth        = 0.35,     -- 35/100
     CharSmooth       = 0.25,
     AimHead          = true,
     ForceHead        = true,
@@ -170,7 +170,7 @@ local function guiParent()
     return PlayerGui
 end
 local PARENT = guiParent()
-local old = PARENT:FindFirstChild("AD_GUI_v47")
+local old = PARENT:FindFirstChild("AD_GUI_v48")
 if old then old:Destroy() end
 
 --// ---------------- BUILDERS ----------------
@@ -187,7 +187,7 @@ local function Tween(o, i, pr) TweenService:Create(o, i, pr):Play() end
 
 --// ---------------- GUI ----------------
 local GUI = Create("ScreenGui", {
-    Name = "AD_GUI_v47", ResetOnSpawn = false, IgnoreGuiInset = true,
+    Name = "AD_GUI_v48", ResetOnSpawn = false, IgnoreGuiInset = true,
     ZIndexBehavior = Enum.ZIndexBehavior.Sibling, Parent = PARENT
 })
 bind(GUI.Destroying:Connect(disconnectAll))
@@ -212,7 +212,7 @@ Corner(Header, UDim.new(0, 12))
 
 local Title = Create("TextLabel", {
     Size = UDim2.new(1, -80, 1, 0), Position = UDim2.fromOffset(12, 0),
-    BackgroundTransparency = 1, Text = "AD v4.7", TextColor3 = T.Accent, TextSize = 16,
+    BackgroundTransparency = 1, Text = "AD v4.8", TextColor3 = T.Accent, TextSize = 16,
     Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left, Parent = Header
 })
 
@@ -312,6 +312,99 @@ local function Number(txt, initial, min, max, cb)
     return f
 end
 
+--// ---------------- SLIDER ----------------
+local function Slider(txt, initial, min, max, cb)
+    local frame = Create("Frame", { Size = UDim2.new(1, 0, 0, 44), BackgroundColor3 = T.Sec, Parent = Content })
+    Corner(frame, UDim.new(0, 6))
+
+    local label = Create("TextLabel", {
+        Size = UDim2.new(0.6, -10, 0, 20), Position = UDim2.fromOffset(10, 2),
+        BackgroundTransparency = 1, Text = txt, TextColor3 = T.Text, TextSize = 12,
+        Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Left, Parent = frame
+    })
+
+    local valueLabel = Create("TextLabel", {
+        Size = UDim2.new(0.4, -10, 0, 20), Position = UDim2.new(0.6, 0, 0, 2),
+        BackgroundTransparency = 1, Text = string.format("%d/%d", math.floor(initial), max),
+        TextColor3 = T.Accent, TextSize = 12, Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Right, Parent = frame
+    })
+
+    local track = Create("Frame", {
+        Size = UDim2.new(1, -20, 0, 8), Position = UDim2.new(0, 10, 0, 28),
+        BackgroundColor3 = Color3.fromRGB(40, 44, 54), BorderSizePixel = 0, Parent = frame
+    })
+    Corner(track, UDim.new(1, 0))
+
+    local fill = Create("Frame", {
+        Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = T.Accent,
+        BorderSizePixel = 0, Parent = track
+    })
+    Corner(fill, UDim.new(1, 0))
+
+    local knob = Create("Frame", {
+        Size = UDim2.fromOffset(16, 16), AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0, 0, 0.5, 0), BackgroundColor3 = Color3.fromRGB(240, 244, 255),
+        BorderSizePixel = 0, ZIndex = 2, Parent = track
+    })
+    Corner(knob, UDim.new(1, 0))
+    Create("UIStroke", { Color = T.Accent, Thickness = 2, Parent = knob })
+
+    local hitbox = Create("TextButton", {
+        Size = UDim2.new(1, 0, 0, 32), Position = UDim2.new(0, 0, 0, -12),
+        BackgroundTransparency = 1, Text = "", AutoButtonColor = false, Parent = track
+    })
+
+    local value = math.clamp(initial, min, max)
+    local dragging = false
+
+    local function updateVisual()
+        local ratio = (value - min) / math.max(max - min, 1)
+        fill.Size = UDim2.new(ratio, 0, 1, 0)
+        knob.Position = UDim2.new(ratio, 0, 0.5, 0)
+        valueLabel.Text = string.format("%d/%d", math.floor(value), max)
+    end
+
+    local function setFromX(x)
+        local trackAbs = track.AbsolutePosition
+        local trackSize = track.AbsoluteSize.X
+        if trackSize <= 0 then return end
+        local rel = math.clamp((x - trackAbs.X) / trackSize, 0, 1)
+        value = min + rel * (max - min)
+        updateVisual()
+        if cb then
+            local ok, err = pcall(cb, value)
+            if not ok then warn(err) end
+        end
+    end
+
+    hitbox.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            setFromX(input.Position.X)
+        end
+    end)
+
+    bind(UIS.InputChanged:Connect(function(input)
+        if not dragging then return end
+        if input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch then
+            setFromX(input.Position.X)
+        end
+    end))
+
+    bind(UIS.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end))
+
+    updateVisual()
+    return frame
+end
+
 local function LanguageSelector()
     local row = Create("Frame", { Size = UDim2.new(1, 0, 0, 32), BackgroundColor3 = T.Sec, Parent = Content })
     Corner(row, UDim.new(0, 6))
@@ -341,8 +434,8 @@ local FOV = Create("Frame", {
 })
 Corner(FOV, UDim.new(1, 0))
 Stroke(FOV, T.Accent, 1.5, 0.15)
-Create("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(3, 3), BackgroundColor3 = T.Accent, Parent = FOV })
-Corner(FOV:FindFirstChildWhichIsA("Frame"), UDim.new(1, 0))
+local FOVDot = Create("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(3, 3), BackgroundColor3 = T.Accent, Parent = FOV })
+Corner(FOVDot, UDim.new(1, 0))
 local function UpdateFOV() FOV.Size = UDim2.fromOffset(S.AimFOV * 2, S.AimFOV * 2) end
 
 local TriggerFOV = Create("Frame", {
@@ -410,7 +503,7 @@ local function isTargetable(plr)
     return true
 end
 
---// ---------------- TEAM ----------------
+--// ---------------- TEAM / VISIBILITY ----------------
 local function isEnemy(plr)
     if not plr or plr == LP then return false end
     if S.TeamCheck and LP.Team and plr.Team and LP.Team == plr.Team then return false end
@@ -557,8 +650,14 @@ local function aimApply(dt)
         end
         local aimPos = predictPosition(part)
         local desiredCam = CFrame.lookAt(Camera.CFrame.Position, aimPos)
-        local smooth = math.clamp(S.AimSmooth * (dt * 60), 0.01, 1)
-        Camera.CFrame = Camera.CFrame:Lerp(desiredCam, smooth)
+
+        if S.AimSmooth >= 0.99 then
+            -- Мгновенный снап при 100/100
+            Camera.CFrame = desiredCam
+        else
+            local smooth = math.clamp(S.AimSmooth * (dt * 60), 0.01, 1)
+            Camera.CFrame = Camera.CFrame:Lerp(desiredCam, smooth)
+        end
 
         if S.RotateCharacter then
             local myChar = LP.Character
@@ -684,7 +783,7 @@ end)
 --// =========================================================
 --// ESP
 --// =========================================================
-local espFolder = Create("Folder", { Name = "AD_ESP_v47", Parent = PARENT })
+local espFolder = Create("Folder", { Name = "AD_ESP_v48", Parent = PARENT })
 local ESPData = {}
 
 local BOX_COLOR  = Color3.fromRGB(255, 90, 90)
@@ -913,7 +1012,7 @@ end))
 --// ---------------- PAGES ----------------
 local function MainPage()
     Clear()
-    Title.Text = "AD v4.7"
+    Title.Text = "AD v4.8"
     Back.Visible = false
     Section(L("sec_main"))
     Button(L("btn_aim"),      function() AimPage() end)
@@ -942,7 +1041,9 @@ function AimPage()
     Section(L("sec_aim_params"))
     Number(L("aim_range"),       S.AimRange,  10, 500,  function(v) S.AimRange = v end)
     Number(L("aim_fov"),         S.AimFOV,    20, 600,  function(v) S.AimFOV = v UpdateFOV() end)
-    Number(L("aim_cam_smooth"),  S.AimSmooth, 0.05, 1,  function(v) S.AimSmooth = v end)
+    Slider(L("aim_speed"),       math.floor(S.AimSmooth * 100), 0, 100, function(v)
+        S.AimSmooth = math.clamp(v / 100, 0.01, 1)
+    end)
     Number(L("aim_body_smooth"), S.CharSmooth,0.05, 1,  function(v) S.CharSmooth = v end)
     Number(L("aim_prediction"),  S.Prediction,0, 0.5,   function(v) S.Prediction = v end)
 end
@@ -1096,4 +1197,4 @@ end
 UpdateFOV()
 UpdateTriggerFOV()
 MainPage()
-print("[AD v4.7] loaded — clean build")
+print("[AD v4.8] loaded — aim speed slider added")
