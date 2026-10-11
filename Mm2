@@ -1,7 +1,7 @@
 --========================================================--
---   AD MM2 v1.1 — Murder Mystery 2                        --
+--   AD MM2 v1.2 — Murder Mystery 2 (CLEAN BUILD)          --
 --   ESP · АИМ · Фарм · Убийца · Движение · Разное         --
---   Перехват ролей · Кидание ножа · Дистанция поражения   --
+--   Перехват ролей · Кидание ножа · Всё на русском        --
 --========================================================--
 
 if _G.__ADMM2_CLEANUP then pcall(_G.__ADMM2_CLEANUP) _G.__ADMM2_CLEANUP = nil end
@@ -37,11 +37,10 @@ end))
 local Locale = {
     RU = {
         title_main="Главное", title_esp="ESP", title_aim="АИМ",
-        title_farm="Фарм", title_murderer="Убийца", title_move="Движение",
-        title_misc="Разное", title_util="Утилиты", title_settings="Настройки",
+        title_farm="Фарм", title_move="Движение",
+        title_util="Утилиты", title_settings="Настройки",
         btn_esp="ESP", btn_aim="АИМ", btn_farm="Фарм",
-        btn_murderer="Убийца", btn_move="Движение", btn_misc="Разное",
-        btn_util="Утилиты", btn_settings="Настройки",
+        btn_move="Движение", btn_util="Утилиты", btn_settings="Настройки",
         sec_main="ГЛАВНОЕ",
         sec_esp_roles="РОЛИ",
         esp_murderer="ESP Убийца", esp_sheriff="ESP Шериф",
@@ -51,9 +50,9 @@ local Locale = {
         sec_esp_params="ПАРАМЕТРЫ",
         esp_max_dist="Макс. дистанция ESP",
         sec_aim_main="ОСНОВНОЕ",
-        aim_auto="Авто-наведение на Убийцу", aim_wall="WallCheck (не через стены)",
+        aim_auto="Авто-наведение на Убийцу", aim_wall="WallCheck",
         sec_aim_params="ПАРАМЕТРЫ",
-        aim_fov="FOV (пиксели)", aim_range="Дистанция захвата (studs)",
+        aim_fov="FOV (пиксели)", aim_range="Дистанция захвата",
         aim_smooth="Плавность (0=резко, 100=мгновенно)",
         sec_farm="АВТО-ФАРМ",
         farm_coin="Авто-сбор монет",
@@ -71,11 +70,10 @@ local Locale = {
     },
     EN = {
         title_main="Main", title_esp="ESP", title_aim="AIM",
-        title_farm="Farm", title_murderer="Murderer", title_move="Movement",
-        title_misc="Misc", title_util="Utilities", title_settings="Settings",
+        title_farm="Farm", title_move="Movement",
+        title_util="Utilities", title_settings="Settings",
         btn_esp="ESP", btn_aim="AIM", btn_farm="Farm",
-        btn_murderer="Murderer", btn_move="Movement", btn_misc="Misc",
-        btn_util="Utilities", btn_settings="Settings",
+        btn_move="Movement", btn_util="Utilities", btn_settings="Settings",
         sec_main="MAIN",
         sec_esp_roles="ROLES",
         esp_murderer="ESP Murderer", esp_sheriff="ESP Sheriff",
@@ -87,8 +85,8 @@ local Locale = {
         sec_aim_main="MAIN",
         aim_auto="Auto Aim Murderer", aim_wall="WallCheck",
         sec_aim_params="PARAMETERS",
-        aim_fov="FOV (pixels)", aim_range="Aim Range (studs)",
-        aim_smooth="Smoothness (0=fast, 100=instant)",
+        aim_fov="FOV (pixels)", aim_range="Aim Range",
+        aim_smooth="Smoothness",
         sec_farm="AUTO FARM",
         farm_coin="Auto Coin Farm",
         farm_info="Teleport to nearest coin",
@@ -141,34 +139,27 @@ end
 --// НАСТРОЙКИ
 --// =========================================================
 local S = {
-    -- ESP
     ESPMurderer=true, ESPSheriff=true, ESPInnocent=false,
     ESPName=true, ESPDistance=true, ESPHighlight=true,
     ESPMaxDistance=500,
 
-    -- AIM
     AimAuto=false, AimWall=true,
     AimFOV=150, AimRange=200, AimSmooth=0.7,
 
-    -- FARM
     AutoCoin=false,
 
-    -- MURDERER
     KillAura=false, KillAuraRange=15,
     AutoKillNearest=false, RevealRoles=false,
     KnifeThrow=false, KnifeThrowRange=60, KnifeThrowCooldown=0.5,
 
-    -- MOVE
     SpeedBoost=false, SpeedValue=60,
     JumpBoost=false, JumpValue=100,
     Fly=false, FlySpeed=70,
     NoClip=false,
 
-    -- MISC
     SpectateMurderer=false, AntiFling=false,
     AutoGetGun=false, InfiniteJump=false,
 
-    -- UTIL
     ShowFPS=false, ShowPing=false, ShowWatermark=false,
 }
 
@@ -181,7 +172,7 @@ local function guiParent()
     return PlayerGui
 end
 local PARENT = guiParent()
-local old = PARENT:FindFirstChild("AD_MM2_v11")
+local old = PARENT:FindFirstChild("AD_MM2_v12")
 if old then old:Destroy() end
 
 --// =========================================================
@@ -202,7 +193,7 @@ local function Play(o, i, pr) TweenService:Create(o, i, pr):Play() end
 --// GUI
 --// =========================================================
 local GUI = Create("ScreenGui", {
-    Name="AD_MM2_v11", ResetOnSpawn=false, IgnoreGuiInset=true,
+    Name="AD_MM2_v12", ResetOnSpawn=false, IgnoreGuiInset=true,
     ZIndexBehavior=Enum.ZIndexBehavior.Sibling, Parent=PARENT
 })
 bind(GUI.Destroying:Connect(disconnectAll))
@@ -221,14 +212,13 @@ local Main = Create("Frame", {
 })
 Corner(Main, UDim.new(0,12))
 local MainStroke = Stroke(Main, T.Accent, 1.5, 0.3)
-local MainScale = Create("UIScale", { Scale = 1, Parent = Main })
 
 local Header = Create("Frame", { Size=UDim2.new(1,0,0,40), BackgroundColor3=T.Sec, Parent=Main })
 Corner(Header, UDim.new(0,12))
 
 local Title = Create("TextLabel", {
     Size=UDim2.new(1,-80,1,0), Position=UDim2.fromOffset(12,0),
-    BackgroundTransparency=1, Text="AD MM2 v1.1", TextColor3=T.Accent, TextSize=15,
+    BackgroundTransparency=1, Text="AD MM2 v1.2", TextColor3=T.Accent, TextSize=15,
     Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, Parent=Header
 })
 
@@ -295,9 +285,8 @@ local function Button(txt, cb)
     reg(label, "TextColor3", "Text")
     reg(arrow, "TextColor3", "Accent")
     b.MouseButton1Click:Connect(function()
-        Play(label, TweenInfo.new(0.08), { Position = UDim2.fromOffset(14, 0) })
-        task.delay(0.08, function() Play(label, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Position = UDim2.fromOffset(10, 0) }) end)
-        cb()
+        local ok, err = pcall(cb)
+        if not ok then warn("[AD] Button error: " .. tostring(err)) end
     end)
     return b
 end
@@ -326,7 +315,10 @@ local function Toggle(txt, initial, cb)
     b.MouseButton1Click:Connect(function()
         state.v = not state.v
         apply(false)
-        if cb then pcall(cb, state.v) end
+        if cb then
+            local ok, err = pcall(cb, state.v)
+            if not ok then warn("[AD] Toggle error: " .. tostring(err)) end
+        end
     end)
     return b, state
 end
@@ -346,7 +338,10 @@ local function Number(txt, initial, min, max, cb)
         if not n then box.Text = tostring(initial) return end
         n = math.clamp(n, min, max)
         box.Text = tostring(n)
-        if cb then pcall(cb, n) end
+        if cb then
+            local ok, err = pcall(cb, n)
+            if not ok then warn("[AD] Number error: " .. tostring(err)) end
+        end
     end)
     return f
 end
@@ -388,7 +383,10 @@ local function Slider(txt, initial, min, max, cb)
         local rel = math.clamp((x - trackAbs.X) / trackSize, 0, 1)
         value = min + rel * (max - min)
         updateVisual(false)
-        if cb then pcall(cb, value) end
+        if cb then
+            local ok, err = pcall(cb, value)
+            if not ok then warn("[AD] Slider error: " .. tostring(err)) end
+        end
     end
     hitbox.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -463,7 +461,7 @@ reg(Close, "BackgroundColor3", "Bg")
 reg(Close, "TextColor3", "Text")
 
 --// =========================================================
---// ПЕРЕХВАТ РОЛЕЙ ЧЕРЕЗ REMOTE
+--// ПЕРЕХВАТ РОЛЕЙ
 --// =========================================================
 local RoleCache = {}
 local RoleNames = {
@@ -539,8 +537,8 @@ local function hookRoleEvents()
     end
 end
 
-tryGetPlayerData()
-hookRoleEvents()
+pcall(tryGetPlayerData)
+pcall(hookRoleEvents)
 
 task.spawn(function()
     while GUI and GUI.Parent do
@@ -702,7 +700,7 @@ end
 --// =========================================================
 local fpsLabel = Create("TextLabel", { Size=UDim2.fromOffset(120,20), Position=UDim2.new(0,10,0,10), BackgroundTransparency=1, Text="FPS: --", TextColor3=Color3.fromRGB(0,255,0), TextSize=14, Font=Enum.Font.Code, TextXAlignment=Enum.TextXAlignment.Left, Visible=false, Parent=GUI })
 local pingLabel = Create("TextLabel", { Size=UDim2.fromOffset(120,20), Position=UDim2.new(0,10,0,30), BackgroundTransparency=1, Text="Ping: -- ms", TextColor3=Color3.fromRGB(255,255,0), TextSize=14, Font=Enum.Font.Code, TextXAlignment=Enum.TextXAlignment.Left, Visible=false, Parent=GUI })
-local watermarkLabel = Create("TextLabel", { Size=UDim2.fromOffset(200,20), Position=UDim2.new(1,-210,0,10), BackgroundTransparency=1, Text="AD MM2 v1.1 | Delta", TextColor3=Color3.fromRGB(200,200,255), TextSize=14, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Right, Visible=false, Parent=GUI })
+local watermarkLabel = Create("TextLabel", { Size=UDim2.fromOffset(200,20), Position=UDim2.new(1,-210,0,10), BackgroundTransparency=1, Text="AD MM2 v1.2 | Delta", TextColor3=Color3.fromRGB(200,200,255), TextSize=14, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Right, Visible=false, Parent=GUI })
 
 task.spawn(function()
     while GUI and GUI.Parent do
@@ -731,8 +729,8 @@ local flyBV, flyBG = nil, nil
 local flyLastVel = Vector3.zero
 
 local function stopFly()
-    if flyBV then flyBV:Destroy() flyBV = nil end
-    if flyBG then flyBG:Destroy() flyBG = nil end
+    if flyBV then pcall(function() flyBV:Destroy() end) flyBV = nil end
+    if flyBG then pcall(function() flyBG:Destroy() end) flyBG = nil end
     flyLastVel = Vector3.zero
 end
 
@@ -971,12 +969,12 @@ bind(RunService.RenderStepped:Connect(function(dt)
         end
     end
 
-    -- ESP throttled
+    -- ESP
     accum = accum + dt
     if accum >= UPDATE_STEP then
         accum = 0
-        if S.ESPMurderer or S.ESPSheriff or S.ESPInnocent then
-            for plr, d in pairs(ESPData) do
+        for plr, d in pairs(ESPData) do
+            local ok, err = pcall(function()
                 local role = getRole(plr)
                 local char = getCharacter(plr)
                 local showRole =
@@ -1023,18 +1021,14 @@ bind(RunService.RenderStepped:Connect(function(dt)
                     d.Info.Enabled = false
                     d.Highlight.Enabled = false
                 end
-            end
-        else
-            for _, d in pairs(ESPData) do
-                d.Info.Enabled = false
-                d.Highlight.Enabled = false
-            end
+            end)
+            if not ok then warn("[AD ESP error] " .. tostring(err)) end
         end
     end
 end))
 
 --// =========================================================
---// SPEED/JUMP/NOCLIP
+--// SPEED / JUMP / NOCLIP
 --// =========================================================
 local humanoidHooks = {}
 local function hookHumanoid(hum)
@@ -1074,34 +1068,10 @@ bind(RunService.Stepped:Connect(function()
 end))
 
 --// =========================================================
---// АНИМАЦИЯ СТРАНИЦ
---// =========================================================
-local function animatePageIn()
-    Content.CanvasPosition = Vector2.new(0, 0)
-    local i = 0
-    for _, el in ipairs(Content:GetChildren()) do
-        if el:IsA("GuiObject") then
-            i = i + 1
-            local oldPos = el.Position
-            local oldTrans = el.BackgroundTransparency
-            el.Position = UDim2.new(oldPos.X.Scale, oldPos.X.Offset + 30, oldPos.Y.Scale, oldPos.Y.Offset)
-            if oldTrans < 1 then el.BackgroundTransparency = 1 end
-            task.delay((i-1) * 0.02, function()
-                if el and el.Parent then
-                    Play(el, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                        Position = oldPos, BackgroundTransparency = oldTrans,
-                    })
-                end
-            end)
-        end
-    end
-end
-
---// =========================================================
 --// СТРАНИЦЫ
 --// =========================================================
 local function MainPage()
-    Clear(); Title.Text = "AD MM2 v1.1"; Back.Visible = false
+    Clear(); Title.Text = "AD MM2 v1.2"; Back.Visible = false
     Section(L("sec_main"))
     Button(L("btn_esp"),      function() ESPPage() end)
     Button(L("btn_aim"),      function() AimPage() end)
@@ -1111,7 +1081,6 @@ local function MainPage()
     Button("Разное",          function() MiscExtraPage() end)
     Button(L("btn_util"),     function() UtilPage() end)
     Button(L("btn_settings"), function() SettingsPage() end)
-    animatePageIn()
 end
 
 function ESPPage()
@@ -1125,7 +1094,6 @@ function ESPPage()
     Toggle(L("esp_dist"),      S.ESPDistance,  function(v) S.ESPDistance=v end)
     Toggle(L("esp_highlight"), S.ESPHighlight, function(v) S.ESPHighlight=v end)
     Number(L("esp_max_dist"), S.ESPMaxDistance, 50, 2000, function(v) S.ESPMaxDistance=v end)
-    animatePageIn()
 end
 
 function AimPage()
@@ -1138,7 +1106,6 @@ function AimPage()
     Number(L("aim_range"), S.AimRange, 20, 1000, function(v) S.AimRange=v end)
     Slider(L("aim_smooth"), math.floor(S.AimSmooth*100), 0, 100, function(v) S.AimSmooth=math.clamp(v/100,0.01,1) end)
     Info("АИМ работает когда ты Шериф и целится в Убийцу.")
-    animatePageIn()
 end
 
 function FarmPage()
@@ -1146,7 +1113,6 @@ function FarmPage()
     Section(L("sec_farm"))
     Toggle(L("farm_coin"), S.AutoCoin, function(v) S.AutoCoin=v end)
     Info(L("farm_info"))
-    animatePageIn()
 end
 
 function MurdererPage()
@@ -1209,7 +1175,6 @@ function MurdererPage()
             end)
         end
     end)
-    animatePageIn()
 end
 
 function MovePage()
@@ -1228,7 +1193,6 @@ function MovePage()
             if char then for _,d in ipairs(char:GetDescendants()) do if d:IsA("BasePart") then pcall(function() d.CanCollide=true end) end end end
         end
     end)
-    animatePageIn()
 end
 
 function MiscExtraPage()
@@ -1276,7 +1240,6 @@ function MiscExtraPage()
             end
         end
     end)
-    animatePageIn()
 end
 
 function UtilPage()
@@ -1285,7 +1248,6 @@ function UtilPage()
     Toggle(L("util_fps"), S.ShowFPS, function(v) S.ShowFPS=v fpsLabel.Visible=v end)
     Toggle(L("util_ping"), S.ShowPing, function(v) S.ShowPing=v pingLabel.Visible=v end)
     Toggle(L("util_watermark"), S.ShowWatermark, function(v) S.ShowWatermark=v watermarkLabel.Visible=v end)
-    animatePageIn()
 end
 
 function SettingsPage()
@@ -1295,7 +1257,6 @@ function SettingsPage()
     Section(L("set_theme"))
     ThemeSelector()
     Info(L("set_info"))
-    animatePageIn()
 end
 
 --// =========================================================
@@ -1323,33 +1284,20 @@ MakeDraggable(Header, Main)
 MakeDraggable(AD, AD)
 
 --// =========================================================
---// КНОПКИ
+--// КНОПКИ (ПРОСТОЕ ОТКРЫТИЕ БЕЗ АНИМАЦИИ)
 --// =========================================================
-Back.MouseButton1Click:Connect(MainPage)
-Close.MouseButton1Click:Connect(function()
-    Play(Main, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
-    task.delay(0.15, function()
-        Main.Visible = false
-        Main.BackgroundTransparency = 0.05
-    end)
+Back.MouseButton1Click:Connect(function()
+    local ok, err = pcall(MainPage)
+    if not ok then warn("[AD] Back error: " .. tostring(err)) end
 end)
+
+Close.MouseButton1Click:Connect(function() Main.Visible = false end)
+
 AD.MouseButton1Click:Connect(function()
+    Main.Visible = not Main.Visible
     if Main.Visible then
-        MainScale.Scale = 1
-        Play(MainScale, TweenInfo.new(0.2, Enum.EasingStyle.Quad), { Scale = 0.5 })
-        Play(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quad), { BackgroundTransparency = 1 })
-        task.delay(0.2, function()
-            Main.Visible = false
-            Main.BackgroundTransparency = 0.05
-            MainScale.Scale = 1
-        end)
-    else
-        Main.Visible = true
-        Main.BackgroundTransparency = 1
-        MainScale.Scale = 0.5
-        Play(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quad), { BackgroundTransparency = 0.05 })
-        Play(MainScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
-        MainPage()
+        local ok, err = pcall(MainPage)
+        if not ok then warn("[AD] MainPage error: " .. tostring(err)) end
     end
 end)
 
@@ -1379,5 +1327,6 @@ _G.__ADMM2_CLEANUP = function()
     pcall(function() espFolder:Destroy() end)
 end
 
-MainPage()
-print("[AD MM2 v1.1] загружен — перехват ролей + кидание ножа")
+local ok, err = pcall(MainPage)
+if not ok then warn("[AD] Init MainPage error: " .. tostring(err)) end
+print("[AD MM2 v1.2] загружен")
