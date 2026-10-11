@@ -1,6 +1,6 @@
 --========================================================--
---   AD MM2 v1.2 — Murder Mystery 2 Cheat                  --
---   Перехват ролей · Auto Gun на смерть Шерифа · ESP · AIM--
+--   AD MM2 v1.3 — Murder Mystery 2 Cheat                  --
+--   Постоянный ESP после обнаружения · Auto Gun · Разное  --
 --========================================================--
 
 if _G.__ADMM2_CLEANUP then pcall(_G.__ADMM2_CLEANUP) _G.__ADMM2_CLEANUP = nil end
@@ -10,7 +10,6 @@ local UIS          = game:GetService("UserInputService")
 local RunService   = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local CoreGui      = game:GetService("CoreGui")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LP = Players.LocalPlayer
 if not LP then return end
@@ -48,21 +47,22 @@ local Locale = {
         sec_esp_params="ПАРАМЕТРЫ",
         esp_max_dist="Макс. дистанция ESP",
         sec_aim_main="ОСНОВНОЕ",
-        aim_auto="Auto Shoot Убийцы", aim_wall="WallCheck",
-        aim_head="Целиться в голову",
+        aim_auto="Auto Shoot Убийцы", aim_wall="WallCheck (не через стены)",
+        aim_head="Целиться в голову", aim_team="Игнорировать своих",
         sec_aim_params="ПАРАМЕТРЫ",
-        aim_fov="FOV (пиксели)", aim_range="Дистанция захвата",
+        aim_fov="FOV (пиксели)", aim_range="Дистанция захвата (studs)",
         aim_smooth="Плавность (0=резко, 100=мгновенно)",
         sec_farm="АВТО-ФАРМ",
         farm_coin="Auto Coin Farm",
-        farm_info="Авто-подбор монет",
+        farm_info="Авто-подбор монет — телепорт к ближайшей",
         sec_move="ДВИЖЕНИЕ",
         move_speed="Буст скорости", move_speed_val="Значение скорости",
         move_jump="Буст прыжка", move_jump_val="Значение прыжка",
         move_fly="Полёт", move_fly_val="Скорость полёта",
-        move_noclip="NoClip",
+        move_noclip="NoClip (сквозь стены)",
         sec_util="УТИЛИТЫ",
-        util_fps="FPS", util_ping="Ping", util_watermark="Водяной знак",
+        util_fps="Показывать FPS", util_ping="Показывать Ping",
+        util_watermark="Водяной знак",
         set_lang="Язык", set_lang_ru="Русский", set_lang_en="Английский",
         set_theme="Тема", set_info="Изменения применяются сразу.",
     },
@@ -82,21 +82,22 @@ local Locale = {
         sec_esp_params="PARAMETERS",
         esp_max_dist="Max ESP Distance",
         sec_aim_main="MAIN",
-        aim_auto="Auto Aim Murderer", aim_wall="WallCheck",
-        aim_head="Aim Head",
+        aim_auto="Auto Shoot Murderer", aim_wall="WallCheck",
+        aim_head="Aim Head", aim_team="Ignore Teammates",
         sec_aim_params="PARAMETERS",
-        aim_fov="FOV (pixels)", aim_range="Aim Range",
-        aim_smooth="Smoothness",
+        aim_fov="FOV (pixels)", aim_range="Aim Range (studs)",
+        aim_smooth="Smoothness (0=fast, 100=instant)",
         sec_farm="AUTO FARM",
         farm_coin="Auto Coin Farm",
-        farm_info="Auto collect coins",
+        farm_info="Auto collect coins — teleport to nearest",
         sec_move="MOVEMENT",
         move_speed="Speed Boost", move_speed_val="Speed Value",
         move_jump="Jump Boost", move_jump_val="Jump Value",
         move_fly="Fly", move_fly_val="Fly Speed",
         move_noclip="NoClip",
         sec_util="UTILITIES",
-        util_fps="FPS", util_ping="Ping", util_watermark="Watermark",
+        util_fps="Show FPS", util_ping="Show Ping",
+        util_watermark="Watermark",
         set_lang="Language", set_lang_ru="Russian", set_lang_en="English",
         set_theme="Theme", set_info="Changes apply instantly.",
     },
@@ -157,10 +158,9 @@ local S = {
     Fly=false, FlySpeed=70,
     NoClip=false,
 
-    -- MISC / AUTO GUN
-    AutoGunOnSheriffDeath=false,
-    GunSavedPos=nil,
-    GunReturnDelay=3,
+    -- MISC
+    AutoGun=false, AutoGunReturn=true, AutoGunDelay=0.4,
+    GunReturnPos=nil,
     SpectateMurderer=false,
     AntiFling=false,
     InfiniteJump=false,
@@ -178,7 +178,7 @@ local function guiParent()
     return PlayerGui
 end
 local PARENT = guiParent()
-local old = PARENT:FindFirstChild("AD_MM2_v12")
+local old = PARENT:FindFirstChild("AD_MM2_v1")
 if old then old:Destroy() end
 
 --// =========================================================
@@ -199,7 +199,7 @@ local function Play(o, i, pr) TweenService:Create(o, i, pr):Play() end
 --// GUI
 --// =========================================================
 local GUI = Create("ScreenGui", {
-    Name="AD_MM2_v12", ResetOnSpawn=false, IgnoreGuiInset=true,
+    Name="AD_MM2_v1", ResetOnSpawn=false, IgnoreGuiInset=true,
     ZIndexBehavior=Enum.ZIndexBehavior.Sibling, Parent=PARENT
 })
 bind(GUI.Destroying:Connect(disconnectAll))
@@ -225,7 +225,7 @@ Corner(Header, UDim.new(0,12))
 
 local Title = Create("TextLabel", {
     Size=UDim2.new(1,-80,1,0), Position=UDim2.fromOffset(12,0),
-    BackgroundTransparency=1, Text="AD MM2 v1.2", TextColor3=T.Accent, TextSize=15,
+    BackgroundTransparency=1, Text="AD MM2 v1.3", TextColor3=T.Accent, TextSize=15,
     Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, Parent=Header
 })
 
@@ -460,132 +460,90 @@ reg(Close, "BackgroundColor3", "Bg")
 reg(Close, "TextColor3", "Text")
 
 --// =========================================================
---// ПЕРЕХВАТ РОЛЕЙ ЧЕРЕЗ REMOTE
+--// РОЛИ В MM2 (с постоянным кэшем до конца раунда)
 --// =========================================================
-local RoleCache = {}
-local RoleNames = {
-    ["murderer"] = "Murderer",
-    ["sheriff"]  = "Sheriff",
-    ["hero"]     = "Sheriff",
-    ["innocent"] = "Innocent",
-    ["civilian"] = "Innocent",
-}
+local RoleCache = {}     -- [playerName] = "Murderer" / "Sheriff" / "Innocent"
 
 local function cacheRole(name, role)
     if not name or not role then return end
-    local key = string.lower(tostring(role))
-    local mapped = RoleNames[key] or tostring(role)
-    RoleCache[name] = mapped
+    RoleCache[name] = tostring(role)
 end
 
-local function tryGetPlayerData()
-    for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
-        if obj:IsA("RemoteFunction") then
-            local n = obj.Name:lower()
-            if n:find("data") or n:find("role") or n:find("player") or n:find("get") then
-                local ok, data = pcall(function() return obj:InvokeServer() end)
-                if ok and type(data) == "table" then
-                    for k, v in pairs(data) do
-                        if type(v) == "table" then
-                            if v.Role then cacheRole(k, v.Role)
-                            elseif v.role then cacheRole(k, v.role) end
-                        elseif type(v) == "string" and type(k) == "string" then
-                            cacheRole(k, v)
-                        end
-                    end
-                end
-            end
-        end
-    end
+-- Сбрасываем кэш при новом раунде (когда наш персонаж респавнится)
+local function resetRoleCache()
+    RoleCache = {}
+    print("[AD] Кэш ролей сброшен — новый раунд")
 end
 
-local function hookRoleEvents()
-    for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
-        if obj:IsA("RemoteEvent") then
-            local n = obj.Name:lower()
-            if n:find("role") or n:find("murder") or n:find("sheriff")
-                or n:find("innocent") or n:find("assign") or n:find("start")
-                or n:find("round") or n:find("game") or n:find("setrole") then
-                pcall(function()
-                    obj.OnClientEvent:Connect(function(...)
-                        local args = {...}
-                        for i = 1, #args do
-                            local a = args[i]
-                            if type(a) == "string" and RoleNames[a:lower()] then
-                                for j = 1, #args do
-                                    if args[j] ~= a and type(args[j]) == "string" then
-                                        cacheRole(args[j], a)
-                                    end
-                                end
-                            elseif type(a) == "table" then
-                                for k, v in pairs(a) do
-                                    if type(v) == "string" and RoleNames[v:lower()] then cacheRole(k, v) end
-                                    if type(v) == "table" and (v.Role or v.role) then cacheRole(k, v.Role or v.role) end
-                                end
-                            elseif typeof(a) == "Instance" and a:IsA("Player") then
-                                for j = 1, #args do
-                                    local roleStr = args[j]
-                                    if type(roleStr) == "string" and RoleNames[roleStr:lower()] then
-                                        cacheRole(a.Name, roleStr)
-                                    end
-                                end
-                            end
-                        end
-                    end)
-                end)
-            end
-        end
-    end
+-- Отслеживаем наш респавн = новый раунд
+if LP.Character then
+    -- уже заспавнен
 end
-
-pcall(tryGetPlayerData)
-pcall(hookRoleEvents)
-
-task.spawn(function()
-    while GUI and GUI.Parent do
-        task.wait(3)
-        pcall(tryGetPlayerData)
-    end
-end)
+bind(LP.CharacterAdded:Connect(function()
+    task.wait(1)  -- даём серверу время присвоить роли
+    resetRoleCache()
+end))
 
 local function getRole(plr)
-    if RoleCache[plr.Name] then return RoleCache[plr.Name] end
+    -- 1. Если уже знаем роль — отдаём её (постоянно до конца раунда)
+    if RoleCache[plr.Name] then
+        return RoleCache[plr.Name]
+    end
+
     local char = plr.Character
     if not char then return "Innocent" end
 
+    -- 2. Атрибуты
     local role = plr:GetAttribute("Role") or plr:GetAttribute("role")
     if role then
         cacheRole(plr.Name, role)
-        return RoleNames[tostring(role):lower()] or tostring(role)
+        return tostring(role)
     end
     role = char:GetAttribute("Role") or char:GetAttribute("role")
     if role then
         cacheRole(plr.Name, role)
-        return RoleNames[tostring(role):lower()] or tostring(role)
+        return tostring(role)
     end
 
+    -- 3. Tool в руках (НОЖ = Murderer, ПИСТОЛЕТ = Sheriff)
     local tool = char:FindFirstChildOfClass("Tool")
     if tool then
         local n = tool.Name:lower()
-        if n:find("knife") or n:find("dagger") or n:find("sword") then
-            cacheRole(plr.Name, "Murderer") return "Murderer"
+        if n:find("knife") or n:find("dagger") or n:find("sword") or n:find("blade") then
+            cacheRole(plr.Name, "Murderer")
+            return "Murderer"
         end
-        if n:find("gun") or n:find("pistol") or n:find("revolver") then
-            cacheRole(plr.Name, "Sheriff") return "Sheriff"
+        if n:find("gun") or n:find("pistol") or n:find("revolver") or n:find("revolver") then
+            cacheRole(plr.Name, "Sheriff")
+            return "Sheriff"
         end
     end
 
+    -- 4. Backpack (пистолет Шерифа лежит в бэкпаке)
     local backpack = plr:FindFirstChild("Backpack")
     if backpack then
         for _, t in ipairs(backpack:GetChildren()) do
             if t:IsA("Tool") then
                 local n = t.Name:lower()
-                if n:find("knife") or n:find("dagger") then
-                    cacheRole(plr.Name, "Murderer") return "Murderer"
+                if n:find("knife") or n:find("dagger") or n:find("blade") then
+                    cacheRole(plr.Name, "Murderer")
+                    return "Murderer"
                 end
-                if n:find("gun") or n:find("pistol") then
-                    cacheRole(plr.Name, "Sheriff") return "Sheriff"
+                if n:find("gun") or n:find("pistol") or n:find("revolver") then
+                    cacheRole(plr.Name, "Sheriff")
+                    return "Sheriff"
                 end
+            end
+        end
+    end
+
+    -- 5. Папка Role на персонаже
+    local folder = char:FindFirstChild("Role") or char:FindFirstChild("Roles")
+    if folder then
+        for _, v in ipairs(folder:GetChildren()) do
+            if v:IsA("StringValue") and v.Value ~= "" then
+                cacheRole(plr.Name, v.Value)
+                return v.Value
             end
         end
     end
@@ -709,7 +667,7 @@ end
 --// =========================================================
 local fpsLabel = Create("TextLabel", { Size=UDim2.fromOffset(120,20), Position=UDim2.new(0,10,0,10), BackgroundTransparency=1, Text="FPS: --", TextColor3=Color3.fromRGB(0,255,0), TextSize=14, Font=Enum.Font.Code, TextXAlignment=Enum.TextXAlignment.Left, Visible=false, Parent=GUI })
 local pingLabel = Create("TextLabel", { Size=UDim2.fromOffset(120,20), Position=UDim2.new(0,10,0,30), BackgroundTransparency=1, Text="Ping: -- ms", TextColor3=Color3.fromRGB(255,255,0), TextSize=14, Font=Enum.Font.Code, TextXAlignment=Enum.TextXAlignment.Left, Visible=false, Parent=GUI })
-local watermarkLabel = Create("TextLabel", { Size=UDim2.fromOffset(200,20), Position=UDim2.new(1,-210,0,10), BackgroundTransparency=1, Text="AD MM2 v1.2 | Delta", TextColor3=Color3.fromRGB(200,200,255), TextSize=14, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Right, Visible=false, Parent=GUI })
+local watermarkLabel = Create("TextLabel", { Size=UDim2.fromOffset(200,20), Position=UDim2.new(1,-210,0,10), BackgroundTransparency=1, Text="AD MM2 v1.3 | Delta", TextColor3=Color3.fromRGB(200,200,255), TextSize=14, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Right, Visible=false, Parent=GUI })
 
 task.spawn(function()
     while GUI and GUI.Parent do
@@ -830,8 +788,8 @@ bind(RunService.Heartbeat:Connect(function(dt)
     local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
     local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
 
-    -- AUTO GUN НА СМЕРТЬ ШЕРИФА
-    if S.AutoGunOnSheriffDeath and myHrp and not gunTaskRunning then
+    -- AUTO GET GUN
+    if S.AutoGun and myHrp and not gunTaskRunning then
         local now = tick()
         if now - lastGunPickTime > 1 then
             local bestGun, bestDist = nil, math.huge
@@ -842,7 +800,7 @@ bind(RunService.Heartbeat:Connect(function(dt)
                         local handle = obj:FindFirstChild("Handle")
                         if handle then
                             local d = (handle.Position - myHrp.Position).Magnitude
-                            if d < bestDist and d < 500 then
+                            if d < bestDist and d < 300 then
                                 bestDist = d
                                 bestGun = handle
                             end
@@ -855,23 +813,28 @@ bind(RunService.Heartbeat:Connect(function(dt)
                 gunTaskRunning = true
                 task.spawn(function()
                     local savedPos = myHrp.CFrame
-                    S.GunSavedPos = savedPos
+                    if S.AutoGunReturn then
+                        S.GunReturnPos = savedPos
+                    end
 
                     pcall(function()
                         myHrp.CFrame = CFrame.new(bestGun.Position + Vector3.new(0, 2, 0))
                     end)
 
-                    task.wait(0.5)
+                    task.wait(S.AutoGunDelay)
 
-                    if S.GunSavedPos then
-                        task.wait(S.GunReturnDelay)
-                        pcall(function()
-                            local curChar = LP.Character
-                            local curHrp = curChar and curChar:FindFirstChild("HumanoidRootPart")
-                            if curHrp then
-                                curHrp.CFrame = S.GunSavedPos
-                            end
-                        end)
+                    if S.AutoGunReturn and S.GunReturnPos then
+                        local hasTool = myChar:FindFirstChildOfClass("Tool")
+                        if hasTool then
+                            task.wait(0.15)
+                            pcall(function()
+                                local curChar = LP.Character
+                                local curHrp = curChar and curChar:FindFirstChild("HumanoidRootPart")
+                                if curHrp then
+                                    curHrp.CFrame = S.GunReturnPos
+                                end
+                            end)
+                        end
                     end
 
                     lastGunPickTime = tick()
@@ -939,7 +902,7 @@ bind(RunService.RenderStepped:Connect(function(dt)
     accum = accum + dt
     if accum >= UPDATE_STEP then
         accum = 0
-        if S.ESPMurderer or S.ESPSheriff or S.ESPInnocent or S.ESPGun then
+        if S.ESPMurderer or S.ESPSheriff or S.ESPInnocent then
             for plr, d in pairs(ESPData) do
                 local role = getRole(plr)
                 local char = getCharacter(plr)
@@ -1065,7 +1028,7 @@ end
 --// СТРАНИЦЫ
 --// =========================================================
 local function MainPage()
-    Clear(); Title.Text = "AD MM2 v1.2"; Back.Visible = false
+    Clear(); Title.Text = "AD MM2 v1.3"; Back.Visible = false
     Section(L("sec_main"))
     Button(L("btn_esp"),      function() ESPPage() end)
     Button(L("btn_aim"),      function() AimPage() end)
@@ -1083,13 +1046,12 @@ function ESPPage()
     Toggle(L("esp_murderer"), S.ESPMurderer, function(v) S.ESPMurderer=v end)
     Toggle(L("esp_sheriff"),  S.ESPSheriff,  function(v) S.ESPSheriff=v end)
     Toggle(L("esp_innocent"), S.ESPInnocent, function(v) S.ESPInnocent=v end)
-    Toggle(L("esp_gun"),      S.ESPGun,      function(v) S.ESPGun=v end)
-    Toggle(L("esp_coin"),     S.ESPCoin,     function(v) S.ESPCoin=v end)
     Section(L("sec_esp_params"))
     Toggle(L("esp_name"),      S.ESPName,      function(v) S.ESPName=v end)
     Toggle(L("esp_dist"),      S.ESPDistance,  function(v) S.ESPDistance=v end)
     Toggle(L("esp_highlight"), S.ESPHighlight, function(v) S.ESPHighlight=v end)
     Number(L("esp_max_dist"), S.ESPMaxDistance, 50, 2000, function(v) S.ESPMaxDistance=v end)
+    Info("Роль сохраняется до конца раунда. Если убийца достал нож — он станет красным навсегда.")
     animatePageIn()
 end
 
@@ -1137,10 +1099,11 @@ end
 function MiscExtraPage()
     Clear(); Title.Text = "Разное"; Back.Visible = true
 
-    Section("ПИСТОЛЕТ (ШЕРИФ)")
-    Toggle("Авто-подбор при смерти Шерифа", S.AutoGunOnSheriffDeath, function(v) S.AutoGunOnSheriffDeath = v end)
-    Number("Возврат через (сек)", S.GunReturnDelay, 1, 10, function(v) S.GunReturnDelay = v end)
-    Info("Когда Шериф умирает и пистолет падает — скрипт летит, подбирает и возвращается назад.")
+    Section("ПИСТОЛЕТ")
+    Toggle("Авто-подбор пистолета", S.AutoGun, function(v) S.AutoGun = v end)
+    Toggle("Возврат на место", S.AutoGunReturn, function(v) S.AutoGunReturn = v end)
+    Number("Задержка (сек)", S.AutoGunDelay, 0.1, 3, function(v) S.AutoGunDelay = v end)
+    Info("Скрипт запоминает позицию, летит к пистолету, подбирает и возвращается назад.")
 
     Section("КАМЕРА")
     Toggle("Spectate Убийцу", S.SpectateMurderer, function(v) S.SpectateMurderer = v end)
@@ -1270,4 +1233,4 @@ _G.__ADMM2_CLEANUP = function()
 end
 
 MainPage()
-print("[AD MM2 v1.2] загружен — перехват ролей + Auto Gun")
+print("[AD MM2 v1.3] загружен — постоянный ESP ролей")
