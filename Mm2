@@ -1,7 +1,6 @@
 --========================================================--
---   AD MM2 v1.2 — Murder Mystery 2 (CLEAN BUILD)          --
---   ESP · АИМ · Фарм · Убийца · Движение · Разное         --
---   Перехват ролей · Кидание ножа · Всё на русском        --
+--   AD MM2 v1.1 — Murder Mystery 2 Cheat                  --
+--   ESP · AIM · Auto Farm · Auto Gun · Разное · Fly       --
 --========================================================--
 
 if _G.__ADMM2_CLEANUP then pcall(_G.__ADMM2_CLEANUP) _G.__ADMM2_CLEANUP = nil end
@@ -11,9 +10,6 @@ local UIS          = game:GetService("UserInputService")
 local RunService   = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local CoreGui      = game:GetService("CoreGui")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TeleportService   = game:GetService("TeleportService")
-local HttpService       = game:GetService("HttpService")
 
 local LP = Players.LocalPlayer
 if not LP then return end
@@ -37,26 +33,28 @@ end))
 local Locale = {
     RU = {
         title_main="Главное", title_esp="ESP", title_aim="АИМ",
-        title_farm="Фарм", title_move="Движение",
-        title_util="Утилиты", title_settings="Настройки",
+        title_farm="Фарм", title_move="Движение", title_util="Утилиты",
+        title_settings="Настройки", title_misc="Разное",
         btn_esp="ESP", btn_aim="АИМ", btn_farm="Фарм",
         btn_move="Движение", btn_util="Утилиты", btn_settings="Настройки",
+        btn_misc="Разное",
         sec_main="ГЛАВНОЕ",
         sec_esp_roles="РОЛИ",
         esp_murderer="ESP Убийца", esp_sheriff="ESP Шериф",
-        esp_innocent="ESP Мирные",
-        esp_name="Показывать имя", esp_dist="Показывать дистанцию",
-        esp_highlight="Обводка (Highlight)",
+        esp_innocent="ESP Мирные", esp_gun="ESP Пистолет",
+        esp_coin="ESP Монеты", esp_name="Показывать имя",
+        esp_dist="Показывать дистанцию", esp_highlight="Обводка (Highlight)",
         sec_esp_params="ПАРАМЕТРЫ",
         esp_max_dist="Макс. дистанция ESP",
         sec_aim_main="ОСНОВНОЕ",
-        aim_auto="Авто-наведение на Убийцу", aim_wall="WallCheck",
+        aim_auto="Auto Shoot Убийцы", aim_wall="WallCheck (не через стены)",
+        aim_head="Целиться в голову", aim_team="Игнорировать своих",
         sec_aim_params="ПАРАМЕТРЫ",
-        aim_fov="FOV (пиксели)", aim_range="Дистанция захвата",
+        aim_fov="FOV (пиксели)", aim_range="Дистанция захвата (studs)",
         aim_smooth="Плавность (0=резко, 100=мгновенно)",
         sec_farm="АВТО-ФАРМ",
-        farm_coin="Авто-сбор монет",
-        farm_info="Телепорт к ближайшей монете",
+        farm_coin="Auto Coin Farm",
+        farm_info="Авто-подбор монет — телепорт к ближайшей",
         sec_move="ДВИЖЕНИЕ",
         move_speed="Буст скорости", move_speed_val="Значение скорости",
         move_jump="Буст прыжка", move_jump_val="Значение прыжка",
@@ -70,26 +68,28 @@ local Locale = {
     },
     EN = {
         title_main="Main", title_esp="ESP", title_aim="AIM",
-        title_farm="Farm", title_move="Movement",
-        title_util="Utilities", title_settings="Settings",
+        title_farm="Farm", title_move="Movement", title_util="Utilities",
+        title_settings="Settings", title_misc="Misc",
         btn_esp="ESP", btn_aim="AIM", btn_farm="Farm",
         btn_move="Movement", btn_util="Utilities", btn_settings="Settings",
+        btn_misc="Misc",
         sec_main="MAIN",
         sec_esp_roles="ROLES",
         esp_murderer="ESP Murderer", esp_sheriff="ESP Sheriff",
-        esp_innocent="ESP Innocent",
-        esp_name="Show Name", esp_dist="Show Distance",
-        esp_highlight="Highlight",
+        esp_innocent="ESP Innocent", esp_gun="ESP Gun",
+        esp_coin="ESP Coin", esp_name="Show Name",
+        esp_dist="Show Distance", esp_highlight="Highlight",
         sec_esp_params="PARAMETERS",
         esp_max_dist="Max ESP Distance",
         sec_aim_main="MAIN",
-        aim_auto="Auto Aim Murderer", aim_wall="WallCheck",
+        aim_auto="Auto Shoot Murderer", aim_wall="WallCheck",
+        aim_head="Aim Head", aim_team="Ignore Teammates",
         sec_aim_params="PARAMETERS",
-        aim_fov="FOV (pixels)", aim_range="Aim Range",
-        aim_smooth="Smoothness",
+        aim_fov="FOV (pixels)", aim_range="Aim Range (studs)",
+        aim_smooth="Smoothness (0=fast, 100=instant)",
         sec_farm="AUTO FARM",
         farm_coin="Auto Coin Farm",
-        farm_info="Teleport to nearest coin",
+        farm_info="Auto collect coins — teleport to nearest",
         sec_move="MOVEMENT",
         move_speed="Speed Boost", move_speed_val="Speed Value",
         move_jump="Jump Boost", move_jump_val="Jump Value",
@@ -139,27 +139,33 @@ end
 --// НАСТРОЙКИ
 --// =========================================================
 local S = {
+    -- ESP
     ESPMurderer=true, ESPSheriff=true, ESPInnocent=false,
+    ESPGun=true, ESPCoin=false,
     ESPName=true, ESPDistance=true, ESPHighlight=true,
     ESPMaxDistance=500,
 
-    AimAuto=false, AimWall=true,
+    -- AIM
+    AimAuto=false, AimWall=true, AimHead=true,
     AimFOV=150, AimRange=200, AimSmooth=0.7,
 
+    -- FARM
     AutoCoin=false,
 
-    KillAura=false, KillAuraRange=15,
-    AutoKillNearest=false, RevealRoles=false,
-    KnifeThrow=false, KnifeThrowRange=60, KnifeThrowCooldown=0.5,
-
+    -- MOVE
     SpeedBoost=false, SpeedValue=60,
     JumpBoost=false, JumpValue=100,
     Fly=false, FlySpeed=70,
     NoClip=false,
 
-    SpectateMurderer=false, AntiFling=false,
-    AutoGetGun=false, InfiniteJump=false,
+    -- MISC
+    AutoGun=false, AutoGunReturn=true, AutoGunDelay=0.4,
+    GunReturnPos=nil,
+    SpectateMurderer=false,
+    AntiFling=false,
+    InfiniteJump=false,
 
+    -- UTIL
     ShowFPS=false, ShowPing=false, ShowWatermark=false,
 }
 
@@ -172,7 +178,7 @@ local function guiParent()
     return PlayerGui
 end
 local PARENT = guiParent()
-local old = PARENT:FindFirstChild("AD_MM2_v12")
+local old = PARENT:FindFirstChild("AD_MM2_v1")
 if old then old:Destroy() end
 
 --// =========================================================
@@ -193,7 +199,7 @@ local function Play(o, i, pr) TweenService:Create(o, i, pr):Play() end
 --// GUI
 --// =========================================================
 local GUI = Create("ScreenGui", {
-    Name="AD_MM2_v12", ResetOnSpawn=false, IgnoreGuiInset=true,
+    Name="AD_MM2_v1", ResetOnSpawn=false, IgnoreGuiInset=true,
     ZIndexBehavior=Enum.ZIndexBehavior.Sibling, Parent=PARENT
 })
 bind(GUI.Destroying:Connect(disconnectAll))
@@ -207,18 +213,19 @@ Corner(AD, UDim.new(1,0))
 local ADStroke = Stroke(AD, T.Accent, 2)
 
 local Main = Create("Frame", {
-    Size=UDim2.fromOffset(320,400), Position=UDim2.new(0.5,-160,0.5,-200),
+    Size=UDim2.fromOffset(320,380), Position=UDim2.new(0.5,-160,0.5,-190),
     BackgroundColor3=T.Bg, Visible=false, ClipsDescendants=true, Parent=GUI
 })
 Corner(Main, UDim.new(0,12))
 local MainStroke = Stroke(Main, T.Accent, 1.5, 0.3)
+local MainScale = Create("UIScale", { Scale = 1, Parent = Main })
 
 local Header = Create("Frame", { Size=UDim2.new(1,0,0,40), BackgroundColor3=T.Sec, Parent=Main })
 Corner(Header, UDim.new(0,12))
 
 local Title = Create("TextLabel", {
     Size=UDim2.new(1,-80,1,0), Position=UDim2.fromOffset(12,0),
-    BackgroundTransparency=1, Text="AD MM2 v1.2", TextColor3=T.Accent, TextSize=15,
+    BackgroundTransparency=1, Text="AD MM2 v1.1", TextColor3=T.Accent, TextSize=15,
     Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, Parent=Header
 })
 
@@ -285,8 +292,9 @@ local function Button(txt, cb)
     reg(label, "TextColor3", "Text")
     reg(arrow, "TextColor3", "Accent")
     b.MouseButton1Click:Connect(function()
-        local ok, err = pcall(cb)
-        if not ok then warn("[AD] Button error: " .. tostring(err)) end
+        Play(label, TweenInfo.new(0.08), { Position = UDim2.fromOffset(14, 0) })
+        task.delay(0.08, function() Play(label, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Position = UDim2.fromOffset(10, 0) }) end)
+        pcall(cb)
     end)
     return b
 end
@@ -315,10 +323,7 @@ local function Toggle(txt, initial, cb)
     b.MouseButton1Click:Connect(function()
         state.v = not state.v
         apply(false)
-        if cb then
-            local ok, err = pcall(cb, state.v)
-            if not ok then warn("[AD] Toggle error: " .. tostring(err)) end
-        end
+        if cb then pcall(cb, state.v) end
     end)
     return b, state
 end
@@ -338,10 +343,7 @@ local function Number(txt, initial, min, max, cb)
         if not n then box.Text = tostring(initial) return end
         n = math.clamp(n, min, max)
         box.Text = tostring(n)
-        if cb then
-            local ok, err = pcall(cb, n)
-            if not ok then warn("[AD] Number error: " .. tostring(err)) end
-        end
+        if cb then pcall(cb, n) end
     end)
     return f
 end
@@ -383,10 +385,7 @@ local function Slider(txt, initial, min, max, cb)
         local rel = math.clamp((x - trackAbs.X) / trackSize, 0, 1)
         value = min + rel * (max - min)
         updateVisual(false)
-        if cb then
-            local ok, err = pcall(cb, value)
-            if not ok then warn("[AD] Slider error: " .. tostring(err)) end
-        end
+        if cb then pcall(cb, value) end
     end
     hitbox.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -461,134 +460,27 @@ reg(Close, "BackgroundColor3", "Bg")
 reg(Close, "TextColor3", "Text")
 
 --// =========================================================
---// ПЕРЕХВАТ РОЛЕЙ
+--// РОЛИ В MM2
 --// =========================================================
-local RoleCache = {}
-local RoleNames = {
-    ["murderer"] = "Murderer",
-    ["sheriff"]  = "Sheriff",
-    ["hero"]     = "Sheriff",
-    ["innocent"] = "Innocent",
-    ["civilian"] = "Innocent",
-}
-
-local function cacheRole(name, role)
-    if not name or not role then return end
-    local key = string.lower(tostring(role))
-    local mapped = RoleNames[key] or tostring(role)
-    RoleCache[name] = mapped
-end
-
-local function tryGetPlayerData()
-    for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
-        if obj:IsA("RemoteFunction") then
-            local n = obj.Name:lower()
-            if n:find("data") or n:find("role") or n:find("player") or n:find("get") then
-                local ok, data = pcall(function() return obj:InvokeServer() end)
-                if ok and type(data) == "table" then
-                    for k, v in pairs(data) do
-                        if type(v) == "table" then
-                            if v.Role then cacheRole(k, v.Role)
-                            elseif v.role then cacheRole(k, v.role) end
-                        elseif type(v) == "string" and type(k) == "string" then
-                            cacheRole(k, v)
-                        end
-                    end
-                end
-            end
-        end
-    end
-end
-
-local function hookRoleEvents()
-    for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
-        if obj:IsA("RemoteEvent") then
-            local n = obj.Name:lower()
-            if n:find("role") or n:find("murder") or n:find("sheriff")
-                or n:find("innocent") or n:find("assign") or n:find("start")
-                or n:find("round") or n:find("game") then
-                obj.OnClientEvent:Connect(function(...)
-                    local args = {...}
-                    for i = 1, #args do
-                        local a = args[i]
-                        if type(a) == "string" and RoleNames[a:lower()] then
-                            for j = 1, #args do
-                                if args[j] ~= a and type(args[j]) == "string" then
-                                    cacheRole(args[j], a)
-                                end
-                            end
-                        elseif type(a) == "table" then
-                            for k, v in pairs(a) do
-                                if type(v) == "string" and RoleNames[v:lower()] then cacheRole(k, v) end
-                                if type(v) == "table" and (v.Role or v.role) then cacheRole(k, v.Role or v.role) end
-                            end
-                        elseif typeof(a) == "Instance" and a:IsA("Player") then
-                            for j = 1, #args do
-                                local roleStr = args[j]
-                                if type(roleStr) == "string" and RoleNames[roleStr:lower()] then
-                                    cacheRole(a.Name, roleStr)
-                                end
-                            end
-                        end
-                    end
-                end)
-            end
-        end
-    end
-end
-
-pcall(tryGetPlayerData)
-pcall(hookRoleEvents)
-
-task.spawn(function()
-    while GUI and GUI.Parent do
-        task.wait(3)
-        pcall(tryGetPlayerData)
-    end
-end)
-
 local function getRole(plr)
-    if RoleCache[plr.Name] then return RoleCache[plr.Name] end
     local char = plr.Character
     if not char then return "Innocent" end
-
     local role = plr:GetAttribute("Role") or plr:GetAttribute("role")
-    if role then
-        cacheRole(plr.Name, role)
-        return RoleNames[tostring(role):lower()] or tostring(role)
-    end
+    if role then return tostring(role) end
     role = char:GetAttribute("Role") or char:GetAttribute("role")
-    if role then
-        cacheRole(plr.Name, role)
-        return RoleNames[tostring(role):lower()] or tostring(role)
-    end
-
+    if role then return tostring(role) end
     local tool = char:FindFirstChildOfClass("Tool")
     if tool then
         local n = tool.Name:lower()
-        if n:find("knife") or n:find("dagger") or n:find("sword") or n:find("blade") then
-            cacheRole(plr.Name, "Murderer") return "Murderer"
-        end
-        if n:find("gun") or n:find("pistol") or n:find("revolver") then
-            cacheRole(plr.Name, "Sheriff") return "Sheriff"
+        if n:find("knife") or n:find("dagger") or n:find("sword") then return "Murderer" end
+        if n:find("gun") or n:find("pistol") or n:find("revolver") then return "Sheriff" end
+    end
+    local folder = char:FindFirstChild("Role") or char:FindFirstChild("Roles")
+    if folder then
+        for _, v in ipairs(folder:GetChildren()) do
+            if v:IsA("StringValue") and v.Value ~= "" then return v.Value end
         end
     end
-
-    local backpack = plr:FindFirstChild("Backpack")
-    if backpack then
-        for _, t in ipairs(backpack:GetChildren()) do
-            if t:IsA("Tool") then
-                local n = t.Name:lower()
-                if n:find("knife") or n:find("dagger") then
-                    cacheRole(plr.Name, "Murderer") return "Murderer"
-                end
-                if n:find("gun") or n:find("pistol") then
-                    cacheRole(plr.Name, "Sheriff") return "Sheriff"
-                end
-            end
-        end
-    end
-
     return "Innocent"
 end
 
@@ -609,7 +501,7 @@ local function watchPlayer(plr)
 end
 for _, plr in ipairs(Players:GetPlayers()) do watchPlayer(plr) end
 bind(Players.PlayerAdded:Connect(watchPlayer))
-bind(Players.PlayerRemoving:Connect(function(plr) CharCache[plr] = nil RoleCache[plr.Name] = nil end))
+bind(Players.PlayerRemoving:Connect(function(plr) CharCache[plr] = nil end))
 
 local function getCharacter(player) return CharCache[player] end
 local function getRoot(char)
@@ -618,6 +510,7 @@ local function getRoot(char)
 end
 local function getHumanoid(char) return char and char:FindFirstChildOfClass("Humanoid") end
 local function getHead(char) return char and char:FindFirstChild("Head") end
+
 local function isAlive(char)
     if not char or not char.Parent or not char:IsDescendantOf(workspace) then return false end
     local hum = char:FindFirstChildOfClass("Humanoid")
@@ -629,9 +522,12 @@ end
 --// =========================================================
 local espFolder = Create("Folder", { Name="AD_MM2_ESP", Parent=PARENT })
 local ESPData = {}
+
 local COLOR_MURDERER = Color3.fromRGB(255, 50, 50)
 local COLOR_SHERIFF  = Color3.fromRGB(50, 130, 255)
 local COLOR_INNOCENT = Color3.fromRGB(50, 220, 90)
+local COLOR_GUN      = Color3.fromRGB(255, 220, 50)
+local COLOR_COIN     = Color3.fromRGB(255, 200, 0)
 
 local function removeESP(plr)
     local d = ESPData[plr]
@@ -653,7 +549,7 @@ local function createESP(plr)
 end
 
 --// =========================================================
---// АИМ
+--// AIM
 --// =========================================================
 local function findMurderer()
     if not Camera then return nil end
@@ -663,28 +559,34 @@ local function findMurderer()
     local best, bestScore = nil, math.huge
 
     for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LP and getRole(plr) == "Murderer" then
-            local char = getCharacter(plr)
-            if char and isAlive(char) then
-                local head = char:FindFirstChild("Head")
-                if head then
-                    local dist = (head.Position - camPos).Magnitude
-                    if dist <= S.AimRange then
-                        local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
-                        if onScreen and pos.Z > 0 then
-                            local pixelDist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
-                            if pixelDist <= S.AimFOV and pixelDist < bestScore then
-                                local visible = true
-                                if S.AimWall then
-                                    local filter = { Camera }
-                                    if LP.Character then table.insert(filter, LP.Character) end
-                                    local params = RaycastParams.new()
-                                    params.FilterType = Enum.RaycastFilterType.Exclude
-                                    params.FilterDescendantsInstances = filter
-                                    local hit = workspace:Raycast(camPos, head.Position - camPos, params)
-                                    visible = (not hit) or hit.Instance:IsDescendantOf(char)
+        if plr ~= LP then
+            local role = getRole(plr)
+            if role == "Murderer" then
+                local char = getCharacter(plr)
+                if char and isAlive(char) then
+                    local head = char:FindFirstChild("Head")
+                    if head then
+                        local dist = (head.Position - camPos).Magnitude
+                        if dist <= S.AimRange then
+                            local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                            if onScreen and pos.Z > 0 then
+                                local pixelDist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+                                if pixelDist <= S.AimFOV and pixelDist < bestScore then
+                                    local visible = true
+                                    if S.AimWall then
+                                        local filter = { Camera }
+                                        if LP.Character then table.insert(filter, LP.Character) end
+                                        local params = RaycastParams.new()
+                                        params.FilterType = Enum.RaycastFilterType.Exclude
+                                        params.FilterDescendantsInstances = filter
+                                        local hit = workspace:Raycast(camPos, head.Position - camPos, params)
+                                        visible = (not hit) or hit.Instance:IsDescendantOf(char)
+                                    end
+                                    if visible then
+                                        best = plr
+                                        bestScore = pixelDist
+                                    end
                                 end
-                                if visible then best = plr bestScore = pixelDist end
                             end
                         end
                     end
@@ -700,7 +602,7 @@ end
 --// =========================================================
 local fpsLabel = Create("TextLabel", { Size=UDim2.fromOffset(120,20), Position=UDim2.new(0,10,0,10), BackgroundTransparency=1, Text="FPS: --", TextColor3=Color3.fromRGB(0,255,0), TextSize=14, Font=Enum.Font.Code, TextXAlignment=Enum.TextXAlignment.Left, Visible=false, Parent=GUI })
 local pingLabel = Create("TextLabel", { Size=UDim2.fromOffset(120,20), Position=UDim2.new(0,10,0,30), BackgroundTransparency=1, Text="Ping: -- ms", TextColor3=Color3.fromRGB(255,255,0), TextSize=14, Font=Enum.Font.Code, TextXAlignment=Enum.TextXAlignment.Left, Visible=false, Parent=GUI })
-local watermarkLabel = Create("TextLabel", { Size=UDim2.fromOffset(200,20), Position=UDim2.new(1,-210,0,10), BackgroundTransparency=1, Text="AD MM2 v1.2 | Delta", TextColor3=Color3.fromRGB(200,200,255), TextSize=14, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Right, Visible=false, Parent=GUI })
+local watermarkLabel = Create("TextLabel", { Size=UDim2.fromOffset(200,20), Position=UDim2.new(1,-210,0,10), BackgroundTransparency=1, Text="AD MM2 v1.1 | Delta", TextColor3=Color3.fromRGB(200,200,255), TextSize=14, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Right, Visible=false, Parent=GUI })
 
 task.spawn(function()
     while GUI and GUI.Parent do
@@ -729,8 +631,8 @@ local flyBV, flyBG = nil, nil
 local flyLastVel = Vector3.zero
 
 local function stopFly()
-    if flyBV then pcall(function() flyBV:Destroy() end) flyBV = nil end
-    if flyBG then pcall(function() flyBG:Destroy() end) flyBG = nil end
+    if flyBV then flyBV:Destroy() flyBV = nil end
+    if flyBG then flyBG:Destroy() flyBG = nil end
     flyLastVel = Vector3.zero
 end
 
@@ -811,89 +713,68 @@ task.spawn(function()
 end)
 
 --// =========================================================
---// KILL AURA / AUTO KILL / KNIFE THROW / SPECTATE / AUTO GUN / INF JUMP
+--// AUTO GUN / SPECTATE / INFINITE JUMP / ANTI-FLING
 --// =========================================================
+local gunTaskRunning = false
+local lastGunPickTime = 0
+
 bind(RunService.Heartbeat:Connect(function(dt)
     local myChar = LP.Character
     local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
     local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
-    local tool = myChar and myChar:FindFirstChildOfClass("Tool")
 
-    -- KILL AURA
-    if S.KillAura and tool and tool.Name:lower():find("knife") and myHrp then
-        for _, plr in ipairs(Players:GetPlayers()) do
-            if plr ~= LP then
-                local tchar = plr.Character
-                local thum = tchar and tchar:FindFirstChildOfClass("Humanoid")
-                local thrp = tchar and tchar:FindFirstChild("HumanoidRootPart")
-                if thum and thum.Health > 0 and thrp then
-                    local d = (thrp.Position - myHrp.Position).Magnitude
-                    if d <= S.KillAuraRange then
-                        pcall(function()
-                            myHrp.CFrame = thrp.CFrame
-                            tool:Activate()
-                        end)
-                    end
-                end
-            end
-        end
-    end
-
-    -- AUTO KILL NEAREST
-    if S.AutoKillNearest and tool and tool.Name:lower():find("knife") and myHrp then
-        local best, bestD = nil, math.huge
-        for _, plr in ipairs(Players:GetPlayers()) do
-            if plr ~= LP then
-                local tchar = plr.Character
-                local thrp = tchar and tchar:FindFirstChild("HumanoidRootPart")
-                if thrp then
-                    local d = (thrp.Position - myHrp.Position).Magnitude
-                    if d < bestD then bestD = d best = thrp end
-                end
-            end
-        end
-        if best then
-            pcall(function()
-                myHrp.CFrame = best.CFrame
-                tool:Activate()
-            end)
-        end
-    end
-
-    -- KNIFE THROW
-    if S.KnifeThrow and tool and tool.Name:lower():find("knife") and myHrp then
+    -- AUTO GET GUN (с возвратом на исходную позицию)
+    if S.AutoGun and myHrp and not gunTaskRunning then
         local now = tick()
-        if not _G.__KnifeThrowLast or now - _G.__KnifeThrowLast > S.KnifeThrowCooldown then
-            local best, bestD = nil, math.huge
-            for _, plr in ipairs(Players:GetPlayers()) do
-                if plr ~= LP and getRole(plr) ~= "Sheriff" then
-                    local tchar = plr.Character
-                    local thrp = tchar and tchar:FindFirstChild("HumanoidRootPart")
-                    if thrp then
-                        local d = (thrp.Position - myHrp.Position).Magnitude
-                        if d <= S.KnifeThrowRange and d < bestD then
-                            bestD = d
-                            best = plr
+        if now - lastGunPickTime > 1 then
+            local bestGun, bestDist = nil, math.huge
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("Tool") then
+                    local n = obj.Name:lower()
+                    if n:find("gun") or n:find("pistol") or n:find("revolver") then
+                        local handle = obj:FindFirstChild("Handle")
+                        if handle then
+                            local d = (handle.Position - myHrp.Position).Magnitude
+                            if d < bestDist and d < 300 then
+                                bestDist = d
+                                bestGun = handle
+                            end
                         end
                     end
                 end
             end
-            if best then
-                local tchar = best.Character
-                local thrp = tchar and tchar:FindFirstChild("HumanoidRootPart")
-                if thrp then
+
+            if bestGun then
+                gunTaskRunning = true
+                task.spawn(function()
+                    local savedPos = myHrp.CFrame
+                    if S.AutoGunReturn then
+                        S.GunReturnPos = savedPos
+                    end
+
                     pcall(function()
-                        Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, thrp.Position)
+                        myHrp.CFrame = CFrame.new(bestGun.Position + Vector3.new(0, 2, 0))
                     end)
-                    pcall(function() tool:Activate() end)
-                    pcall(function()
-                        local throwEvent = tool:FindFirstChild("Throw") or tool:FindFirstChild("ThrowEvent")
-                        if throwEvent and throwEvent.FireServer then
-                            throwEvent:FireServer(thrp.Position)
+
+                    task.wait(S.AutoGunDelay)
+
+                    if S.AutoGunReturn and S.GunReturnPos then
+                        local hasTool = myChar:FindFirstChildOfClass("Tool")
+                        if hasTool then
+                            task.wait(0.15)
+                            pcall(function()
+                                local curChar = LP.Character
+                                local curHrp = curChar and curChar:FindFirstChild("HumanoidRootPart")
+                                if curHrp then
+                                    curHrp.CFrame = S.GunReturnPos
+                                end
+                            end)
                         end
-                    end)
-                    _G.__KnifeThrowLast = now
-                end
+                    end
+
+                    lastGunPickTime = tick()
+                    gunTaskRunning = false
+                end)
             end
         end
     end
@@ -912,28 +793,11 @@ bind(RunService.Heartbeat:Connect(function(dt)
                 break
             end
         end
-        if not found and myHum then Camera.CameraSubject = myHum end
-    else
-        if myHum and Camera and Camera.CameraSubject ~= myHum then
+        if not found and myHum and Camera.CameraSubject ~= myHum then
             Camera.CameraSubject = myHum
         end
-    end
-
-    -- AUTO GET GUN
-    if S.AutoGetGun and myHrp then
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("Tool") and (obj.Name:lower():find("gun") or obj.Name:lower():find("pistol")) then
-                local handle = obj:FindFirstChild("Handle")
-                if handle then
-                    local d = (handle.Position - myHrp.Position).Magnitude
-                    if d < 100 then
-                        pcall(function()
-                            myHrp.CFrame = CFrame.new(handle.Position + Vector3.new(0, 2, 0))
-                        end)
-                    end
-                end
-            end
-        end
+    elseif myHum and Camera and Camera.CameraSubject ~= myHum then
+        Camera.CameraSubject = myHum
     end
 
     -- INFINITE JUMP
@@ -969,12 +833,12 @@ bind(RunService.RenderStepped:Connect(function(dt)
         end
     end
 
-    -- ESP
+    -- ESP throttled
     accum = accum + dt
     if accum >= UPDATE_STEP then
         accum = 0
-        for plr, d in pairs(ESPData) do
-            local ok, err = pcall(function()
+        if S.ESPMurderer or S.ESPSheriff or S.ESPInnocent or S.ESPGun then
+            for plr, d in pairs(ESPData) do
                 local role = getRole(plr)
                 local char = getCharacter(plr)
                 local showRole =
@@ -985,6 +849,7 @@ bind(RunService.RenderStepped:Connect(function(dt)
                 if char and isAlive(char) and showRole then
                     local root = getRoot(char)
                     local head = getHead(char)
+                    local hum = getHumanoid(char)
                     local camPos = Camera.CFrame.Position
                     if root then
                         local distance = (root.Position - camPos).Magnitude
@@ -1021,14 +886,18 @@ bind(RunService.RenderStepped:Connect(function(dt)
                     d.Info.Enabled = false
                     d.Highlight.Enabled = false
                 end
-            end)
-            if not ok then warn("[AD ESP error] " .. tostring(err)) end
+            end
+        else
+            for _, d in pairs(ESPData) do
+                d.Info.Enabled = false
+                d.Highlight.Enabled = false
+            end
         end
     end
 end))
 
 --// =========================================================
---// SPEED / JUMP / NOCLIP
+--// SPEED/JUMP/NOCLIP
 --// =========================================================
 local humanoidHooks = {}
 local function hookHumanoid(hum)
@@ -1068,19 +937,43 @@ bind(RunService.Stepped:Connect(function()
 end))
 
 --// =========================================================
+--// АНИМАЦИЯ СТРАНИЦ
+--// =========================================================
+local function animatePageIn()
+    Content.CanvasPosition = Vector2.new(0, 0)
+    local i = 0
+    for _, el in ipairs(Content:GetChildren()) do
+        if el:IsA("GuiObject") then
+            i = i + 1
+            local oldPos = el.Position
+            local oldTrans = el.BackgroundTransparency
+            el.Position = UDim2.new(oldPos.X.Scale, oldPos.X.Offset + 30, oldPos.Y.Scale, oldPos.Y.Offset)
+            if oldTrans < 1 then el.BackgroundTransparency = 1 end
+            task.delay((i-1) * 0.02, function()
+                if el and el.Parent then
+                    Play(el, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Position = oldPos, BackgroundTransparency = oldTrans,
+                    })
+                end
+            end)
+        end
+    end
+end
+
+--// =========================================================
 --// СТРАНИЦЫ
 --// =========================================================
 local function MainPage()
-    Clear(); Title.Text = "AD MM2 v1.2"; Back.Visible = false
+    Clear(); Title.Text = "AD MM2 v1.1"; Back.Visible = false
     Section(L("sec_main"))
     Button(L("btn_esp"),      function() ESPPage() end)
     Button(L("btn_aim"),      function() AimPage() end)
     Button(L("btn_farm"),     function() FarmPage() end)
-    Button("Убийца",          function() MurdererPage() end)
     Button(L("btn_move"),     function() MovePage() end)
     Button("Разное",          function() MiscExtraPage() end)
     Button(L("btn_util"),     function() UtilPage() end)
     Button(L("btn_settings"), function() SettingsPage() end)
+    animatePageIn()
 end
 
 function ESPPage()
@@ -1089,11 +982,14 @@ function ESPPage()
     Toggle(L("esp_murderer"), S.ESPMurderer, function(v) S.ESPMurderer=v end)
     Toggle(L("esp_sheriff"),  S.ESPSheriff,  function(v) S.ESPSheriff=v end)
     Toggle(L("esp_innocent"), S.ESPInnocent, function(v) S.ESPInnocent=v end)
+    Toggle(L("esp_gun"),      S.ESPGun,      function(v) S.ESPGun=v end)
+    Toggle(L("esp_coin"),     S.ESPCoin,     function(v) S.ESPCoin=v end)
     Section(L("sec_esp_params"))
     Toggle(L("esp_name"),      S.ESPName,      function(v) S.ESPName=v end)
     Toggle(L("esp_dist"),      S.ESPDistance,  function(v) S.ESPDistance=v end)
     Toggle(L("esp_highlight"), S.ESPHighlight, function(v) S.ESPHighlight=v end)
     Number(L("esp_max_dist"), S.ESPMaxDistance, 50, 2000, function(v) S.ESPMaxDistance=v end)
+    animatePageIn()
 end
 
 function AimPage()
@@ -1101,11 +997,13 @@ function AimPage()
     Section(L("sec_aim_main"))
     Toggle(L("aim_auto"), S.AimAuto, function(v) S.AimAuto=v end)
     Toggle(L("aim_wall"), S.AimWall, function(v) S.AimWall=v end)
+    Toggle(L("aim_head"), S.AimHead, function(v) S.AimHead=v end)
     Section(L("sec_aim_params"))
     Number(L("aim_fov"), S.AimFOV, 20, 600, function(v) S.AimFOV=v end)
     Number(L("aim_range"), S.AimRange, 20, 1000, function(v) S.AimRange=v end)
     Slider(L("aim_smooth"), math.floor(S.AimSmooth*100), 0, 100, function(v) S.AimSmooth=math.clamp(v/100,0.01,1) end)
-    Info("АИМ работает когда ты Шериф и целится в Убийцу.")
+    Info("АИМ работает только когда ты Шериф. Целится в Убийцу.")
+    animatePageIn()
 end
 
 function FarmPage()
@@ -1113,68 +1011,7 @@ function FarmPage()
     Section(L("sec_farm"))
     Toggle(L("farm_coin"), S.AutoCoin, function(v) S.AutoCoin=v end)
     Info(L("farm_info"))
-end
-
-function MurdererPage()
-    Clear(); Title.Text = "Убийца"; Back.Visible = true
-    Section("ОСНОВНОЕ")
-    Info("Работает только когда ты Убийца (в руках нож).")
-    Toggle("Kill Aura", S.KillAura, function(v) S.KillAura = v end)
-    Number("Радиус ауры (studs)", S.KillAuraRange, 5, 50, function(v) S.KillAuraRange = v end)
-    Toggle("Авто-убийство ближайшего", S.AutoKillNearest, function(v) S.AutoKillNearest = v end)
-
-    Section("КИДАНИЕ НОЖА")
-    Toggle("Авто-кидание ножа", S.KnifeThrow, function(v) S.KnifeThrow = v end)
-    Number("Дистанция поражения (studs)", S.KnifeThrowRange, 10, 200, function(v) S.KnifeThrowRange = v end)
-    Number("Задержка (сек)", S.KnifeThrowCooldown, 0.1, 3, function(v) S.KnifeThrowCooldown = v end)
-    Info("Скрипт сам кидает нож в ближайшую цель в радиусе поражения.")
-
-    Section("ИНФО")
-    Toggle("Раскрыть роли (в консоль)", S.RevealRoles, function(v)
-        S.RevealRoles = v
-        if v then
-            for _, plr in ipairs(Players:GetPlayers()) do
-                if plr ~= LP then
-                    print("[AD] " .. plr.Name .. " = " .. getRole(plr))
-                end
-            end
-        end
-    end)
-
-    Section("РУЧНЫЕ ДЕЙСТВИЯ")
-    Button("Кинуть нож (разово)", function()
-        local char = LP.Character
-        local tool = char and char:FindFirstChildOfClass("Tool")
-        if not tool then print("[AD] Ножа нет в руках") return end
-        pcall(function() tool:Activate() end)
-        pcall(function()
-            local te = tool:FindFirstChild("Throw")
-            if te and te.FireServer then te:FireServer() end
-        end)
-    end)
-    Button("Убить ближайшего (разово)", function()
-        local char = LP.Character
-        local myHrp = char and char:FindFirstChild("HumanoidRootPart")
-        local tool = char and char:FindFirstChildOfClass("Tool")
-        if not tool or not myHrp then return end
-        local best, bestD = nil, math.huge
-        for _, plr in ipairs(Players:GetPlayers()) do
-            if plr ~= LP then
-                local tchar = plr.Character
-                local thrp = tchar and tchar:FindFirstChild("HumanoidRootPart")
-                if thrp then
-                    local d = (thrp.Position - myHrp.Position).Magnitude
-                    if d < bestD then bestD = d best = thrp end
-                end
-            end
-        end
-        if best then
-            pcall(function()
-                myHrp.CFrame = best.CFrame
-                tool:Activate()
-            end)
-        end
-    end)
+    animatePageIn()
 end
 
 function MovePage()
@@ -1193,10 +1030,17 @@ function MovePage()
             if char then for _,d in ipairs(char:GetDescendants()) do if d:IsA("BasePart") then pcall(function() d.CanCollide=true end) end end end
         end
     end)
+    animatePageIn()
 end
 
 function MiscExtraPage()
     Clear(); Title.Text = "Разное"; Back.Visible = true
+
+    Section("ПИСТОЛЕТ")
+    Toggle("Авто-подбор пистолета", S.AutoGun, function(v) S.AutoGun = v end)
+    Toggle("Возврат на место", S.AutoGunReturn, function(v) S.AutoGunReturn = v end)
+    Number("Задержка (сек)", S.AutoGunDelay, 0.1, 3, function(v) S.AutoGunDelay = v end)
+    Info("Скрипт запоминает позицию, летит к пистолету, подбирает и возвращается назад.")
 
     Section("КАМЕРА")
     Toggle("Spectate Убийцу", S.SpectateMurderer, function(v) S.SpectateMurderer = v end)
@@ -1219,27 +1063,10 @@ function MiscExtraPage()
         end
     end)
 
-    Section("УТИЛИТЫ")
-    Toggle("Auto Get Gun", S.AutoGetGun, function(v) S.AutoGetGun = v end)
+    Section("ПРЫЖОК")
     Toggle("Infinite Jump", S.InfiniteJump, function(v) S.InfiniteJump = v end)
 
-    Section("СЕРВЕР")
-    Button("Rejoin (перезайти)", function()
-        TeleportService:Teleport(game.PlaceId, LP)
-    end)
-    Button("Server Hop (другой сервер)", function()
-        local ok, servers = pcall(function()
-            return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-        end)
-        if ok and servers and servers.data then
-            for _, srv in ipairs(servers.data) do
-                if srv.playing < srv.maxPlayers and srv.id ~= game.JobId then
-                    TeleportService:TeleportToPlaceInstance(game.PlaceId, srv.id, LP)
-                    break
-                end
-            end
-        end
-    end)
+    animatePageIn()
 end
 
 function UtilPage()
@@ -1248,6 +1075,7 @@ function UtilPage()
     Toggle(L("util_fps"), S.ShowFPS, function(v) S.ShowFPS=v fpsLabel.Visible=v end)
     Toggle(L("util_ping"), S.ShowPing, function(v) S.ShowPing=v pingLabel.Visible=v end)
     Toggle(L("util_watermark"), S.ShowWatermark, function(v) S.ShowWatermark=v watermarkLabel.Visible=v end)
+    animatePageIn()
 end
 
 function SettingsPage()
@@ -1257,6 +1085,7 @@ function SettingsPage()
     Section(L("set_theme"))
     ThemeSelector()
     Info(L("set_info"))
+    animatePageIn()
 end
 
 --// =========================================================
@@ -1284,20 +1113,33 @@ MakeDraggable(Header, Main)
 MakeDraggable(AD, AD)
 
 --// =========================================================
---// КНОПКИ (ПРОСТОЕ ОТКРЫТИЕ БЕЗ АНИМАЦИИ)
+--// КНОПКИ
 --// =========================================================
-Back.MouseButton1Click:Connect(function()
-    local ok, err = pcall(MainPage)
-    if not ok then warn("[AD] Back error: " .. tostring(err)) end
+Back.MouseButton1Click:Connect(MainPage)
+Close.MouseButton1Click:Connect(function()
+    Play(Main, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
+    task.delay(0.15, function()
+        Main.Visible = false
+        Main.BackgroundTransparency = 0.05
+    end)
 end)
-
-Close.MouseButton1Click:Connect(function() Main.Visible = false end)
-
 AD.MouseButton1Click:Connect(function()
-    Main.Visible = not Main.Visible
     if Main.Visible then
-        local ok, err = pcall(MainPage)
-        if not ok then warn("[AD] MainPage error: " .. tostring(err)) end
+        MainScale.Scale = 1
+        Play(MainScale, TweenInfo.new(0.2, Enum.EasingStyle.Quad), { Scale = 0.5 })
+        Play(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quad), { BackgroundTransparency = 1 })
+        task.delay(0.2, function()
+            Main.Visible = false
+            Main.BackgroundTransparency = 0.05
+            MainScale.Scale = 1
+        end)
+    else
+        Main.Visible = true
+        Main.BackgroundTransparency = 1
+        MainScale.Scale = 0.5
+        Play(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quad), { BackgroundTransparency = 0.05 })
+        Play(MainScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
+        MainPage()
     end
 end)
 
@@ -1327,6 +1169,5 @@ _G.__ADMM2_CLEANUP = function()
     pcall(function() espFolder:Destroy() end)
 end
 
-local ok, err = pcall(MainPage)
-if not ok then warn("[AD] Init MainPage error: " .. tostring(err)) end
-print("[AD MM2 v1.2] загружен")
+MainPage()
+print("[AD MM2 v1.1] загружен")
