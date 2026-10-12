@@ -1,6 +1,6 @@
 --========================================================--
---   AD MM2 v1.4 — AIM Sheriff-Only + Раздел Убийца       --
---   Постоянный ESP · Auto Gun · Kill Aura · Кидание ножа --
+--   AD MM2 v1.6 — Sheriff Aim · Gun ESP · Auto Gun 1-click--
+--   Clean UI · Hero ESP · ESP Gun · Одна кнопка подбора    --
 --========================================================--
 
 if _G.__ADMM2_CLEANUP then pcall(_G.__ADMM2_CLEANUP) _G.__ADMM2_CLEANUP = nil end
@@ -41,28 +41,26 @@ local Locale = {
         sec_main="ГЛАВНОЕ",
         sec_esp_roles="РОЛИ",
         esp_murderer="ESP Убийца", esp_sheriff="ESP Шериф",
-        esp_innocent="ESP Мирные", esp_gun="ESP Пистолет",
-        esp_coin="ESP Монеты", esp_name="Показывать имя",
-        esp_dist="Показывать дистанцию", esp_highlight="Обводка (Highlight)",
+        esp_hero="ESP Герой", esp_innocent="ESP Мирные",
+        esp_gun="ESP Пистолет (выпавший)",
+        esp_name="Имя", esp_dist="Дистанция", esp_highlight="Обводка",
         sec_esp_params="ПАРАМЕТРЫ",
-        esp_max_dist="Макс. дистанция ESP",
+        esp_max_dist="Макс. дистанция",
         sec_aim_main="ОСНОВНОЕ",
         aim_auto="АИМ (только Шериф)", aim_wall="WallCheck",
-        aim_head="Целиться в голову",
+        aim_fast="Быстрое наведение",
         sec_aim_params="ПАРАМЕТРЫ",
-        aim_fov="FOV (пиксели)", aim_range="Дистанция захвата (studs)",
-        aim_smooth="Плавность (0=резко, 100=мгновенно)",
+        aim_fov="FOV (пиксели)", aim_range="Дистанция захвата",
+        aim_smooth="Плавность",
         sec_farm="АВТО-ФАРМ",
         farm_coin="Auto Coin Farm",
-        farm_info="Авто-подбор монет — телепорт к ближайшей",
         sec_move="ДВИЖЕНИЕ",
-        move_speed="Буст скорости", move_speed_val="Значение скорости",
-        move_jump="Буст прыжка", move_jump_val="Значение прыжка",
+        move_speed="Буст скорости", move_speed_val="Скорость",
+        move_jump="Буст прыжка", move_jump_val="Прыжок",
         move_fly="Полёт", move_fly_val="Скорость полёта",
-        move_noclip="NoClip (сквозь стены)",
+        move_noclip="NoClip",
         sec_util="УТИЛИТЫ",
-        util_fps="Показывать FPS", util_ping="Показывать Ping",
-        util_watermark="Водяной знак",
+        util_fps="FPS", util_ping="Ping", util_watermark="Водяной знак",
         set_lang="Язык", set_lang_ru="Русский", set_lang_en="Английский",
         set_theme="Тема", set_info="Изменения применяются сразу.",
     },
@@ -76,28 +74,26 @@ local Locale = {
         sec_main="MAIN",
         sec_esp_roles="ROLES",
         esp_murderer="ESP Murderer", esp_sheriff="ESP Sheriff",
-        esp_innocent="ESP Innocent", esp_gun="ESP Gun",
-        esp_coin="ESP Coin", esp_name="Show Name",
-        esp_dist="Show Distance", esp_highlight="Highlight",
+        esp_hero="ESP Hero", esp_innocent="ESP Innocent",
+        esp_gun="ESP Gun (dropped)",
+        esp_name="Name", esp_dist="Distance", esp_highlight="Highlight",
         sec_esp_params="PARAMETERS",
-        esp_max_dist="Max ESP Distance",
+        esp_max_dist="Max Distance",
         sec_aim_main="MAIN",
         aim_auto="AIM (Sheriff only)", aim_wall="WallCheck",
-        aim_head="Aim Head",
+        aim_fast="Fast aim",
         sec_aim_params="PARAMETERS",
-        aim_fov="FOV (pixels)", aim_range="Aim Range (studs)",
-        aim_smooth="Smoothness (0=fast, 100=instant)",
+        aim_fov="FOV (pixels)", aim_range="Aim Range",
+        aim_smooth="Smoothness",
         sec_farm="AUTO FARM",
         farm_coin="Auto Coin Farm",
-        farm_info="Auto collect coins",
         sec_move="MOVEMENT",
-        move_speed="Speed Boost", move_speed_val="Speed Value",
-        move_jump="Jump Boost", move_jump_val="Jump Value",
+        move_speed="Speed Boost", move_speed_val="Speed",
+        move_jump="Jump Boost", move_jump_val="Jump",
         move_fly="Fly", move_fly_val="Fly Speed",
         move_noclip="NoClip",
         sec_util="UTILITIES",
-        util_fps="Show FPS", util_ping="Show Ping",
-        util_watermark="Watermark",
+        util_fps="FPS", util_ping="Ping", util_watermark="Watermark",
         set_lang="Language", set_lang_ru="Russian", set_lang_en="English",
         set_theme="Theme", set_info="Changes apply instantly.",
     },
@@ -140,13 +136,14 @@ end
 --// =========================================================
 local S = {
     -- ESP
-    ESPMurderer=true, ESPSheriff=true, ESPInnocent=false,
+    ESPMurderer=true, ESPSheriff=true, ESPHero=true, ESPInnocent=false,
+    ESPGun=true,
     ESPName=true, ESPDistance=true, ESPHighlight=true,
-    ESPMaxDistance=500,
+    ESPMaxDistance=600,
 
-    -- AIM (только Шериф)
-    AimAuto=false, AimWall=true, AimHead=true,
-    AimFOV=150, AimRange=200, AimSmooth=0.7,
+    -- AIM
+    AimAuto=false, AimWall=true, AimFast=true,
+    AimFOV=180, AimRange=250, AimSmooth=0.9,
 
     -- FARM
     AutoCoin=false,
@@ -163,8 +160,7 @@ local S = {
     KnifeThrow=false, KnifeThrowRange=60, KnifeThrowCooldown=0.5,
 
     -- MISC
-    AutoGun=false, AutoGunReturn=true, AutoGunDelay=0.4,
-    GunReturnPos=nil,
+    AutoGunDelay=0.5,
     SpectateMurderer=false,
     AntiFling=false,
     InfiniteJump=false,
@@ -174,7 +170,7 @@ local S = {
 }
 
 --// =========================================================
---// РОДИТЕЛЬ GUI
+--// GUI ROOT
 --// =========================================================
 local function guiParent()
     if gethui then local ok,h = pcall(gethui) if ok and h then return h end end
@@ -182,12 +178,9 @@ local function guiParent()
     return PlayerGui
 end
 local PARENT = guiParent()
-local old = PARENT:FindFirstChild("AD_MM2_v14")
+local old = PARENT:FindFirstChild("AD_MM2_v16")
 if old then old:Destroy() end
 
---// =========================================================
---// БИЛДЕРЫ
---// =========================================================
 local function Create(class, props)
     local o = Instance.new(class)
     local p = props.Parent
@@ -195,67 +188,63 @@ local function Create(class, props)
     o.Parent = p
     return o
 end
-local function Corner(p, r) return Create("UICorner", { CornerRadius = r or UDim.new(0, 8), Parent = p }) end
+local function Corner(p, r) return Create("UICorner", { CornerRadius = r or UDim.new(0, 6), Parent = p }) end
 local function Stroke(p, c, th, tr) return Create("UIStroke", { Color = c or T.Accent, Thickness = th or 1, Transparency = tr or 0, Parent = p }) end
 local function Play(o, i, pr) TweenService:Create(o, i, pr):Play() end
 
---// =========================================================
---// GUI
---// =========================================================
 local GUI = Create("ScreenGui", {
-    Name="AD_MM2_v14", ResetOnSpawn=false, IgnoreGuiInset=true,
+    Name="AD_MM2_v16", ResetOnSpawn=false, IgnoreGuiInset=true,
     ZIndexBehavior=Enum.ZIndexBehavior.Sibling, Parent=PARENT
 })
 bind(GUI.Destroying:Connect(disconnectAll))
 
 local AD = Create("TextButton", {
-    Size=UDim2.fromOffset(52,52), Position=UDim2.new(0,15,0.5,-26),
-    BackgroundColor3=T.Bg, Text="AD", TextColor3=T.Accent, TextSize=17,
+    Size=UDim2.fromOffset(48,48), Position=UDim2.new(0,14,0.5,-24),
+    BackgroundColor3=T.Bg, Text="AD", TextColor3=T.Accent, TextSize=16,
     Font=Enum.Font.GothamBold, AutoButtonColor=false, Parent=GUI
 })
 Corner(AD, UDim.new(1,0))
 local ADStroke = Stroke(AD, T.Accent, 2)
 
 local Main = Create("Frame", {
-    Size=UDim2.fromOffset(320,400), Position=UDim2.new(0.5,-160,0.5,-200),
+    Size=UDim2.fromOffset(300,360), Position=UDim2.new(0.5,-150,0.5,-180),
     BackgroundColor3=T.Bg, Visible=false, ClipsDescendants=true, Parent=GUI
 })
-Corner(Main, UDim.new(0,12))
-local MainStroke = Stroke(Main, T.Accent, 1.5, 0.3)
-local MainScale = Create("UIScale", { Scale = 1, Parent = Main })
+Corner(Main, UDim.new(0, 10))
+local MainStroke = Stroke(Main, T.Accent, 1, 0.35)
 
-local Header = Create("Frame", { Size=UDim2.new(1,0,0,40), BackgroundColor3=T.Sec, Parent=Main })
-Corner(Header, UDim.new(0,12))
+local Header = Create("Frame", { Size=UDim2.new(1,0,0,36), BackgroundColor3=T.Sec, Parent=Main })
+Corner(Header, UDim.new(0, 10))
 
 local Title = Create("TextLabel", {
-    Size=UDim2.new(1,-80,1,0), Position=UDim2.fromOffset(12,0),
-    BackgroundTransparency=1, Text="AD MM2 v1.4", TextColor3=T.Accent, TextSize=15,
+    Size=UDim2.new(1,-72,1,0), Position=UDim2.fromOffset(10,0),
+    BackgroundTransparency=1, Text="AD MM2 v1.6", TextColor3=T.Accent, TextSize=14,
     Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, Parent=Header
 })
 
 local Back = Create("TextButton", {
-    Size=UDim2.fromOffset(30,26), Position=UDim2.new(1,-68,0,7),
-    BackgroundColor3=T.Bg, Text="‹", TextColor3=T.Text, TextSize=20,
+    Size=UDim2.fromOffset(26,22), Position=UDim2.new(1,-60,0,7),
+    BackgroundColor3=T.Bg, Text="‹", TextColor3=T.Text, TextSize=18,
     Font=Enum.Font.GothamBold, Visible=false, AutoButtonColor=false, Parent=Header
 })
-Corner(Back, UDim.new(0,6))
+Corner(Back, UDim.new(0, 5))
 
 local Close = Create("TextButton", {
-    Size=UDim2.fromOffset(30,26), Position=UDim2.new(1,-36,0,7),
-    BackgroundColor3=T.Bg, Text="×", TextColor3=T.Text, TextSize=18,
+    Size=UDim2.fromOffset(26,22), Position=UDim2.new(1,-32,0,7),
+    BackgroundColor3=T.Bg, Text="×", TextColor3=T.Text, TextSize=16,
     Font=Enum.Font.Gotham, AutoButtonColor=false, Parent=Header
 })
-Corner(Close, UDim.new(0,6))
+Corner(Close, UDim.new(0, 5))
 
 local Content = Create("ScrollingFrame", {
-    Size=UDim2.new(1,-10,1,-50), Position=UDim2.fromOffset(5,45),
+    Size=UDim2.new(1,-8,1,-42), Position=UDim2.fromOffset(4,40),
     BackgroundTransparency=1, BorderSizePixel=0, ScrollBarThickness=2,
     ScrollBarImageColor3=T.Accent, ScrollingDirection=Enum.ScrollingDirection.Y,
     AutomaticCanvasSize=Enum.AutomaticSize.Y, CanvasSize=UDim2.new(),
     ElasticBehavior=Enum.ElasticBehavior.Always, Parent=Main
 })
-Create("UIPadding", { PaddingLeft=UDim.new(0,3), PaddingRight=UDim.new(0,3), PaddingBottom=UDim.new(0,10), Parent=Content })
-Create("UIListLayout", { Padding=UDim.new(0,5), SortOrder=Enum.SortOrder.LayoutOrder, Parent=Content })
+Create("UIPadding", { PaddingLeft=UDim.new(0,3), PaddingRight=UDim.new(0,3), PaddingBottom=UDim.new(0,8), Parent=Content })
+Create("UIListLayout", { Padding=UDim.new(0,4), SortOrder=Enum.SortOrder.LayoutOrder, Parent=Content })
 
 --// =========================================================
 --// КОМПОНЕНТЫ
@@ -268,8 +257,8 @@ end
 
 local function Section(txt)
     local s = Create("TextLabel", {
-        Size=UDim2.new(1,0,0,22), BackgroundTransparency=1, Text=txt,
-        TextColor3=T.Accent2, TextSize=12, Font=Enum.Font.GothamBold,
+        Size=UDim2.new(1,0,0,20), BackgroundTransparency=1, Text=txt,
+        TextColor3=T.Accent2, TextSize=11, Font=Enum.Font.GothamBold,
         TextXAlignment=Enum.TextXAlignment.Left, Parent=Content
     })
     reg(s, "TextColor3", "Accent2")
@@ -278,7 +267,7 @@ end
 
 local function Info(txt)
     local i = Create("TextLabel", {
-        Size=UDim2.new(1,0,0,30), BackgroundColor3=T.Sec,
+        Size=UDim2.new(1,0,0,26), BackgroundColor3=T.Sec,
         Text=txt, TextWrapped=true, TextColor3=T.Accent2,
         TextSize=10, Font=Enum.Font.Gotham, Parent=Content
     })
@@ -288,16 +277,16 @@ local function Info(txt)
 end
 
 local function Button(txt, cb)
-    local b = Create("TextButton", { Size=UDim2.new(1,0,0,32), BackgroundColor3=T.Sec, Text="", AutoButtonColor=false, Parent=Content })
-    Corner(b, UDim.new(0,6))
-    local label = Create("TextLabel", { Size=UDim2.new(1,-30,1,0), Position=UDim2.fromOffset(10,0), BackgroundTransparency=1, Text=txt, TextColor3=T.Text, TextSize=13, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=b })
-    local arrow = Create("TextLabel", { Size=UDim2.fromOffset(20,32), Position=UDim2.new(1,-25,0,0), BackgroundTransparency=1, Text="›", TextColor3=T.Accent, TextSize=16, Font=Enum.Font.GothamBold, Parent=b })
+    local b = Create("TextButton", { Size=UDim2.new(1,0,0,28), BackgroundColor3=T.Sec, Text="", AutoButtonColor=false, Parent=Content })
+    Corner(b, UDim.new(0, 5))
+    local label = Create("TextLabel", { Size=UDim2.new(1,-24,1,0), Position=UDim2.fromOffset(8,0), BackgroundTransparency=1, Text=txt, TextColor3=T.Text, TextSize=12, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=b })
+    local arrow = Create("TextLabel", { Size=UDim2.fromOffset(18,28), Position=UDim2.new(1,-22,0,0), BackgroundTransparency=1, Text="›", TextColor3=T.Accent, TextSize=15, Font=Enum.Font.GothamBold, Parent=b })
     reg(b, "BackgroundColor3", "Sec")
     reg(label, "TextColor3", "Text")
     reg(arrow, "TextColor3", "Accent")
     b.MouseButton1Click:Connect(function()
-        Play(label, TweenInfo.new(0.08), { Position = UDim2.fromOffset(14, 0) })
-        task.delay(0.08, function() Play(label, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Position = UDim2.fromOffset(10, 0) }) end)
+        Play(b, TweenInfo.new(0.1), { BackgroundColor3 = T.Accent })
+        task.delay(0.1, function() Play(b, TweenInfo.new(0.15), { BackgroundColor3 = T.Sec }) end)
         pcall(cb)
     end)
     return b
@@ -305,12 +294,12 @@ end
 
 local function Toggle(txt, initial, cb)
     local state = { v = initial }
-    local b = Create("TextButton", { Size=UDim2.new(1,0,0,28), BackgroundColor3=T.Sec, Text="", AutoButtonColor=false, Parent=Content })
-    Corner(b, UDim.new(0,6))
-    local lbl = Create("TextLabel", { Size=UDim2.new(1,-50,1,0), Position=UDim2.fromOffset(10,0), BackgroundTransparency=1, Text=txt, TextColor3=T.Text, TextSize=12, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=b })
-    local sw = Create("Frame", { Size=UDim2.fromOffset(32,16), Position=UDim2.new(1,-40,0.5,-8), BackgroundColor3=Color3.fromRGB(50,50,60), Parent=b })
+    local b = Create("TextButton", { Size=UDim2.new(1,0,0,26), BackgroundColor3=T.Sec, Text="", AutoButtonColor=false, Parent=Content })
+    Corner(b, UDim.new(0, 5))
+    local lbl = Create("TextLabel", { Size=UDim2.new(1,-46,1,0), Position=UDim2.fromOffset(8,0), BackgroundTransparency=1, Text=txt, TextColor3=T.Text, TextSize=12, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=b })
+    local sw = Create("Frame", { Size=UDim2.fromOffset(30,14), Position=UDim2.new(1,-36,0.5,-7), BackgroundColor3=Color3.fromRGB(50,50,60), Parent=b })
     Corner(sw, UDim.new(1,0))
-    local dot = Create("Frame", { Size=UDim2.fromOffset(12,12), Position=UDim2.fromOffset(2,2), BackgroundColor3=Color3.fromRGB(200,200,210), Parent=sw })
+    local dot = Create("Frame", { Size=UDim2.fromOffset(10,10), Position=UDim2.fromOffset(2,2), BackgroundColor3=Color3.fromRGB(200,200,210), Parent=sw })
     Corner(dot, UDim.new(1,0))
     reg(b, "BackgroundColor3", "Sec")
     reg(lbl, "TextColor3", "Text")
@@ -319,8 +308,8 @@ local function Toggle(txt, initial, cb)
         local pos = state.v and UDim2.fromOffset(18,2) or UDim2.fromOffset(2,2)
         if instant then sw.BackgroundColor3=col dot.Position=pos
         else
-            Play(sw, TweenInfo.new(0.18), {BackgroundColor3=col})
-            Play(dot, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position=pos})
+            Play(sw, TweenInfo.new(0.15), {BackgroundColor3=col})
+            Play(dot, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position=pos})
         end
     end
     apply(true)
@@ -333,11 +322,11 @@ local function Toggle(txt, initial, cb)
 end
 
 local function Number(txt, initial, min, max, cb)
-    local f = Create("Frame", { Size=UDim2.new(1,0,0,28), BackgroundColor3=T.Sec, Parent=Content })
-    Corner(f, UDim.new(0,6))
-    local lbl = Create("TextLabel", { Size=UDim2.new(1,-70,1,0), Position=UDim2.fromOffset(10,0), BackgroundTransparency=1, Text=txt, TextColor3=T.Text, TextSize=12, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=f })
-    local box = Create("TextBox", { Size=UDim2.fromOffset(55,20), Position=UDim2.new(1,-62,0.5,-10), BackgroundColor3=T.Bg, Text=tostring(initial), TextColor3=T.Accent, TextSize=11, Font=Enum.Font.GothamBold, ClearTextOnFocus=false, Parent=f })
-    Corner(box, UDim.new(0,4))
+    local f = Create("Frame", { Size=UDim2.new(1,0,0,26), BackgroundColor3=T.Sec, Parent=Content })
+    Corner(f, UDim.new(0, 5))
+    local lbl = Create("TextLabel", { Size=UDim2.new(1,-64,1,0), Position=UDim2.fromOffset(8,0), BackgroundTransparency=1, Text=txt, TextColor3=T.Text, TextSize=12, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=f })
+    local box = Create("TextBox", { Size=UDim2.fromOffset(50,18), Position=UDim2.new(1,-56,0.5,-9), BackgroundColor3=T.Bg, Text=tostring(initial), TextColor3=T.Accent, TextSize=11, Font=Enum.Font.GothamBold, ClearTextOnFocus=false, Parent=f })
+    Corner(box, UDim.new(0, 4))
     reg(f, "BackgroundColor3", "Sec")
     reg(lbl, "TextColor3", "Text")
     reg(box, "BackgroundColor3", "Bg")
@@ -353,18 +342,18 @@ local function Number(txt, initial, min, max, cb)
 end
 
 local function Slider(txt, initial, min, max, cb)
-    local frame = Create("Frame", { Size=UDim2.new(1,0,0,44), BackgroundColor3=T.Sec, Parent=Content })
-    Corner(frame, UDim.new(0,6))
-    local lbl = Create("TextLabel", { Size=UDim2.new(0.6,-10,0,20), Position=UDim2.fromOffset(10,2), BackgroundTransparency=1, Text=txt, TextColor3=T.Text, TextSize=12, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=frame })
-    local valueLabel = Create("TextLabel", { Size=UDim2.new(0.4,-10,0,20), Position=UDim2.new(0.6,0,0,2), BackgroundTransparency=1, Text=string.format("%d/%d", math.floor(initial), max), TextColor3=T.Accent, TextSize=12, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Right, Parent=frame })
-    local track = Create("Frame", { Size=UDim2.new(1,-20,0,8), Position=UDim2.new(0,10,0,28), BackgroundColor3=Color3.fromRGB(40,44,54), BorderSizePixel=0, Parent=frame })
+    local frame = Create("Frame", { Size=UDim2.new(1,0,0,40), BackgroundColor3=T.Sec, Parent=Content })
+    Corner(frame, UDim.new(0, 5))
+    local lbl = Create("TextLabel", { Size=UDim2.new(0.6,-8,0,18), Position=UDim2.fromOffset(8,2), BackgroundTransparency=1, Text=txt, TextColor3=T.Text, TextSize=11, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=frame })
+    local valueLabel = Create("TextLabel", { Size=UDim2.new(0.4,-8,0,18), Position=UDim2.new(0.6,0,0,2), BackgroundTransparency=1, Text=string.format("%d/%d", math.floor(initial), max), TextColor3=T.Accent, TextSize=11, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Right, Parent=frame })
+    local track = Create("Frame", { Size=UDim2.new(1,-16,0,6), Position=UDim2.new(0,8,0,26), BackgroundColor3=Color3.fromRGB(40,44,54), BorderSizePixel=0, Parent=frame })
     Corner(track, UDim.new(1,0))
     local fill = Create("Frame", { Size=UDim2.new(0,0,1,0), BackgroundColor3=T.Accent, BorderSizePixel=0, Parent=track })
     Corner(fill, UDim.new(1,0))
-    local knob = Create("Frame", { Size=UDim2.fromOffset(16,16), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0,0,0.5,0), BackgroundColor3=Color3.fromRGB(240,244,255), BorderSizePixel=0, ZIndex=2, Parent=track })
+    local knob = Create("Frame", { Size=UDim2.fromOffset(14,14), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0,0,0.5,0), BackgroundColor3=Color3.fromRGB(240,244,255), BorderSizePixel=0, ZIndex=2, Parent=track })
     Corner(knob, UDim.new(1,0))
     Create("UIStroke", { Color=T.Accent, Thickness=2, Parent=knob })
-    local hitbox = Create("TextButton", { Size=UDim2.new(1,0,0,32), Position=UDim2.new(0,0,0,-12), BackgroundTransparency=1, Text="", AutoButtonColor=false, Parent=track })
+    local hitbox = Create("TextButton", { Size=UDim2.new(1,0,0,28), Position=UDim2.new(0,0,0,-11), BackgroundTransparency=1, Text="", AutoButtonColor=false, Parent=track })
     reg(frame, "BackgroundColor3", "Sec")
     reg(lbl, "TextColor3", "Text")
     reg(valueLabel, "TextColor3", "Accent")
@@ -374,8 +363,8 @@ local function Slider(txt, initial, min, max, cb)
     local function updateVisual(animate)
         local ratio = (value - min) / math.max(max - min, 1)
         if animate then
-            Play(fill, TweenInfo.new(0.12), { Size = UDim2.new(ratio,0,1,0) })
-            Play(knob, TweenInfo.new(0.12), { Position = UDim2.new(ratio,0,0.5,0) })
+            Play(fill, TweenInfo.new(0.1), { Size = UDim2.new(ratio,0,1,0) })
+            Play(knob, TweenInfo.new(0.1), { Position = UDim2.new(ratio,0,0.5,0) })
         else
             fill.Size = UDim2.new(ratio,0,1,0)
             knob.Position = UDim2.new(ratio,0,0.5,0)
@@ -394,7 +383,7 @@ local function Slider(txt, initial, min, max, cb)
     hitbox.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
-            Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(22,22) })
+            Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(20,20) })
             setFromX(input.Position.X)
         end
     end)
@@ -408,7 +397,7 @@ local function Slider(txt, initial, min, max, cb)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             if dragging then
                 dragging = false
-                Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(16,16) })
+                Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(14,14) })
             end
         end
     end))
@@ -417,29 +406,29 @@ local function Slider(txt, initial, min, max, cb)
 end
 
 local function LanguageSelector()
-    local row = Create("Frame", { Size=UDim2.new(1,0,0,32), BackgroundColor3=T.Sec, Parent=Content })
-    Corner(row, UDim.new(0,6))
-    local left = Create("TextButton", { Size=UDim2.new(0.5,-3,1,-4), Position=UDim2.fromOffset(2,2), BackgroundColor3=(CurrentLang=="RU") and T.Accent or Color3.fromRGB(35,38,46), Text=L("set_lang_ru"), TextColor3=Color3.fromRGB(240,240,250), TextSize=12, Font=Enum.Font.GothamBold, AutoButtonColor=false, Parent=row })
-    Corner(left, UDim.new(0,5))
-    local right = Create("TextButton", { Size=UDim2.new(0.5,-3,1,-4), Position=UDim2.new(0.5,1,0,2), BackgroundColor3=(CurrentLang=="EN") and T.Accent or Color3.fromRGB(35,38,46), Text=L("set_lang_en"), TextColor3=Color3.fromRGB(240,240,250), TextSize=12, Font=Enum.Font.GothamBold, AutoButtonColor=false, Parent=row })
-    Corner(right, UDim.new(0,5))
+    local row = Create("Frame", { Size=UDim2.new(1,0,0,28), BackgroundColor3=T.Sec, Parent=Content })
+    Corner(row, UDim.new(0, 5))
+    local left = Create("TextButton", { Size=UDim2.new(0.5,-3,1,-4), Position=UDim2.fromOffset(2,2), BackgroundColor3=(CurrentLang=="RU") and T.Accent or Color3.fromRGB(35,38,46), Text=L("set_lang_ru"), TextColor3=Color3.fromRGB(240,240,250), TextSize=11, Font=Enum.Font.GothamBold, AutoButtonColor=false, Parent=row })
+    Corner(left, UDim.new(0, 4))
+    local right = Create("TextButton", { Size=UDim2.new(0.5,-3,1,-4), Position=UDim2.new(0.5,1,0,2), BackgroundColor3=(CurrentLang=="EN") and T.Accent or Color3.fromRGB(35,38,46), Text=L("set_lang_en"), TextColor3=Color3.fromRGB(240,240,250), TextSize=11, Font=Enum.Font.GothamBold, AutoButtonColor=false, Parent=row })
+    Corner(right, UDim.new(0, 4))
     reg(row, "BackgroundColor3", "Sec")
     left.MouseButton1Click:Connect(function() if CurrentLang ~= "RU" then CurrentLang = "RU" SettingsPage() end end)
     right.MouseButton1Click:Connect(function() if CurrentLang ~= "EN" then CurrentLang = "EN" SettingsPage() end end)
 end
 
 local function ThemeSelector()
-    local row = Create("Frame", { Size=UDim2.new(1,0,0,44), BackgroundColor3=T.Sec, Parent=Content })
-    Corner(row, UDim.new(0,6))
-    local tlbl = Create("TextLabel", { Size=UDim2.new(1,-10,0,16), Position=UDim2.fromOffset(10,4), BackgroundTransparency=1, Text=L("set_theme"), TextColor3=T.Text, TextSize=11, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=row })
+    local row = Create("Frame", { Size=UDim2.new(1,0,0,40), BackgroundColor3=T.Sec, Parent=Content })
+    Corner(row, UDim.new(0, 5))
+    local tlbl = Create("TextLabel", { Size=UDim2.new(1,-10,0,14), Position=UDim2.fromOffset(8,4), BackgroundTransparency=1, Text=L("set_theme"), TextColor3=T.Text, TextSize=11, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=row })
     reg(row, "BackgroundColor3", "Sec")
     reg(tlbl, "TextColor3", "Text")
-    local colorRow = Create("Frame", { Size=UDim2.new(1,-20,0,22), Position=UDim2.fromOffset(10,20), BackgroundTransparency=1, Parent=row })
-    Create("UIListLayout", { FillDirection=Enum.FillDirection.Horizontal, Padding=UDim.new(0,8), SortOrder=Enum.SortOrder.LayoutOrder, Parent=colorRow })
+    local colorRow = Create("Frame", { Size=UDim2.new(1,-16,0,20), Position=UDim2.fromOffset(8,18), BackgroundTransparency=1, Parent=row })
+    Create("UIListLayout", { FillDirection=Enum.FillDirection.Horizontal, Padding=UDim.new(0,6), SortOrder=Enum.SortOrder.LayoutOrder, Parent=colorRow })
     for i, name in ipairs({"Purple", "Ocean", "Crimson"}) do
         local c = Themes[name]
-        local swatch = Create("TextButton", { Size = UDim2.fromOffset(24,22), BackgroundColor3 = c.Accent, Text = "", AutoButtonColor = false, LayoutOrder = i, Parent = colorRow })
-        Corner(swatch, UDim.new(0,6))
+        local swatch = Create("TextButton", { Size = UDim2.fromOffset(22,20), BackgroundColor3 = c.Accent, Text = "", AutoButtonColor = false, LayoutOrder = i, Parent = colorRow })
+        Corner(swatch, UDim.new(0, 5))
         if CurrentTheme == name then Stroke(swatch, Color3.fromRGB(255,255,255), 2) end
         swatch.MouseButton1Click:Connect(function()
             if CurrentTheme ~= name then
@@ -464,7 +453,7 @@ reg(Close, "BackgroundColor3", "Bg")
 reg(Close, "TextColor3", "Text")
 
 --// =========================================================
---// РОЛИ В MM2 (постоянный кэш до конца раунда)
+--// РОЛИ (постоянный кэш)
 --// =========================================================
 local RoleCache = {}
 
@@ -475,7 +464,6 @@ end
 
 local function resetRoleCache()
     RoleCache = {}
-    print("[AD] Кэш ролей сброшен — новый раунд")
 end
 
 bind(LP.CharacterAdded:Connect(function()
@@ -531,11 +519,6 @@ local function getRole(plr)
     return "Innocent"
 end
 
--- Моя роль
-local function myRole()
-    return getRole(LP)
-end
-
 --// =========================================================
 --// КЭШ ПЕРСОНАЖЕЙ
 --// =========================================================
@@ -570,13 +553,14 @@ local function isAlive(char)
 end
 
 --// =========================================================
---// ESP
+--// ESP (игроки)
 --// =========================================================
 local espFolder = Create("Folder", { Name="AD_MM2_ESP", Parent=PARENT })
 local ESPData = {}
 
 local COLOR_MURDERER = Color3.fromRGB(255, 50, 50)
 local COLOR_SHERIFF  = Color3.fromRGB(50, 130, 255)
+local COLOR_HERO     = Color3.fromRGB(80, 200, 255)
 local COLOR_INNOCENT = Color3.fromRGB(50, 220, 90)
 
 local function removeESP(plr)
@@ -590,13 +574,76 @@ local function createESP(plr)
     if plr == LP or ESPData[plr] then return end
     local data = {}
     data.Highlight = Create("Highlight", { Name="ESP_HL", FillColor=COLOR_INNOCENT, FillTransparency=0.7, OutlineColor=Color3.fromRGB(255,255,255), OutlineTransparency=0.4, DepthMode=Enum.HighlightDepthMode.AlwaysOnTop, Enabled=false, Parent=espFolder })
-    local bb = Create("BillboardGui", { Name="ESP_Info", Size=UDim2.fromOffset(160,36), StudsOffsetWorldSpace=Vector3.new(0,3.4,0), AlwaysOnTop=true, Enabled=false, MaxDistance=S.ESPMaxDistance, Parent=espFolder })
+    local bb = Create("BillboardGui", { Name="ESP_Info", Size=UDim2.fromOffset(150,36), StudsOffsetWorldSpace=Vector3.new(0,3.4,0), AlwaysOnTop=true, Enabled=false, MaxDistance=S.ESPMaxDistance, Parent=espFolder })
     data.Info = bb
     data.Name = Create("TextLabel", { Size=UDim2.new(1,0,0,16), BackgroundTransparency=1, TextColor3=Color3.fromRGB(255,255,255), TextStrokeTransparency=0.4, TextStrokeColor3=Color3.fromRGB(0,0,0), Font=Enum.Font.GothamBold, TextSize=13, Text=plr.Name, Parent=bb })
     data.Role = Create("TextLabel", { Size=UDim2.new(1,0,0,12), Position=UDim2.fromOffset(0,16), BackgroundTransparency=1, TextColor3=Color3.fromRGB(200,200,200), TextStrokeTransparency=0.4, TextStrokeColor3=Color3.fromRGB(0,0,0), Font=Enum.Font.GothamBold, TextSize=11, Text="?", Parent=bb })
     data.Dist = Create("TextLabel", { Size=UDim2.new(1,0,0,12), Position=UDim2.fromOffset(0,28), BackgroundTransparency=1, TextColor3=Color3.fromRGB(200,240,210), TextStrokeTransparency=0.4, TextStrokeColor3=Color3.fromRGB(0,0,0), Font=Enum.Font.Gotham, TextSize=10, Text="0 m", Parent=bb })
     ESPData[plr] = data
 end
+
+--// =========================================================
+--// GUN ESP (выпавший пистолет в мире)
+--// =========================================================
+local gunEspFolder = Create("Folder", { Name="AD_MM2_GunESP", Parent=PARENT })
+local gunESPData = {}   -- [Tool] = { Highlight, Billboard }
+
+local function isGun(tool)
+    if not tool:IsA("Tool") then return false end
+    local n = tool.Name:lower()
+    return n:find("gun") or n:find("pistol") or n:find("revolver")
+end
+
+local function createGunESP(tool)
+    if gunESPData[tool] then return end
+    local data = {}
+    data.Highlight = Create("Highlight", {
+        Name="GunHL", FillColor=Color3.fromRGB(255,60,60), FillTransparency=0.5,
+        OutlineColor=Color3.fromRGB(255,255,255), OutlineTransparency=0.2,
+        DepthMode=Enum.HighlightDepthMode.AlwaysOnTop, Adornee=tool, Parent=gunEspFolder
+    })
+    local bb = Create("BillboardGui", {
+        Name="GunInfo", Size=UDim2.fromOffset(100,16),
+        StudsOffsetWorldSpace=Vector3.new(0,2,0), AlwaysOnTop=true,
+        Adornee=tool, Parent=gunEspFolder
+    })
+    Create("TextLabel", {
+        Size=UDim2.new(1,0,1,0), BackgroundTransparency=1,
+        Text="🔫 ПИСТОЛЕТ", TextColor3=Color3.fromRGB(255,220,50),
+        TextStrokeTransparency=0.3, TextStrokeColor3=Color3.fromRGB(0,0,0),
+        Font=Enum.Font.GothamBold, TextSize=12, Parent=bb
+    })
+    data.Billboard = bb
+    gunESPData[tool] = data
+end
+
+local function removeGunESP(tool)
+    local d = gunESPData[tool]
+    if not d then return end
+    if d.Highlight then pcall(function() d.Highlight:Destroy() end) end
+    if d.Billboard then pcall(function() d.Billboard:Destroy() end) end
+    gunESPData[tool] = nil
+end
+
+-- Сканируем workspace на выпавшие пистолеты
+task.spawn(function()
+    while GUI and GUI.Parent do
+        task.wait(0.5)
+        if S.ESPGun then
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("Tool") and isGun(obj) and not gunESPData[obj] then
+                    createGunESP(obj)
+                end
+            end
+            -- Чистим удалённые
+            for tool, d in pairs(gunESPData) do
+                if not tool.Parent then removeGunESP(tool) end
+            end
+        else
+            for tool, d in pairs(gunESPData) do removeGunESP(tool) end
+        end
+    end
+end)
 
 --// =========================================================
 --// AIM (только Шериф)
@@ -670,9 +717,9 @@ end
 --// =========================================================
 --// ВИЗУАЛЫ
 --// =========================================================
-local fpsLabel = Create("TextLabel", { Size=UDim2.fromOffset(120,20), Position=UDim2.new(0,10,0,10), BackgroundTransparency=1, Text="FPS: --", TextColor3=Color3.fromRGB(0,255,0), TextSize=14, Font=Enum.Font.Code, TextXAlignment=Enum.TextXAlignment.Left, Visible=false, Parent=GUI })
-local pingLabel = Create("TextLabel", { Size=UDim2.fromOffset(120,20), Position=UDim2.new(0,10,0,30), BackgroundTransparency=1, Text="Ping: -- ms", TextColor3=Color3.fromRGB(255,255,0), TextSize=14, Font=Enum.Font.Code, TextXAlignment=Enum.TextXAlignment.Left, Visible=false, Parent=GUI })
-local watermarkLabel = Create("TextLabel", { Size=UDim2.fromOffset(200,20), Position=UDim2.new(1,-210,0,10), BackgroundTransparency=1, Text="AD MM2 v1.4 | Delta", TextColor3=Color3.fromRGB(200,200,255), TextSize=14, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Right, Visible=false, Parent=GUI })
+local fpsLabel = Create("TextLabel", { Size=UDim2.fromOffset(120,20), Position=UDim2.new(0,10,0,10), BackgroundTransparency=1, Text="FPS: --", TextColor3=Color3.fromRGB(0,255,0), TextSize=13, Font=Enum.Font.Code, TextXAlignment=Enum.TextXAlignment.Left, Visible=false, Parent=GUI })
+local pingLabel = Create("TextLabel", { Size=UDim2.fromOffset(120,20), Position=UDim2.new(0,10,0,28), BackgroundTransparency=1, Text="Ping: -- ms", TextColor3=Color3.fromRGB(255,255,0), TextSize=13, Font=Enum.Font.Code, TextXAlignment=Enum.TextXAlignment.Left, Visible=false, Parent=GUI })
+local watermarkLabel = Create("TextLabel", { Size=UDim2.fromOffset(200,20), Position=UDim2.new(1,-210,0,10), BackgroundTransparency=1, Text="AD MM2 v1.6 | Delta", TextColor3=Color3.fromRGB(200,200,255), TextSize=13, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Right, Visible=false, Parent=GUI })
 
 task.spawn(function()
     while GUI and GUI.Parent do
@@ -749,6 +796,77 @@ bind(RunService.Heartbeat:Connect(function(dt)
 end))
 
 --// =========================================================
+--// AUTO GUN — ОДНА КОМАНДА (сохранение позиции и возврат)
+--// =========================================================
+local autoGunRunning = false
+
+local function autoGunOneShot()
+    if autoGunRunning then return end
+    local myChar = LP.Character
+    local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    if not myHrp then return end
+
+    -- Ищем ближайший выпавший пистолет
+    local bestGun, bestDist = nil, math.huge
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if isGun(obj) then
+            local handle = obj:FindFirstChild("Handle")
+            if handle then
+                local d = (handle.Position - myHrp.Position).Magnitude
+                if d < bestDist and d < 800 then
+                    bestDist = d
+                    bestGun = handle
+                end
+            end
+        end
+    end
+    if not bestGun then
+        print("[AD] Пистолет не найден")
+        return
+    end
+
+    autoGunRunning = true
+    task.spawn(function()
+        local savedPos = myHrp.CFrame
+        print("[AD] Пистолет найден на " .. math.floor(bestDist) .. " studs. Летим...")
+
+        pcall(function()
+            myHrp.CFrame = CFrame.new(bestGun.Position + Vector3.new(0, 2, 0))
+        end)
+
+        -- Ждём пока подберётся (макс 3 сек)
+        local picked = false
+        for i = 1, 30 do
+            task.wait(0.1)
+            local curChar = LP.Character
+            if curChar and curChar:FindFirstChildOfClass("Tool") then
+                picked = true
+                break
+            end
+        end
+
+        if picked then
+            print("[AD] Пистолет подобран! Возврат...")
+            task.wait(0.3)
+            pcall(function()
+                local curChar = LP.Character
+                local curHrp = curChar and curChar:FindFirstChild("HumanoidRootPart")
+                if curHrp then curHrp.CFrame = savedPos end
+            end)
+        else
+            print("[AD] Не удалось подобрать, возврат...")
+            pcall(function()
+                local curChar = LP.Character
+                local curHrp = curChar and curChar:FindFirstChild("HumanoidRootPart")
+                if curHrp then curHrp.CFrame = savedPos end
+            end)
+        end
+
+        autoGunRunning = false
+    end)
+end
+
+--// =========================================================
 --// АВТО-ФАРМ МОНЕТ
 --// =========================================================
 task.spawn(function()
@@ -761,21 +879,13 @@ task.spawn(function()
                 local myPos = myHrp.Position
                 local best, bestDist = nil, math.huge
                 for _, obj in ipairs(workspace:GetDescendants()) do
-                    if obj:IsA("BasePart") then
-                        local n = obj.Name:lower()
-                        if n:find("coin") and obj.Transparency < 1 then
-                            local d = (obj.Position - myPos).Magnitude
-                            if d < bestDist and d < 200 then
-                                bestDist = d
-                                best = obj
-                            end
-                        end
+                    if obj:IsA("BasePart") and obj.Name:lower():find("coin") and obj.Transparency < 1 then
+                        local d = (obj.Position - myPos).Magnitude
+                        if d < bestDist and d < 200 then bestDist = d best = obj end
                     end
                 end
                 if best and myHrp then
-                    pcall(function()
-                        myHrp.CFrame = CFrame.new(best.Position + Vector3.new(0, 3, 0))
-                    end)
+                    pcall(function() myHrp.CFrame = CFrame.new(best.Position + Vector3.new(0, 3, 0)) end)
                 end
             end
         end
@@ -783,64 +893,14 @@ task.spawn(function()
 end)
 
 --// =========================================================
---// AUTO GUN / УБИЙЦА / SPECTATE / INFINITE JUMP
+--// УБИЙЦА / SPECTATE / INFINITE JUMP
 --// =========================================================
-local gunTaskRunning = false
-local lastGunPickTime = 0
-
 bind(RunService.Heartbeat:Connect(function(dt)
     local myChar = LP.Character
     local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
     local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
     local myTool = myChar and myChar:FindFirstChildOfClass("Tool")
 
-    -- AUTO GET GUN
-    if S.AutoGun and myHrp and not gunTaskRunning then
-        local now = tick()
-        if now - lastGunPickTime > 1 then
-            local bestGun, bestDist = nil, math.huge
-            for _, obj in ipairs(workspace:GetDescendants()) do
-                if obj:IsA("Tool") then
-                    local n = obj.Name:lower()
-                    if n:find("gun") or n:find("pistol") or n:find("revolver") then
-                        local handle = obj:FindFirstChild("Handle")
-                        if handle then
-                            local d = (handle.Position - myHrp.Position).Magnitude
-                            if d < bestDist and d < 300 then
-                                bestDist = d
-                                bestGun = handle
-                            end
-                        end
-                    end
-                end
-            end
-
-            if bestGun then
-                gunTaskRunning = true
-                task.spawn(function()
-                    local savedPos = myHrp.CFrame
-                    if S.AutoGunReturn then S.GunReturnPos = savedPos end
-                    pcall(function() myHrp.CFrame = CFrame.new(bestGun.Position + Vector3.new(0, 2, 0)) end)
-                    task.wait(S.AutoGunDelay)
-                    if S.AutoGunReturn and S.GunReturnPos then
-                        local hasTool = myChar:FindFirstChildOfClass("Tool")
-                        if hasTool then
-                            task.wait(0.15)
-                            pcall(function()
-                                local curChar = LP.Character
-                                local curHrp = curChar and curChar:FindFirstChild("HumanoidRootPart")
-                                if curHrp then curHrp.CFrame = S.GunReturnPos end
-                            end)
-                        end
-                    end
-                    lastGunPickTime = tick()
-                    gunTaskRunning = false
-                end)
-            end
-        end
-    end
-
-    -- ===== УБИЙЦА =====
     local isKnife = myTool and (myTool.Name:lower():find("knife") or myTool.Name:lower():find("dagger") or myTool.Name:lower():find("sword") or myTool.Name:lower():find("blade"))
 
     -- KILL AURA
@@ -853,10 +913,7 @@ bind(RunService.Heartbeat:Connect(function(dt)
                 if thum and thum.Health > 0 and thrp then
                     local d = (thrp.Position - myHrp.Position).Magnitude
                     if d <= S.KillAuraRange then
-                        pcall(function()
-                            myHrp.CFrame = thrp.CFrame
-                            myTool:Activate()
-                        end)
+                        pcall(function() myHrp.CFrame = thrp.CFrame myTool:Activate() end)
                     end
                 end
             end
@@ -876,12 +933,7 @@ bind(RunService.Heartbeat:Connect(function(dt)
                 end
             end
         end
-        if best then
-            pcall(function()
-                myHrp.CFrame = best.CFrame
-                myTool:Activate()
-            end)
-        end
+        if best then pcall(function() myHrp.CFrame = best.CFrame myTool:Activate() end) end
     end
 
     -- KNIFE THROW
@@ -895,10 +947,7 @@ bind(RunService.Heartbeat:Connect(function(dt)
                     local thrp = tchar and tchar:FindFirstChild("HumanoidRootPart")
                     if thrp then
                         local d = (thrp.Position - myHrp.Position).Magnitude
-                        if d <= S.KnifeThrowRange and d < bestD then
-                            bestD = d
-                            best = plr
-                        end
+                        if d <= S.KnifeThrowRange and d < bestD then bestD = d best = plr end
                     end
                 end
             end
@@ -906,9 +955,7 @@ bind(RunService.Heartbeat:Connect(function(dt)
                 local tchar = best.Character
                 local thrp = tchar and tchar:FindFirstChild("HumanoidRootPart")
                 if thrp then
-                    pcall(function()
-                        Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, thrp.Position)
-                    end)
+                    pcall(function() Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, thrp.Position) end)
                     pcall(function() myTool:Activate() end)
                     pcall(function()
                         local te = myTool:FindFirstChild("Throw") or myTool:FindFirstChild("ThrowEvent")
@@ -931,9 +978,7 @@ bind(RunService.Heartbeat:Connect(function(dt)
                 break
             end
         end
-        if not found and myHum and Camera.CameraSubject ~= myHum then
-            Camera.CameraSubject = myHum
-        end
+        if not found and myHum and Camera.CameraSubject ~= myHum then Camera.CameraSubject = myHum end
     elseif myHum and Camera and Camera.CameraSubject ~= myHum then
         Camera.CameraSubject = myHum
     end
@@ -961,10 +1006,11 @@ bind(RunService.RenderStepped:Connect(function(dt)
             local head = char and char:FindFirstChild("Head")
             if head then
                 local desired = CFrame.lookAt(Camera.CFrame.Position, head.Position)
-                if S.AimSmooth >= 0.99 then
+                local baseSmooth = S.AimFast and 0.98 or S.AimSmooth
+                if baseSmooth >= 0.99 then
                     Camera.CFrame = desired
                 else
-                    local sm = math.clamp(S.AimSmooth * (dt * 60), 0.05, 1)
+                    local sm = math.clamp(baseSmooth * (dt * 60), 0.05, 1)
                     Camera.CFrame = Camera.CFrame:Lerp(desired, sm)
                 end
             end
@@ -975,14 +1021,15 @@ bind(RunService.RenderStepped:Connect(function(dt)
     accum = accum + dt
     if accum >= UPDATE_STEP then
         accum = 0
-        if S.ESPMurderer or S.ESPSheriff or S.ESPInnocent then
+        if S.ESPMurderer or S.ESPSheriff or S.ESPHero or S.ESPInnocent then
             for plr, d in pairs(ESPData) do
                 local role = getRole(plr)
                 local char = getCharacter(plr)
                 local showRole =
                     (role == "Murderer" and S.ESPMurderer) or
                     (role == "Sheriff" and S.ESPSheriff) or
-                    (role ~= "Murderer" and role ~= "Sheriff" and S.ESPInnocent)
+                    (role == "Hero" and S.ESPHero) or
+                    (role ~= "Murderer" and role ~= "Sheriff" and role ~= "Hero" and S.ESPInnocent)
 
                 if char and isAlive(char) and showRole then
                     local root = getRoot(char)
@@ -1000,12 +1047,14 @@ bind(RunService.RenderStepped:Connect(function(dt)
 
                             local color = role == "Murderer" and COLOR_MURDERER
                                        or role == "Sheriff" and COLOR_SHERIFF
+                                       or role == "Hero" and COLOR_HERO
                                        or COLOR_INNOCENT
 
                             d.Name.Text = plr.Name
                             d.Name.TextColor3 = color
                             d.Role.Text = role == "Murderer" and "УБИЙЦА"
                                           or role == "Sheriff" and "ШЕРИФ"
+                                          or role == "Hero" and "ГЕРОЙ"
                                           or "МИРНЫЙ"
                             d.Role.TextColor3 = color
                             d.Role.Visible = true
@@ -1084,11 +1133,11 @@ local function animatePageIn()
             i = i + 1
             local oldPos = el.Position
             local oldTrans = el.BackgroundTransparency
-            el.Position = UDim2.new(oldPos.X.Scale, oldPos.X.Offset + 30, oldPos.Y.Scale, oldPos.Y.Offset)
+            el.Position = UDim2.new(oldPos.X.Scale, oldPos.X.Offset + 20, oldPos.Y.Scale, oldPos.Y.Offset)
             if oldTrans < 1 then el.BackgroundTransparency = 1 end
-            task.delay((i-1) * 0.02, function()
+            task.delay((i-1) * 0.015, function()
                 if el and el.Parent then
-                    Play(el, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Play(el, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                         Position = oldPos, BackgroundTransparency = oldTrans,
                     })
                 end
@@ -1101,7 +1150,7 @@ end
 --// СТРАНИЦЫ
 --// =========================================================
 local function MainPage()
-    Clear(); Title.Text = "AD MM2 v1.4"; Back.Visible = false
+    Clear(); Title.Text = "AD MM2 v1.6"; Back.Visible = false
     Section(L("sec_main"))
     Button(L("btn_esp"),      function() ESPPage() end)
     Button(L("btn_aim"),      function() AimPage() end)
@@ -1119,13 +1168,14 @@ function ESPPage()
     Section(L("sec_esp_roles"))
     Toggle(L("esp_murderer"), S.ESPMurderer, function(v) S.ESPMurderer=v end)
     Toggle(L("esp_sheriff"),  S.ESPSheriff,  function(v) S.ESPSheriff=v end)
+    Toggle(L("esp_hero"),     S.ESPHero,     function(v) S.ESPHero=v end)
     Toggle(L("esp_innocent"), S.ESPInnocent, function(v) S.ESPInnocent=v end)
+    Toggle(L("esp_gun"),      S.ESPGun,      function(v) S.ESPGun=v end)
     Section(L("sec_esp_params"))
     Toggle(L("esp_name"),      S.ESPName,      function(v) S.ESPName=v end)
     Toggle(L("esp_dist"),      S.ESPDistance,  function(v) S.ESPDistance=v end)
     Toggle(L("esp_highlight"), S.ESPHighlight, function(v) S.ESPHighlight=v end)
     Number(L("esp_max_dist"), S.ESPMaxDistance, 50, 2000, function(v) S.ESPMaxDistance=v end)
-    Info("Роль сохраняется до конца раунда.")
     animatePageIn()
 end
 
@@ -1134,11 +1184,12 @@ function AimPage()
     Section(L("sec_aim_main"))
     Toggle(L("aim_auto"), S.AimAuto, function(v) S.AimAuto=v end)
     Toggle(L("aim_wall"), S.AimWall, function(v) S.AimWall=v end)
+    Toggle(L("aim_fast"), S.AimFast, function(v) S.AimFast=v end)
     Section(L("sec_aim_params"))
     Number(L("aim_fov"), S.AimFOV, 20, 600, function(v) S.AimFOV=v end)
     Number(L("aim_range"), S.AimRange, 20, 1000, function(v) S.AimRange=v end)
     Slider(L("aim_smooth"), math.floor(S.AimSmooth*100), 0, 100, function(v) S.AimSmooth=math.clamp(v/100,0.01,1) end)
-    Info("АИМ работает ТОЛЬКО когда ты Шериф (пистолет в руках).")
+    Info("АИМ работает ТОЛЬКО когда ты Шериф. Быстрый режим = мгновенное наведение.")
     animatePageIn()
 end
 
@@ -1183,12 +1234,7 @@ function MurdererPage()
                 end
             end
         end
-        if best then
-            pcall(function()
-                myHrp.CFrame = best.CFrame
-                tool:Activate()
-            end)
-        end
+        if best then pcall(function() myHrp.CFrame = best.CFrame tool:Activate() end) end
     end)
     animatePageIn()
 end
@@ -1197,7 +1243,7 @@ function FarmPage()
     Clear(); Title.Text = L("title_farm"); Back.Visible = true
     Section(L("sec_farm"))
     Toggle(L("farm_coin"), S.AutoCoin, function(v) S.AutoCoin=v end)
-    Info(L("farm_info"))
+    Info("Телепорт к ближайшей монете")
     animatePageIn()
 end
 
@@ -1224,10 +1270,9 @@ function MiscExtraPage()
     Clear(); Title.Text = "Разное"; Back.Visible = true
 
     Section("ПИСТОЛЕТ")
-    Toggle("Авто-подбор пистолета", S.AutoGun, function(v) S.AutoGun = v end)
-    Toggle("Возврат на место", S.AutoGunReturn, function(v) S.AutoGunReturn = v end)
-    Number("Задержка (сек)", S.AutoGunDelay, 0.1, 3, function(v) S.AutoGunDelay = v end)
-    Info("Скрипт запоминает позицию, летит к пистолету, подбирает и возвращается назад.")
+    Button("⚡ Подобрать пистолет (1 клик)", function() autoGunOneShot() end)
+    Info("Скрипт находит выпавший пистолет, летит к нему, подбирает и возвращает тебя назад.")
+    Number("Задержка возврата (сек)", S.AutoGunDelay, 0.1, 3, function(v) S.AutoGunDelay = v end)
 
     Section("КАМЕРА")
     Toggle("Spectate Убийцу", S.SpectateMurderer, function(v) S.SpectateMurderer = v end)
@@ -1303,35 +1348,16 @@ MakeDraggable(AD, AD)
 --// КНОПКИ
 --// =========================================================
 Back.MouseButton1Click:Connect(MainPage)
-Close.MouseButton1Click:Connect(function()
-    Play(Main, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
-    task.delay(0.15, function()
-        Main.Visible = false
-        Main.BackgroundTransparency = 0.05
-    end)
-end)
+Close.MouseButton1Click:Connect(function() Main.Visible = false end)
 AD.MouseButton1Click:Connect(function()
+    Main.Visible = not Main.Visible
     if Main.Visible then
-        MainScale.Scale = 1
-        Play(MainScale, TweenInfo.new(0.2, Enum.EasingStyle.Quad), { Scale = 0.5 })
-        Play(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quad), { BackgroundTransparency = 1 })
-        task.delay(0.2, function()
-            Main.Visible = false
-            Main.BackgroundTransparency = 0.05
-            MainScale.Scale = 1
-        end)
-    else
-        Main.Visible = true
-        Main.BackgroundTransparency = 1
-        MainScale.Scale = 0.5
-        Play(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quad), { BackgroundTransparency = 0.05 })
-        Play(MainScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
-        MainPage()
+        pcall(MainPage)
     end
 end)
 
 --// =========================================================
---// ИНИЦИАЛИЗАЦИЯ
+--// INIT
 --// =========================================================
 for _, plr in ipairs(Players:GetPlayers()) do if plr ~= LP then createESP(plr) end end
 bind(Players.PlayerAdded:Connect(function(plr) if plr ~= LP then task.wait(0.5) createESP(plr) end end))
@@ -1354,7 +1380,8 @@ _G.__ADMM2_CLEANUP = function()
     if _G.__AntiFlingBV then pcall(function() _G.__AntiFlingBV:Destroy() end) _G.__AntiFlingBV = nil end
     pcall(function() GUI:Destroy() end)
     pcall(function() espFolder:Destroy() end)
+    pcall(function() gunEspFolder:Destroy() end)
 end
 
 MainPage()
-print("[AD MM2 v1.4] загружен — AIM только для Шерифа + раздел Убийца")
+print("[AD MM2 v1.6] загружен")
