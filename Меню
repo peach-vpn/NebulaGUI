@@ -1,5 +1,5 @@
 --========================================================--
---   AD MM2 v2.2 — FIXED / NO EMOJI / WORKING             --
+--   AD MM2 v1.8 — ENHANCED UI + SKINS + ESP + AIM         --
 --========================================================--
 
 if _G.__ADMM2_CLEANUP then pcall(_G.__ADMM2_CLEANUP) _G.__ADMM2_CLEANUP = nil end
@@ -8,10 +8,12 @@ local Players      = game:GetService("Players")
 local UIS          = game:GetService("UserInputService")
 local RunService   = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local CoreGui      = game:GetService("CoreGui")
 
 local LP = Players.LocalPlayer
+if not LP then return end
 local PlayerGui = LP:WaitForChild("PlayerGui")
-local Camera = workspace.CurrentCamera
+local Camera    = workspace.CurrentCamera
 
 local conns = {}
 local function bind(c) table.insert(conns, c) return c end
@@ -25,725 +27,692 @@ bind(workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
 end))
 
 --========================================================--
+-- SKINS
+--========================================================--
+local SKINS = {
+    ["Standard"]     = { Mesh = nil, Texture = nil },
+    ["Classic"]      = { Mesh = "rbxassetid://583707893", Texture = "rbxassetid://584117262" },
+    ["Samurai"]      = { Mesh = "rbxassetid://424649574", Texture = "rbxassetid://424649618" },
+    ["Ghost"]        = { Mesh = "rbxassetid://221360285", Texture = "rbxassetid://221360322" },
+    ["Fang"]         = { Mesh = "rbxassetid://583707893", Texture = "rbxassetid://584117262" },
+    ["Gingerbread"]  = { Mesh = "rbxassetid://583707893", Texture = "rbxassetid://584117262" },
+    ["Laser"]        = { Mesh = "rbxassetid://583707893", Texture = "rbxassetid://584117262" },
+    ["Icewing"]      = { Mesh = "rbxassetid://583707893", Texture = "rbxassetid://584117262" },
+    ["BattleAxe"]    = { Mesh = "rbxassetid://583707893", Texture = "rbxassetid://584117262" },
+    ["VampireEdge"]  = { Mesh = "rbxassetid://583707893", Texture = "rbxassetid://584117262" },
+    ["Pixel"]        = { Mesh = "rbxassetid://583707893", Texture = "rbxassetid://584117262" },
+    ["ChromaSeer"]   = { Mesh = "rbxassetid://583707893", Texture = "rbxassetid://584117262" },
+    ["Legendary"]    = { Mesh = "rbxassetid://583707893", Texture = "rbxassetid://584117262" },
+}
+
+--========================================================--
 -- SETTINGS
 --========================================================--
 local S = {
     ESPMurderer=true, ESPSheriff=true, ESPHero=true, ESPInnocent=false,
-    ESPGun=true, ESPName=true, ESPDistance=true, ESPHighlight=true,
+    ESPGun=true,
+    ESPName=true, ESPDistance=true, ESPHighlight=true,
     ESPMaxDistance=600,
     AimAuto=false, AimWall=true, AimFast=true,
     AimFOV=180, AimRange=250, AimSmooth=0.9,
     AutoCoin=false,
     SpeedBoost=false, SpeedValue=60,
     JumpBoost=false, JumpValue=100,
-    Fly=false, FlySpeed=70, NoClip=false,
+    Fly=false, FlySpeed=70,
+    NoClip=false,
     KillAura=false, KillAuraRange=15,
     AutoKillNearest=false,
     KnifeThrow=false, KnifeThrowRange=60, KnifeThrowCooldown=0.5,
-    SpectateMurderer=false, AntiFling=false, InfiniteJump=false,
+    AutoGunDelay=0.5,
+    SpectateMurderer=false,
+    AntiFling=false,
+    InfiniteJump=false,
     ShowFPS=false, ShowPing=false, ShowWatermark=false,
-    CurrentSkin="Standard"
+    CurrentSkin = "Standard",
+    OriginalMesh = nil,
+    OriginalTexture = nil,
 }
 
 --========================================================--
--- SKINS
---========================================================--
-local SKINS = {
-    ["Standard"] = { Mesh=nil, Texture=nil },
-    ["Classic"] = { Mesh="rbxassetid://583707893", Texture="rbxassetid://584117262" },
-    ["Samurai"] = { Mesh="rbxassetid://424649574", Texture="rbxassetid://424649618" },
-    ["Ghost"] = { Mesh="rbxassetid://221360285", Texture="rbxassetid://221360322" },
-    ["Icewing"] = { Mesh="rbxassetid://583707893", Texture="rbxassetid://584117262" },
-    ["BattleAxe"] = { Mesh="rbxassetid://583707893", Texture="rbxassetid://584117262" },
-    ["VampireEdge"] = { Mesh="rbxassetid://583707893", Texture="rbxassetid://584117262" },
-    ["Pixel"] = { Mesh="rbxassetid://583707893", Texture="rbxassetid://584117262" },
-}
-local OriginalMesh, OriginalTexture = nil, nil
-
---========================================================--
--- THEME
+-- COLORS
 --========================================================--
 local C = {
-    bg = Color3.fromRGB(14, 14, 20),
-    panel = Color3.fromRGB(21, 21, 30),
-    card = Color3.fromRGB(29, 28, 41),
-    accent = Color3.fromRGB(153, 91, 255),
-    accent2 = Color3.fromRGB(180, 130, 255),
-    text = Color3.fromRGB(245, 245, 255),
-    muted = Color3.fromRGB(145, 143, 163),
-    border = Color3.fromRGB(49, 45, 65),
-    green = Color3.fromRGB(60, 255, 100),
-    red = Color3.fromRGB(255, 60, 60),
-    yellow = Color3.fromRGB(255, 200, 60),
-    blue = Color3.fromRGB(60, 130, 255)
+    bg      = Color3.fromRGB(12, 12, 18),
+    bg2     = Color3.fromRGB(18, 18, 26),
+    panel   = Color3.fromRGB(22, 22, 32),
+    card    = Color3.fromRGB(28, 27, 40),
+    cardHov = Color3.fromRGB(35, 34, 50),
+    accent  = Color3.fromRGB(153, 91, 255),
+    accent2 = Color3.fromRGB(190, 140, 255),
+    accent3 = Color3.fromRGB(120, 70, 220),
+    text    = Color3.fromRGB(245, 245, 255),
+    muted   = Color3.fromRGB(145, 143, 163),
+    border  = Color3.fromRGB(45, 42, 62),
+    green   = Color3.fromRGB(94, 225, 151),
+    red     = Color3.fromRGB(255, 90, 90),
+    blue    = Color3.fromRGB(90, 150, 255),
+    cyan    = Color3.fromRGB(90, 220, 255),
 }
 
 --========================================================--
 -- HELPERS
 --========================================================--
-local function New(class, props, parent)
-    local obj = Instance.new(class)
-    for k, v in pairs(props or {}) do
-        if k ~= "Parent" then obj[k] = v end
-    end
-    obj.Parent = parent
-    return obj
+local function Create(class, props)
+    local o = Instance.new(class)
+    local p = props.Parent
+    for k, v in pairs(props) do if k ~= "Parent" then o[k] = v end end
+    o.Parent = p
+    return o
 end
-
-local function Round(obj, size)
-    return New("UICorner", { CornerRadius = UDim.new(0, size or 8) }, obj)
-end
-
-local function Outline(obj, color)
-    return New("UIStroke", { 
-        Color = color or C.border, 
-        Transparency = 0.3, 
-        Thickness = 1 
-    }, obj)
-end
-
-local function Tween(obj, props, duration)
-    TweenService:Create(obj, TweenInfo.new(duration or 0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), props):Play()
-end
+local function Corner(p, r) return Create("UICorner", { CornerRadius = r or UDim.new(0, 8), Parent = p }) end
+local function Stroke(p, c, th, tr) return Create("UIStroke", { Color = c or C.border, Thickness = th or 1, Transparency = tr or 0.3, Parent = p }) end
+local function Play(o, i, pr) TweenService:Create(o, i, pr):Play() end
 
 --========================================================--
 -- GUI ROOT
 --========================================================--
-local function getGuiParent()
-    if gethui then
-        local ok, h = pcall(gethui)
-        if ok and h then return h end
-    end
-    local cg = game:GetService("CoreGui")
-    if cg then return cg end
+local function guiParent()
+    if gethui then local ok,h = pcall(gethui) if ok and h then return h end end
+    if CoreGui then return CoreGui end
     return PlayerGui
 end
+local PARENT = guiParent()
+local old = PARENT:FindFirstChild("AD_MM2_v18")
+if old then old:Destroy() end
 
-local Screen = New("ScreenGui", {
-    Name = "AD_MM2_v22",
-    ResetOnSpawn = false,
-    IgnoreGuiInset = true,
-    DisplayOrder = 2147483647,
-    ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-}, getGuiParent())
+local GUI = Create("ScreenGui", {
+    Name = "AD_MM2_v18", ResetOnSpawn = false, IgnoreGuiInset = true,
+    DisplayOrder = 2147483647, ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+    Parent = PARENT
+})
+bind(GUI.Destroying:Connect(disconnectAll))
 
--- ICON
-local Icon = New("TextButton", {
-    Name = "Icon",
-    Size = UDim2.fromOffset(46, 46),
-    Position = UDim2.new(0, 15, 0.5, -23),
+--========================================================--
+-- ICON (круг с градиентом + тень)
+--========================================================--
+local IconWrapper = Create("Frame", {
+    Size = UDim2.fromOffset(56, 56),
+    Position = UDim2.new(0, 14, 0.5, -28),
+    BackgroundTransparency = 1,
+    Parent = GUI
+})
+
+local IconShadow = Create("Frame", {
+    Size = UDim2.fromOffset(56, 56),
+    Position = UDim2.fromOffset(0, 3),
+    BackgroundColor3 = C.accent3,
+    BackgroundTransparency = 0.5,
+    BorderSizePixel = 0,
+    ZIndex = 19,
+    Parent = IconWrapper
+})
+Corner(IconShadow, UDim.new(1, 0))
+
+local Icon = Create("TextButton", {
+    Size = UDim2.fromOffset(56, 56),
     BackgroundColor3 = C.bg,
-    Text = "AD",
-    TextColor3 = C.accent,
-    TextSize = 16,
-    Font = Enum.Font.GothamBlack,
+    Text = "",
     AutoButtonColor = false,
-    ZIndex = 100
-}, Screen)
-Round(Icon, 12)
-Outline(Icon, C.accent)
-New("UIGradient", {
+    ZIndex = 20,
+    Parent = IconWrapper
+})
+Corner(Icon, UDim.new(1, 0))
+local IconStroke = Stroke(Icon, C.accent, 2, 0)
+IconStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+local IconGradient = Create("UIGradient", {
     Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 30, 45)),
-        ColorSequenceKeypoint.new(1, C.bg)
+        ColorSequenceKeypoint.new(0.5, C.bg),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 15, 35))
     }),
-    Rotation = 45
-}, Icon)
+    Rotation = 135,
+    Parent = Icon
+})
 
--- MAIN WINDOW
-local Window = New("Frame", {
-    Name = "Window",
-    AnchorPoint = Vector2.new(0.5, 0.5),
-    Position = UDim2.fromScale(0.5, 0.5),
-    Size = UDim2.fromOffset(480, 320),
-    BackgroundColor3 = C.bg,
-    Visible = false,
-    ClipsDescendants = true,
-    ZIndex = 2
-}, Screen)
-Round(Window, 12)
-Outline(Window, C.accent)
-local Scale = New("UIScale", { Scale = 1 }, Window)
-
--- HEADER
-local Header = New("Frame", {
-    Size = UDim2.new(1, 0, 0, 44),
-    BackgroundColor3 = C.panel,
-    BorderSizePixel = 0,
-    ZIndex = 3
-}, Window)
-Round(Header, 12)
-
-local Logo = New("Frame", {
-    Position = UDim2.fromOffset(10, 7),
-    Size = UDim2.fromOffset(30, 30),
+local IconGlow = Create("Frame", {
+    Size = UDim2.fromOffset(4, 20),
+    Position = UDim2.new(0, -2, 0.5, -10),
     BackgroundColor3 = C.accent,
-    ZIndex = 4
-}, Header)
-Round(Logo, 8)
-New("TextLabel", {
+    BorderSizePixel = 0,
+    ZIndex = 21,
+    Parent = Icon
+})
+Corner(IconGlow, UDim.new(1, 0))
+
+local IconText = Create("TextLabel", {
     Size = UDim2.fromScale(1, 1),
     BackgroundTransparency = 1,
     Text = "AD",
-    TextColor3 = Color3.new(1, 1, 1),
-    TextSize = 14,
+    TextColor3 = C.accent2,
+    TextSize = 18,
     Font = Enum.Font.GothamBlack,
-    ZIndex = 5
-}, Logo)
+    ZIndex = 22,
+    Parent = Icon
+})
 
-New("TextLabel", {
-    Position = UDim2.fromOffset(48, 6),
-    Size = UDim2.new(1, -90, 0, 18),
+-- Пульсация иконки
+task.spawn(function()
+    while Icon and Icon.Parent do
+        Play(IconStroke, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Transparency = 0.2 })
+        Play(IconShadow, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.3, Size = UDim2.fromOffset(60, 60), Position = UDim2.fromOffset(-2, 4) })
+        task.wait(1.2)
+        Play(IconStroke, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Transparency = 0.6 })
+        Play(IconShadow, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.6, Size = UDim2.fromOffset(56, 56), Position = UDim2.fromOffset(0, 3) })
+        task.wait(1.2)
+    end
+end)
+
+--========================================================--
+-- MAIN WINDOW
+--========================================================--
+local Main = Create("Frame", {
+    Size = UDim2.fromOffset(320, 400),
+    Position = UDim2.new(0.5, -160, 0.5, -200),
+    BackgroundColor3 = C.bg,
+    Visible = false,
+    ClipsDescendants = true,
+    Parent = GUI
+})
+Corner(Main, UDim.new(0, 14))
+local MainStroke = Stroke(Main, C.accent, 1.5, 0.2)
+
+local MainScale = Create("UIScale", { Scale = 1, Parent = Main })
+
+-- TITLE BAR
+local Header = Create("Frame", {
+    Size = UDim2.new(1, 0, 0, 46),
+    BackgroundColor3 = C.panel,
+    BorderSizePixel = 0,
+    Parent = Main
+})
+Corner(Header, UDim.new(0, 14))
+
+-- верхняя тонкая полоска акцента
+local AccentBar = Create("Frame", {
+    Size = UDim2.new(1, 0, 0, 2),
+    BackgroundColor3 = C.accent,
+    BorderSizePixel = 0,
+    Parent = Header
+})
+Corner(AccentBar, UDim.new(0, 14))
+
+local Logo = Create("Frame", {
+    Size = UDim2.fromOffset(30, 30),
+    Position = UDim2.fromOffset(10, 8),
+    BackgroundColor3 = C.accent,
+    BorderSizePixel = 0,
+    Parent = Header
+})
+Corner(Logo, UDim.new(0, 9))
+local LogoGrad = Create("UIGradient", {
+    Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, C.accent),
+        ColorSequenceKeypoint.new(1, C.accent3)
+    }),
+    Rotation = 135,
+    Parent = Logo
+})
+Create("TextLabel", {
+    Size = UDim2.fromScale(1, 1),
     BackgroundTransparency = 1,
-    Text = "AD MM2",
+    Text = "AD",
     TextColor3 = C.text,
-    TextSize = 14,
+    TextSize = 13,
+    Font = Enum.Font.GothamBlack,
+    Parent = Logo
+})
+
+local Title = Create("TextLabel", {
+    Size = UDim2.new(1, -100, 0, 18),
+    Position = UDim2.fromOffset(48, 7),
+    BackgroundTransparency = 1,
+    Text = "AD · MM2",
+    TextColor3 = C.text,
+    TextSize = 15,
     Font = Enum.Font.GothamBold,
     TextXAlignment = Enum.TextXAlignment.Left,
-    ZIndex = 4
-}, Header)
+    Parent = Header
+})
 
-New("TextLabel", {
-    Position = UDim2.fromOffset(48, 24),
-    Size = UDim2.new(1, -90, 0, 12),
+local Subtitle = Create("TextLabel", {
+    Size = UDim2.new(1, -100, 0, 12),
+    Position = UDim2.fromOffset(48, 26),
     BackgroundTransparency = 1,
-    Text = "v2.2 / PREMIUM",
+    Text = "v1.8 · PREMIUM",
     TextColor3 = C.muted,
     TextSize = 9,
     Font = Enum.Font.Gotham,
     TextXAlignment = Enum.TextXAlignment.Left,
-    ZIndex = 4
-}, Header)
+    Parent = Header
+})
 
-local CloseBtn = New("TextButton", {
-    Position = UDim2.new(1, -34, 0, 9),
-    Size = UDim2.fromOffset(24, 24),
+local Close = Create("TextButton", {
+    Size = UDim2.fromOffset(28, 28),
+    Position = UDim2.new(1, -36, 0, 9),
     BackgroundColor3 = C.card,
-    Text = "X",
+    Text = "×",
     TextColor3 = C.text,
-    TextSize = 14,
-    Font = Enum.Font.GothamBold,
+    TextSize = 18,
+    Font = Enum.Font.Gotham,
     AutoButtonColor = false,
-    ZIndex = 5
-}, Header)
-Round(CloseBtn, 6)
+    Parent = Header
+})
+Corner(Close, UDim.new(0, 7))
+Stroke(Close, C.border, 1, 0.3)
 
--- SIDEBAR
-local Sidebar = New("Frame", {
-    Position = UDim2.fromOffset(0, 44),
-    Size = UDim2.new(0, 110, 1, -44),
-    BackgroundColor3 = C.panel,
+--========================================================--
+-- CONTENT (скролл)
+--========================================================--
+local Content = Create("ScrollingFrame", {
+    Size = UDim2.new(1, -12, 1, -56),
+    Position = UDim2.fromOffset(6, 52),
+    BackgroundTransparency = 1,
     BorderSizePixel = 0,
-    ZIndex = 3
-}, Window)
-New("UIPadding", { PaddingTop = UDim.new(0, 8), PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6) }, Sidebar)
-New("UIListLayout", { Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder }, Sidebar)
-
-New("TextLabel", {
-    Size = UDim2.new(1, 0, 0, 18),
-    BackgroundTransparency = 1,
-    Text = "MENU",
-    TextColor3 = C.muted,
-    TextSize = 8,
-    Font = Enum.Font.GothamBold,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    LayoutOrder = 0,
-    ZIndex = 4
-}, Sidebar)
-
--- CONTENT
-local Content = New("Frame", {
-    Position = UDim2.fromOffset(110, 44),
-    Size = UDim2.new(1, -110, 1, -44),
-    BackgroundTransparency = 1,
-    ClipsDescendants = true,
-    ZIndex = 3
-}, Window)
-
-local Pages = {}
-local Tabs = {}
+    ScrollBarThickness = 2,
+    ScrollBarImageColor3 = C.accent,
+    ScrollingDirection = Enum.ScrollingDirection.Y,
+    AutomaticCanvasSize = Enum.AutomaticSize.Y,
+    CanvasSize = UDim2.new(),
+    ElasticBehavior = Enum.ElasticBehavior.Always,
+    Parent = Main
+})
+Create("UIPadding", {
+    PaddingLeft = UDim.new(0, 4),
+    PaddingRight = UDim.new(0, 4),
+    PaddingBottom = UDim.new(0, 10),
+    Parent = Content
+})
+Create("UIListLayout", {
+    Padding = UDim.new(0, 5),
+    SortOrder = Enum.SortOrder.LayoutOrder,
+    Parent = Content
+})
 
 --========================================================--
--- UI COMPONENTS
+-- COMPONENTS
 --========================================================--
-local function CreatePage(name, subtitle)
-    local page = New("ScrollingFrame", {
-        Name = name,
-        Size = UDim2.fromScale(1, 1),
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ScrollBarThickness = 2,
-        ScrollBarImageColor3 = C.accent,
-        AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        CanvasSize = UDim2.new(),
-        Visible = false,
-        ZIndex = 4
-    }, Content)
-    New("UIPadding", { PaddingTop = UDim.new(0, 10), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), PaddingBottom = UDim.new(0, 8) }, page)
-    New("UIListLayout", { Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder }, page)
-    New("TextLabel", {
+local function Clear()
+    for _, v in ipairs(Content:GetChildren()) do
+        if not v:IsA("UIListLayout") and not v:IsA("UIPadding") then v:Destroy() end
+    end
+end
+
+local function Section(txt)
+    return Create("TextLabel", {
         Size = UDim2.new(1, 0, 0, 20),
         BackgroundTransparency = 1,
-        Text = name,
-        TextColor3 = C.text,
-        TextSize = 15,
+        Text = txt,
+        TextColor3 = C.accent2,
+        TextSize = 11,
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Left,
-        LayoutOrder = 0,
-        ZIndex = 5
-    }, page)
-    New("TextLabel", {
-        Size = UDim2.new(1, 0, 0, 14),
-        BackgroundTransparency = 1,
-        Text = subtitle or "",
+        Parent = Content
+    })
+end
+
+local function Info(txt)
+    return Create("TextLabel", {
+        Size = UDim2.new(1, 0, 0, 30),
+        BackgroundColor3 = C.bg2,
+        BorderSizePixel = 0,
+        Text = "  " .. txt,
+        TextWrapped = true,
         TextColor3 = C.muted,
-        TextSize = 9,
+        TextSize = 10,
         Font = Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Left,
-        LayoutOrder = 1,
-        ZIndex = 5
-    }, page)
-    Pages[name] = page
-    return page
+        TextYAlignment = Enum.TextYAlignment.Center,
+        Parent = Content
+    })
 end
 
-local function SelectTab(name)
-    local targetPage = Pages[name]
-    if not targetPage then
-        warn("[AD] Нет страницы: " .. tostring(name))
-        return
-    end
-    for tabName, item in pairs(Tabs) do
-        local selected = tabName == name
-        Tween(item.Button, { BackgroundColor3 = selected and C.card or C.panel }, 0.15)
-        item.Bar.Visible = selected
-        item.Label.TextColor3 = selected and C.text or C.muted
-        item.Icon.TextColor3 = selected and C.accent or C.muted
-        local page = Pages[tabName]
-        if page then
-            page.Visible = selected
-            if selected then page.CanvasPosition = Vector2.zero end
-        end
-    end
-end
-
-local function CreateTab(name, symbol, order)
-    local btn = New("TextButton", {
-        Name = name,
-        Size = UDim2.new(1, 0, 0, 30),
-        BackgroundColor3 = C.panel,
+local function Button(txt, cb)
+    local b = Create("TextButton", {
+        Size = UDim2.new(1, 0, 0, 34),
+        BackgroundColor3 = C.card,
         Text = "",
         AutoButtonColor = false,
-        LayoutOrder = order,
-        ZIndex = 4
-    }, Sidebar)
-    Round(btn, 6)
+        Parent = Content
+    })
+    Corner(b, UDim.new(0, 8))
+    Stroke(b, C.border, 1, 0.3)
 
-    local bar = New("Frame", {
-        Position = UDim2.new(0, 0, 0.5, -6),
-        Size = UDim2.new(0, 3, 0, 12),
+    local icon = Create("Frame", {
+        Size = UDim2.fromOffset(4, 18),
+        Position = UDim2.fromOffset(10, 8),
         BackgroundColor3 = C.accent,
         BorderSizePixel = 0,
-        Visible = false,
-        ZIndex = 5
-    }, btn)
-    Round(bar, 2)
+        Parent = b
+    })
+    Corner(icon, UDim.new(1, 0))
 
-    local icon = New("TextLabel", {
-        Position = UDim2.fromOffset(7, 0),
-        Size = UDim2.fromOffset(14, 30),
+    Create("TextLabel", {
+        Size = UDim2.new(1, -46, 1, 0),
+        Position = UDim2.fromOffset(22, 0),
         BackgroundTransparency = 1,
-        Text = symbol,
-        TextColor3 = C.muted,
-        TextSize = 11,
-        Font = Enum.Font.GothamBold,
-        ZIndex = 5
-    }, btn)
-
-    local label = New("TextLabel", {
-        Position = UDim2.fromOffset(24, 0),
-        Size = UDim2.new(1, -26, 1, 0),
-        BackgroundTransparency = 1,
-        Text = name,
-        TextColor3 = C.muted,
-        TextSize = 10,
-        Font = Enum.Font.GothamSemibold,
+        Text = txt,
+        TextColor3 = C.text,
+        TextSize = 12,
+        Font = Enum.Font.GothamMedium,
         TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 5
-    }, btn)
+        Parent = b
+    })
 
-    Tabs[name] = { Button = btn, Bar = bar, Icon = icon, Label = label }
+    Create("TextLabel", {
+        Size = UDim2.fromOffset(18, 34),
+        Position = UDim2.new(1, -26, 0, 0),
+        BackgroundTransparency = 1,
+        Text = "›",
+        TextColor3 = C.accent,
+        TextSize = 16,
+        Font = Enum.Font.GothamBold,
+        Parent = b
+    })
 
-    local function handleClick()
-        SelectTab(name)
-    end
-    btn.Activated:Connect(handleClick)
-    btn.MouseButton1Click:Connect(handleClick)
+    b.MouseEnter:Connect(function() Play(b, TweenInfo.new(0.15), { BackgroundColor3 = C.cardHov }) end)
+    b.MouseLeave:Connect(function() Play(b, TweenInfo.new(0.15), { BackgroundColor3 = C.card }) end)
+    b.MouseButton1Click:Connect(function()
+        Play(b, TweenInfo.new(0.08), { BackgroundColor3 = C.accent })
+        task.delay(0.08, function() Play(b, TweenInfo.new(0.15), { BackgroundColor3 = C.card }) end)
+        pcall(cb)
+    end)
+    return b
 end
 
-local function Card(parent, title, desc, height)
-    local f = New("Frame", {
-        Size = UDim2.new(1, -2, 0, height or (desc and 48 or 32)),
+local function Toggle(txt, initial, cb)
+    local state = { v = initial }
+    local b = Create("TextButton", {
+        Size = UDim2.new(1, 0, 0, 32),
+        BackgroundColor3 = C.card,
+        Text = "",
+        AutoButtonColor = false,
+        Parent = Content
+    })
+    Corner(b, UDim.new(0, 8))
+    Stroke(b, C.border, 1, 0.3)
+
+    Create("TextLabel", {
+        Size = UDim2.new(1, -56, 1, 0),
+        Position = UDim2.fromOffset(12, 0),
+        BackgroundTransparency = 1,
+        Text = txt,
+        TextColor3 = C.text,
+        TextSize = 12,
+        Font = Enum.Font.GothamMedium,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = b
+    })
+
+    local sw = Create("Frame", {
+        Size = UDim2.fromOffset(36, 20),
+        Position = UDim2.new(1, -46, 0.5, -10),
+        BackgroundColor3 = Color3.fromRGB(45, 45, 60),
+        BorderSizePixel = 0,
+        Parent = b
+    })
+    Corner(sw, UDim.new(1, 0))
+
+    local dot = Create("Frame", {
+        Size = UDim2.fromOffset(14, 14),
+        Position = UDim2.fromOffset(3, 3),
+        BackgroundColor3 = Color3.fromRGB(220, 220, 230),
+        BorderSizePixel = 0,
+        ZIndex = 2,
+        Parent = sw
+    })
+    Corner(dot, UDim.new(1, 0))
+
+    local function apply(instant)
+        local col = state.v and C.accent or Color3.fromRGB(45, 45, 60)
+        local pos = state.v and UDim2.fromOffset(19, 3) or UDim2.fromOffset(3, 3)
+        if instant then sw.BackgroundColor3 = col; dot.Position = pos
+        else
+            Play(sw, TweenInfo.new(0.18), { BackgroundColor3 = col })
+            Play(dot, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Position = pos })
+        end
+    end
+    apply(true)
+
+    b.MouseButton1Click:Connect(function()
+        state.v = not state.v
+        apply(false)
+        if cb then pcall(cb, state.v) end
+    end)
+    return b, state
+end
+
+local function Number(txt, initial, min, max, cb)
+    local f = Create("Frame", {
+        Size = UDim2.new(1, 0, 0, 32),
         BackgroundColor3 = C.card,
         BorderSizePixel = 0,
-        ZIndex = 5
-    }, parent)
-    Round(f, 6)
-    Outline(f)
+        Parent = Content
+    })
+    Corner(f, UDim.new(0, 8))
+    Stroke(f, C.border, 1, 0.3)
 
-    New("TextLabel", {
-        Position = UDim2.fromOffset(8, desc and 5 or 0),
-        Size = UDim2.new(1, -16, 0, desc and 15 or 32),
+    Create("TextLabel", {
+        Size = UDim2.new(1, -80, 1, 0),
+        Position = UDim2.fromOffset(12, 0),
         BackgroundTransparency = 1,
-        Text = title,
+        Text = txt,
         TextColor3 = C.text,
-        TextSize = 11,
-        Font = Enum.Font.GothamSemibold,
+        TextSize = 12,
+        Font = Enum.Font.GothamMedium,
         TextXAlignment = Enum.TextXAlignment.Left,
-        TextYAlignment = desc and Enum.TextYAlignment.Top or Enum.TextYAlignment.Center,
-        ZIndex = 6
-    }, f)
+        Parent = f
+    })
 
-    if desc then
-        New("TextLabel", {
-            Position = UDim2.fromOffset(8, 20),
-            Size = UDim2.new(1, -16, 0, 24),
-            BackgroundTransparency = 1,
-            Text = desc,
-            TextColor3 = C.muted,
-            TextSize = 8,
-            Font = Enum.Font.Gotham,
-            TextWrapped = true,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = 6
-        }, f)
-    end
-    return f
-end
+    local box = Create("TextBox", {
+        Size = UDim2.fromOffset(60, 22),
+        Position = UDim2.new(1, -70, 0.5, -11),
+        BackgroundColor3 = C.bg2,
+        BorderSizePixel = 0,
+        Text = tostring(initial),
+        TextColor3 = C.accent2,
+        TextSize = 11,
+        Font = Enum.Font.GothamBold,
+        ClearTextOnFocus = false,
+        Parent = f
+    })
+    Corner(box, UDim.new(0, 6))
+    Stroke(box, C.border, 1, 0.4)
 
-local function Toggle(parent, title, desc, default, callback)
-    local state = { v = default == true }
-    local f = Card(parent, title, desc, desc and 48 or 32)
-
-    local btn = New("TextButton", {
-        Position = UDim2.new(1, -42, 0.5, -8),
-        Size = UDim2.fromOffset(32, 16),
-        BackgroundColor3 = state.v and C.accent or C.border,
-        Text = "",
-        AutoButtonColor = false,
-        ZIndex = 7
-    }, f)
-    Round(btn, 8)
-
-    local knob = New("Frame", {
-        Position = UDim2.new(0, state.v and 17 or 2, 0.5, -6),
-        Size = UDim2.fromOffset(12, 12),
-        BackgroundColor3 = Color3.new(1, 1, 1),
-        ZIndex = 8
-    }, btn)
-    Round(knob, 6)
-
-    local function update(instant)
-        local col = state.v and C.accent or C.border
-        local pos = UDim2.new(0, state.v and 17 or 2, 0.5, -6)
-        if instant then
-            btn.BackgroundColor3 = col
-            knob.Position = pos
-        else
-            Tween(btn, { BackgroundColor3 = col }, 0.15)
-            Tween(knob, { Position = pos }, 0.2)
-        end
-    end
-    update(true)
-
-    btn.Activated:Connect(function()
-        state.v = not state.v
-        update(false)
-        if callback then pcall(callback, state.v) end
+    box.FocusLost:Connect(function()
+        local n = tonumber(box.Text)
+        if not n then box.Text = tostring(initial) return end
+        n = math.clamp(n, min, max)
+        box.Text = tostring(n)
+        if cb then pcall(cb, n) end
     end)
-
     return f
 end
 
-local function Slider(parent, title, min, max, default, callback)
-    local f = Card(parent, title, nil, 42)
-    local value = math.clamp(default, min, max)
+local function Slider(txt, initial, min, max, cb)
+    local frame = Create("Frame", {
+        Size = UDim2.new(1, 0, 0, 48),
+        BackgroundColor3 = C.card,
+        BorderSizePixel = 0,
+        Parent = Content
+    })
+    Corner(frame, UDim.new(0, 8))
+    Stroke(frame, C.border, 1, 0.3)
 
-    local valLbl = New("TextLabel", {
-        Position = UDim2.new(1, -50, 0, 4),
-        Size = UDim2.fromOffset(42, 14),
+    Create("TextLabel", {
+        Size = UDim2.new(0.6, -12, 0, 18),
+        Position = UDim2.fromOffset(12, 5),
         BackgroundTransparency = 1,
-        Text = tostring(math.floor(value)),
-        TextColor3 = C.accent,
-        TextSize = 10,
+        Text = txt,
+        TextColor3 = C.text,
+        TextSize = 12,
+        Font = Enum.Font.GothamMedium,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = frame
+    })
+
+    local valueLabel = Create("TextLabel", {
+        Size = UDim2.new(0.4, -12, 0, 18),
+        Position = UDim2.new(0.6, 0, 0, 5),
+        BackgroundTransparency = 1,
+        Text = string.format("%d/%d", math.floor(initial), max),
+        TextColor3 = C.accent2,
+        TextSize = 11,
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Right,
-        ZIndex = 6
-    }, f)
+        Parent = frame
+    })
 
-    local track = New("Frame", {
-        Position = UDim2.fromOffset(8, 24),
-        Size = UDim2.new(1, -16, 0, 4),
-        BackgroundColor3 = C.border,
+    local track = Create("Frame", {
+        Size = UDim2.new(1, -24, 0, 6),
+        Position = UDim2.new(0, 12, 0, 32),
+        BackgroundColor3 = Color3.fromRGB(40, 40, 55),
         BorderSizePixel = 0,
-        ZIndex = 6
-    }, f)
-    Round(track, 2)
+        Parent = frame
+    })
+    Corner(track, UDim.new(1, 0))
 
-    local fill = New("Frame", {
-        Size = UDim2.new((value - min) / (max - min), 0, 1, 0),
+    local fill = Create("Frame", {
+        Size = UDim2.new(0, 0, 1, 0),
         BackgroundColor3 = C.accent,
         BorderSizePixel = 0,
-        ZIndex = 7
-    }, track)
-    Round(fill, 2)
+        Parent = track
+    })
+    Corner(fill, UDim.new(1, 0))
 
-    local knob = New("Frame", {
+    local knob = Create("Frame", {
+        Size = UDim2.fromOffset(16, 16),
         AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.new((value - min) / (max - min), 0, 0.5, 0),
-        Size = UDim2.fromOffset(10, 10),
-        BackgroundColor3 = Color3.new(1, 1, 1),
-        ZIndex = 8
-    }, track)
-    Round(knob, 5)
-    Outline(knob, C.accent)
+        Position = UDim2.new(0, 0, 0.5, 0),
+        BackgroundColor3 = Color3.fromRGB(240, 244, 255),
+        BorderSizePixel = 0,
+        ZIndex = 2,
+        Parent = track
+    })
+    Corner(knob, UDim.new(1, 0))
+    Stroke(knob, C.accent, 2, 0)
 
-    local dragging = false
-
-    local function update(x)
-        local rel = math.clamp((x - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
-        value = min + rel * (max - min)
-        fill.Size = UDim2.new(rel, 0, 1, 0)
-        knob.Position = UDim2.new(rel, 0, 0.5, 0)
-        valLbl.Text = tostring(math.floor(value))
-        if callback then pcall(callback, value) end
-    end
-
-    local hitbox = New("TextButton", {
-        Size = UDim2.new(1, 20, 1, 16),
-        Position = UDim2.fromOffset(-10, -8),
+    local hitbox = Create("TextButton", {
+        Size = UDim2.new(1, 0, 0, 32),
+        Position = UDim2.new(0, 0, 0, -13),
         BackgroundTransparency = 1,
         Text = "",
-        ZIndex = 10
-    }, track)
+        AutoButtonColor = false,
+        Parent = track
+    })
+
+    local value = math.clamp(initial, min, max)
+    local dragging = false
+
+    local function updateVisual(animate)
+        local ratio = (value - min) / math.max(max - min, 1)
+        if animate then
+            Play(fill, TweenInfo.new(0.1), { Size = UDim2.new(ratio, 0, 1, 0) })
+            Play(knob, TweenInfo.new(0.1), { Position = UDim2.new(ratio, 0, 0.5, 0) })
+        else
+            fill.Size = UDim2.new(ratio, 0, 1, 0)
+            knob.Position = UDim2.new(ratio, 0, 0.5, 0)
+        end
+        valueLabel.Text = string.format("%d/%d", math.floor(value), max)
+    end
+
+    local function setFromX(x)
+        local trackAbs = track.AbsolutePosition
+        local trackSize = track.AbsoluteSize.X
+        if trackSize <= 0 then return end
+        local rel = math.clamp((x - trackAbs.X) / trackSize, 0, 1)
+        value = min + rel * (max - min)
+        updateVisual(false)
+        if cb then pcall(cb, value) end
+    end
 
     hitbox.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
-            Tween(knob, { Size = UDim2.fromOffset(14, 14) }, 0.1)
-            update(input.Position.X)
+            Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(22, 22) })
+            setFromX(input.Position.X)
         end
     end)
     bind(UIS.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            update(input.Position.X)
+        if not dragging then return end
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            setFromX(input.Position.X)
         end
     end))
     bind(UIS.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             if dragging then
                 dragging = false
-                Tween(knob, { Size = UDim2.fromOffset(10, 10) }, 0.1)
+                Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(16, 16) })
             end
         end
     end))
-    return f
+    updateVisual(true)
+    return frame
 end
 
-local function ActionButton(parent, title, desc, callback)
-    local f = Card(parent, title, desc, desc and 48 or 32)
-    local btn = New("TextButton", {
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        Text = "",
-        ZIndex = 7
-    }, f)
-    New("TextLabel", {
-        Position = UDim2.new(1, -22, 0.5, -7),
-        Size = UDim2.fromOffset(14, 14),
-        BackgroundTransparency = 1,
-        Text = ">",
-        TextColor3 = C.accent,
-        TextSize = 12,
-        Font = Enum.Font.GothamBold,
-        ZIndex = 8
-    }, f)
-    btn.Activated:Connect(function()
-        Tween(f, { BackgroundColor3 = C.accent }, 0.08)
-        task.delay(0.08, function() Tween(f, { BackgroundColor3 = C.card }, 0.15) end)
-        if callback then pcall(callback) end
-    end)
-    return f
-end
-
-local function InfoCard(parent, text)
-    local f = New("Frame", {
-        Size = UDim2.new(1, -2, 0, 28),
-        BackgroundColor3 = C.panel,
-        BorderSizePixel = 0,
-        ZIndex = 5
-    }, parent)
-    Round(f, 6)
-    New("TextLabel", {
-        Size = UDim2.new(1, -12, 1, 0),
-        Position = UDim2.fromOffset(6, 0),
-        BackgroundTransparency = 1,
-        Text = text,
-        TextColor3 = C.muted,
-        TextSize = 9,
-        Font = Enum.Font.Gotham,
-        TextWrapped = true,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 6
-    }, f)
-    return f
-end
-
---========================================================--
--- TABS (без эмодзи)
---========================================================--
-CreateTab("ESP", "*", 1)
-CreateTab("Aim", "+", 2)
-CreateTab("Knife", "/", 3)
-CreateTab("Skins", "~", 4)
-CreateTab("Farm", "$", 5)
-CreateTab("Move", ">", 6)
-CreateTab("Misc", "=", 7)
-
--- ESP PAGE
-local ESPPage = CreatePage("ESP", "Visual settings")
-Toggle(ESPPage, "Murderer", "Highlight murderer", S.ESPMurderer, function(v) S.ESPMurderer = v end)
-Toggle(ESPPage, "Sheriff", "Highlight sheriff", S.ESPSheriff, function(v) S.ESPSheriff = v end)
-Toggle(ESPPage, "Hero", "Highlight hero", S.ESPHero, function(v) S.ESPHero = v end)
-Toggle(ESPPage, "Innocent", "Highlight innocents", S.ESPInnocent, function(v) S.ESPInnocent = v end)
-Toggle(ESPPage, "Gun ESP", "Dropped gun highlight", S.ESPGun, function(v) S.ESPGun = v end)
-InfoCard(ESPPage, "Display Options")
-Toggle(ESPPage, "Name", "Show player names", S.ESPName, function(v) S.ESPName = v end)
-Toggle(ESPPage, "Distance", "Show distance", S.ESPDistance, function(v) S.ESPDistance = v end)
-Toggle(ESPPage, "Highlight", "Character glow", S.ESPHighlight, function(v) S.ESPHighlight = v end)
-Slider(ESPPage, "Max Distance", 50, 2000, S.ESPMaxDistance, function(v) S.ESPMaxDistance = v end)
-
--- AIM PAGE
-local AimPage = CreatePage("Aim", "Auto aim settings")
-Toggle(AimPage, "Auto Aim", "Enable aimbot (Sheriff only)", S.AimAuto, function(v) S.AimAuto = v end)
-Toggle(AimPage, "Wall Check", "Check line of sight", S.AimWall, function(v) S.AimWall = v end)
-Toggle(AimPage, "Fast Aim", "Instant snap", S.AimFast, function(v) S.AimFast = v end)
-InfoCard(AimPage, "Parameters")
-Slider(AimPage, "FOV", 20, 600, S.AimFOV, function(v) S.AimFOV = v end)
-Slider(AimPage, "Range", 20, 1000, S.AimRange, function(v) S.AimRange = v end)
-Slider(AimPage, "Smoothness", 1, 100, math.floor(S.AimSmooth * 100), function(v) S.AimSmooth = v / 100 end)
-InfoCard(AimPage, "Only works when you have gun equipped")
-
--- KNIFE PAGE
-local KnifePage = CreatePage("Knife", "Murderer features")
-Toggle(KnifePage, "Kill Aura", "Auto kill nearby players", S.KillAura, function(v) S.KillAura = v end)
-Slider(KnifePage, "Aura Range", 5, 50, S.KillAuraRange, function(v) S.KillAuraRange = v end)
-Toggle(KnifePage, "Auto Kill Nearest", "Teleport to nearest", S.AutoKillNearest, function(v) S.AutoKillNearest = v end)
-InfoCard(KnifePage, "Knife Throw")
-Toggle(KnifePage, "Auto Throw", "Auto throw at targets", S.KnifeThrow, function(v) S.KnifeThrow = v end)
-Slider(KnifePage, "Throw Range", 10, 200, S.KnifeThrowRange, function(v) S.KnifeThrowRange = v end)
-Slider(KnifePage, "Cooldown (x10)", 1, 30, S.KnifeThrowCooldown * 10, function(v) S.KnifeThrowCooldown = v / 10 end)
-
--- SKINS PAGE
-local SkinsPage = CreatePage("Skins", "Skin changer (local only)")
-ActionButton(SkinsPage, "Reset to Standard", "Original knife skin", function()
-    applySkin("Standard")
-end)
-InfoCard(SkinsPage, "Only you see the skin")
-for name, _ in pairs(SKINS) do
-    if name ~= "Standard" then
-        ActionButton(SkinsPage, name, "Apply skin", function()
-            applySkin(name)
-        end)
-    end
-end
-
--- FARM PAGE
-local FarmPage = CreatePage("Farm", "Auto farm")
-Toggle(FarmPage, "Auto Coin", "Teleport to coins", S.AutoCoin, function(v) S.AutoCoin = v end)
-InfoCard(FarmPage, "Teleports to nearest coin every 0.5s")
-
--- MOVE PAGE
-local MovePage = CreatePage("Movement", "Speed & jump")
-Toggle(MovePage, "Speed Boost", "Enable speed hack", S.SpeedBoost, function(v) S.SpeedBoost = v end)
-Slider(MovePage, "Speed", 16, 200, S.SpeedValue, function(v) S.SpeedValue = v end)
-Toggle(MovePage, "Jump Boost", "Enable jump hack", S.JumpBoost, function(v) S.JumpBoost = v end)
-Slider(MovePage, "Jump Power", 50, 500, S.JumpValue, function(v) S.JumpValue = v end)
-Toggle(MovePage, "Fly", "Enable flying", S.Fly, function(v) 
-    S.Fly = v 
-    if v then startFly() else stopFly() end
-end)
-Slider(MovePage, "Fly Speed", 10, 300, S.FlySpeed, function(v) S.FlySpeed = v end)
-Toggle(MovePage, "NoClip", "Walk through walls", S.NoClip, function(v) S.NoClip = v end)
-
--- MISC PAGE
-local MiscPage = CreatePage("Misc", "Other features")
-ActionButton(MiscPage, "Auto Gun", "Pick up dropped gun", function()
-    autoGunOneShot()
-end)
-Toggle(MiscPage, "Spectate Murderer", "Camera follows murderer", S.SpectateMurderer, function(v) S.SpectateMurderer = v end)
-Toggle(MiscPage, "Anti Fling", "Prevent flinging", S.AntiFling, function(v)
-    S.AntiFling = v
-    if v then
-        local char = LP.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            local bv = Instance.new("BodyVelocity")
-            bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-            bv.Velocity = Vector3.zero
-            bv.Parent = hrp
-            _G.__AntiFlingBV = bv
+local function PageFade()
+    local i = 0
+    for _, el in ipairs(Content:GetChildren()) do
+        if el:IsA("GuiObject") then
+            i = i + 1
+            local oldPos = el.Position
+            el.Position = UDim2.new(oldPos.X.Scale, oldPos.X.Offset + 20, oldPos.Y.Scale, oldPos.Y.Offset)
+            el.BackgroundTransparency = math.min(1, (el.BackgroundTransparency or 0) + 0.5)
+            task.delay((i - 1) * 0.015, function()
+                if el and el.Parent then
+                    Play(el, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Position = oldPos,
+                        BackgroundTransparency = (el.BackgroundTransparency or 0.5) - 0.5
+                    })
+                end
+            end)
         end
-    else
-        if _G.__AntiFlingBV then pcall(function() _G.__AntiFlingBV:Destroy() end) _G.__AntiFlingBV = nil end
     end
-end)
-Toggle(MiscPage, "Infinite Jump", "Jump forever", S.InfiniteJump, function(v) S.InfiniteJump = v end)
-InfoCard(MiscPage, "Overlays")
-Toggle(MiscPage, "FPS Counter", "Show FPS", S.ShowFPS, function(v) 
-    S.ShowFPS = v 
-    fpsLbl.Visible = v
-end)
-Toggle(MiscPage, "Ping Counter", "Show ping", S.ShowPing, function(v) 
-    S.ShowPing = v 
-    pingLbl.Visible = v
-end)
-Toggle(MiscPage, "Watermark", "Show watermark", S.ShowWatermark, function(v) 
-    S.ShowWatermark = v 
-    wmLbl.Visible = v
-end)
+end
 
 --========================================================--
--- SKIN FUNCTIONS
+-- SKIN CHANGER
 --========================================================--
-function applySkin(skinName)
+local function getMyTool()
     local char = LP.Character
-    local tool = char and char:FindFirstChildOfClass("Tool")
-    if not tool then return end
+    if not char then return nil end
+    return char:FindFirstChildOfClass("Tool")
+end
+
+local function saveOriginalSkin(tool)
+    if S.OriginalMesh then return end
     local handle = tool:FindFirstChild("Handle")
     if not handle then return end
-    
-    if not OriginalMesh then
-        local mesh = handle:FindFirstChildOfClass("SpecialMesh")
-        if mesh then
-            OriginalMesh = mesh.MeshId
-            OriginalTexture = mesh.TextureId
-        end
+    local mesh = handle:FindFirstChildOfClass("SpecialMesh")
+    if mesh then
+        S.OriginalMesh = mesh.MeshId
+        S.OriginalTexture = mesh.TextureId
     end
-    
+end
+
+local function applySkin(skinName)
+    local tool = getMyTool()
+    if not tool then print("[AD] Нет Tool в руках") return end
+    local handle = tool:FindFirstChild("Handle")
+    if not handle then return end
+
+    saveOriginalSkin(tool)
+
     if skinName == "Standard" then
         local mesh = handle:FindFirstChildOfClass("SpecialMesh")
         if mesh then
-            if OriginalMesh then mesh.MeshId = OriginalMesh end
-            if OriginalTexture then mesh.TextureId = OriginalTexture end
+            if S.OriginalMesh then mesh.MeshId = S.OriginalMesh end
+            if S.OriginalTexture then mesh.TextureId = S.OriginalTexture end
         end
         S.CurrentSkin = "Standard"
+        print("[AD] Скин сброшен на стандартный")
         return
     end
-    
+
     local skin = SKINS[skinName]
     if not skin then return end
-    
+
     local mesh = handle:FindFirstChildOfClass("SpecialMesh")
     if not mesh then
         mesh = Instance.new("SpecialMesh")
@@ -752,127 +721,143 @@ function applySkin(skinName)
     if skin.Mesh then mesh.MeshId = skin.Mesh end
     if skin.Texture then mesh.TextureId = skin.Texture end
     S.CurrentSkin = skinName
+    print("[AD] Скин изменён: " .. skinName)
 end
 
 task.spawn(function()
-    while Screen and Screen.Parent do
+    while GUI and GUI.Parent do
         task.wait(1)
         if S.CurrentSkin ~= "Standard" then
-            applySkin(S.CurrentSkin)
+            local tool = getMyTool()
+            if tool then
+                local handle = tool:FindFirstChild("Handle")
+                if handle then
+                    local mesh = handle:FindFirstChildOfClass("SpecialMesh")
+                    local skin = SKINS[S.CurrentSkin]
+                    if skin and mesh then
+                        if skin.Mesh and mesh.MeshId ~= skin.Mesh then mesh.MeshId = skin.Mesh end
+                        if skin.Texture and mesh.TextureId ~= skin.Texture then mesh.TextureId = skin.Texture end
+                    end
+                end
+            end
         end
     end
 end)
 
 --========================================================--
--- ROLE DETECTION
+-- ROLES
 --========================================================--
 local RoleCache = {}
+local function cacheRole(name, role)
+    if not name or not role then return end
+    RoleCache[name] = tostring(role)
+end
+local function resetRoleCache() RoleCache = {} end
+bind(LP.CharacterAdded:Connect(function() task.wait(1) resetRoleCache() end))
 
 local function getRole(plr)
     if RoleCache[plr.Name] then return RoleCache[plr.Name] end
     local char = plr.Character
     if not char then return "Innocent" end
-    
-    local role = plr:GetAttribute("Role") or char:GetAttribute("Role")
-    if role then
-        RoleCache[plr.Name] = tostring(role)
-        return tostring(role)
-    end
-    
+    local role = plr:GetAttribute("Role") or plr:GetAttribute("role")
+    if role then cacheRole(plr.Name, role) return tostring(role) end
+    role = char:GetAttribute("Role") or char:GetAttribute("role")
+    if role then cacheRole(plr.Name, role) return tostring(role) end
     local tool = char:FindFirstChildOfClass("Tool")
     if tool then
         local n = tool.Name:lower()
-        if n:find("knife") or n:find("dagger") or n:find("sword") or n:find("blade") then
-            RoleCache[plr.Name] = "Murderer"
-            return "Murderer"
-        end
-        if n:find("gun") or n:find("pistol") or n:find("revolver") then
-            RoleCache[plr.Name] = "Sheriff"
-            return "Sheriff"
-        end
+        if n:find("knife") or n:find("dagger") or n:find("sword") or n:find("blade") then cacheRole(plr.Name, "Murderer") return "Murderer" end
+        if n:find("gun") or n:find("pistol") or n:find("revolver") then cacheRole(plr.Name, "Sheriff") return "Sheriff" end
     end
-    
-    local bp = plr:FindFirstChild("Backpack")
-    if bp then
-        for _, t in ipairs(bp:GetChildren()) do
+    local backpack = plr:FindFirstChild("Backpack")
+    if backpack then
+        for _, t in ipairs(backpack:GetChildren()) do
             if t:IsA("Tool") then
                 local n = t.Name:lower()
-                if n:find("knife") or n:find("dagger") then
-                    RoleCache[plr.Name] = "Murderer"
-                    return "Murderer"
-                end
-                if n:find("gun") or n:find("pistol") then
-                    RoleCache[plr.Name] = "Sheriff"
-                    return "Sheriff"
-                end
+                if n:find("knife") or n:find("dagger") then cacheRole(plr.Name, "Murderer") return "Murderer" end
+                if n:find("gun") or n:find("pistol") then cacheRole(plr.Name, "Sheriff") return "Sheriff" end
             end
         end
     end
     return "Innocent"
 end
 
-bind(LP.CharacterAdded:Connect(function()
-    task.wait(2)
-    RoleCache = {}
-end))
+--========================================================--
+-- CHARACTER CACHE
+--========================================================--
+local CharCache = {}
+local function setCharacter(player, char)
+    CharCache[player] = char
+    if not char then return end
+    bind(char.AncestryChanged:Connect(function(_, parent) if not parent then CharCache[player] = nil end end))
+end
+local function watchPlayer(plr)
+    if plr == LP then return end
+    setCharacter(plr, plr.Character)
+    bind(plr.CharacterAdded:Connect(function(c) task.wait(0.2) setCharacter(plr, c) end))
+    bind(plr.CharacterRemoving:Connect(function() CharCache[plr] = nil end))
+end
+for _, plr in ipairs(Players:GetPlayers()) do watchPlayer(plr) end
+bind(Players.PlayerAdded:Connect(watchPlayer))
+bind(Players.PlayerRemoving:Connect(function(plr) CharCache[plr] = nil RoleCache[plr.Name] = nil end))
+
+local function getCharacter(player) return CharCache[player] end
+local function getRoot(char)
+    if not char then return nil end
+    return char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
+end
+local function getHumanoid(char) return char and char:FindFirstChildOfClass("Humanoid") end
+local function getHead(char) return char and char:FindFirstChild("Head") end
+local function isAlive(char)
+    if not char or not char.Parent or not char:IsDescendantOf(workspace) then return false end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    return hum ~= nil and hum.Health > 0
+end
 
 --========================================================--
--- ESP SYSTEM
+-- ESP
 --========================================================--
-local espFolder = New("Folder", { Name = "ESP" }, Screen)
+local espFolder = Create("Folder", { Name = "AD_MM2_ESP", Parent = PARENT })
 local ESPData = {}
-local COLORS = {
-    Murderer = Color3.fromRGB(255, 60, 60),
-    Sheriff = Color3.fromRGB(60, 130, 255),
-    Hero = Color3.fromRGB(80, 200, 255),
-    Innocent = Color3.fromRGB(60, 220, 90)
-}
+local COLOR_MURDERER = Color3.fromRGB(255, 50, 50)
+local COLOR_SHERIFF  = Color3.fromRGB(50, 130, 255)
+local COLOR_HERO     = Color3.fromRGB(80, 200, 255)
+local COLOR_INNOCENT = Color3.fromRGB(50, 220, 90)
 
 local function removeESP(plr)
     local d = ESPData[plr]
     if not d then return end
-    for _, obj in pairs(d) do
-        if typeof(obj) == "Instance" then pcall(function() obj:Destroy() end) end
-    end
+    for _, obj in pairs(d) do if typeof(obj) == "Instance" then pcall(function() obj:Destroy() end) end end
     ESPData[plr] = nil
 end
 
 local function createESP(plr)
     if plr == LP or ESPData[plr] then return end
-    local d = {}
-    d.Highlight = New("Highlight", {
-        FillColor = COLORS.Innocent, FillTransparency = 0.7,
-        OutlineColor = Color3.new(1, 1, 1), OutlineTransparency = 0.5,
+    local data = {}
+    data.Highlight = Create("Highlight", {
+        Name = "ESP_HL", FillColor = COLOR_INNOCENT, FillTransparency = 0.7,
+        OutlineColor = Color3.fromRGB(255, 255, 255), OutlineTransparency = 0.4,
         DepthMode = Enum.HighlightDepthMode.AlwaysOnTop, Enabled = false,
         Parent = espFolder
     })
-    local bb = New("BillboardGui", {
-        Size = UDim2.fromOffset(120, 35), StudsOffset = Vector3.new(0, 3, 0),
+    local bb = Create("BillboardGui", {
+        Name = "ESP_Info", Size = UDim2.fromOffset(150, 36),
+        StudsOffsetWorldSpace = Vector3.new(0, 3.4, 0),
         AlwaysOnTop = true, Enabled = false, MaxDistance = S.ESPMaxDistance,
         Parent = espFolder
     })
-    d.Info = bb
-    d.Name = New("TextLabel", {
-        Size = UDim2.new(1, 0, 0, 13), BackgroundTransparency = 1,
-        TextColor3 = Color3.new(1, 1, 1), TextStrokeTransparency = 0.4,
-        Font = Enum.Font.GothamBold, TextSize = 11, Parent = bb
-    })
-    d.Role = New("TextLabel", {
-        Size = UDim2.new(1, 0, 0, 10), Position = UDim2.fromOffset(0, 13),
-        BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(200, 200, 200),
-        TextStrokeTransparency = 0.4, Font = Enum.Font.GothamBold, TextSize = 9, Parent = bb
-    })
-    d.Dist = New("TextLabel", {
-        Size = UDim2.new(1, 0, 0, 10), Position = UDim2.fromOffset(0, 23),
-        BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(180, 255, 180),
-        TextStrokeTransparency = 0.4, Font = Enum.Font.Gotham, TextSize = 8, Parent = bb
-    })
-    ESPData[plr] = d
+    data.Info = bb
+    data.Name = Create("TextLabel", { Size = UDim2.new(1, 0, 0, 16), BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(255, 255, 255), TextStrokeTransparency = 0.4, TextStrokeColor3 = Color3.fromRGB(0, 0, 0), Font = Enum.Font.GothamBold, TextSize = 13, Text = plr.Name, Parent = bb })
+    data.Role = Create("TextLabel", { Size = UDim2.new(1, 0, 0, 12), Position = UDim2.fromOffset(0, 16), BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(200, 200, 200), TextStrokeTransparency = 0.4, TextStrokeColor3 = Color3.fromRGB(0, 0, 0), Font = Enum.Font.GothamBold, TextSize = 11, Text = "?", Parent = bb })
+    data.Dist = Create("TextLabel", { Size = UDim2.new(1, 0, 0, 12), Position = UDim2.fromOffset(0, 28), BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(200, 240, 210), TextStrokeTransparency = 0.4, TextStrokeColor3 = Color3.fromRGB(0, 0, 0), Font = Enum.Font.Gotham, TextSize = 10, Text = "0 m", Parent = bb })
+    ESPData[plr] = data
 end
 
--- Gun ESP
-local gunFolder = New("Folder", { Name = "GunESP" }, Screen)
-local gunESP = {}
+--========================================================--
+-- GUN ESP
+--========================================================--
+local gunEspFolder = Create("Folder", { Name = "AD_MM2_GunESP", Parent = PARENT })
+local gunESPData = {}
 
 local function isGun(tool)
     if not tool:IsA("Tool") then return false end
@@ -881,48 +866,33 @@ local function isGun(tool)
 end
 
 local function createGunESP(tool)
-    if gunESP[tool] then return end
-    local hl = New("Highlight", {
-        FillColor = Color3.fromRGB(255, 60, 60), FillTransparency = 0.5,
-        OutlineColor = Color3.new(1, 1, 1), OutlineTransparency = 0.3,
-        DepthMode = Enum.HighlightDepthMode.AlwaysOnTop, Adornee = tool,
-        Parent = gunFolder
-    })
-    local bb = New("BillboardGui", {
-        Size = UDim2.fromOffset(80, 16), StudsOffset = Vector3.new(0, 1.5, 0),
-        AlwaysOnTop = true, Adornee = tool, Parent = gunFolder
-    })
-    New("TextLabel", {
-        Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1,
-        Text = "GUN", TextColor3 = Color3.fromRGB(255, 220, 60),
-        TextStrokeTransparency = 0.3, Font = Enum.Font.GothamBold,
-        TextSize = 10, Parent = bb
-    })
-    gunESP[tool] = { Highlight = hl, Billboard = bb }
+    if gunESPData[tool] then return end
+    local data = {}
+    data.Highlight = Create("Highlight", { Name = "GunHL", FillColor = Color3.fromRGB(255, 60, 60), FillTransparency = 0.5, OutlineColor = Color3.fromRGB(255, 255, 255), OutlineTransparency = 0.2, DepthMode = Enum.HighlightDepthMode.AlwaysOnTop, Adornee = tool, Parent = gunEspFolder })
+    local bb = Create("BillboardGui", { Name = "GunInfo", Size = UDim2.fromOffset(100, 16), StudsOffsetWorldSpace = Vector3.new(0, 2, 0), AlwaysOnTop = true, Adornee = tool, Parent = gunEspFolder })
+    Create("TextLabel", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "GUN", TextColor3 = Color3.fromRGB(255, 220, 50), TextStrokeTransparency = 0.3, TextStrokeColor3 = Color3.fromRGB(0, 0, 0), Font = Enum.Font.GothamBold, TextSize = 12, Parent = bb })
+    data.Billboard = bb
+    gunESPData[tool] = data
 end
 
 local function removeGunESP(tool)
-    local d = gunESP[tool]
+    local d = gunESPData[tool]
     if not d then return end
     if d.Highlight then pcall(function() d.Highlight:Destroy() end) end
     if d.Billboard then pcall(function() d.Billboard:Destroy() end) end
-    gunESP[tool] = nil
+    gunESPData[tool] = nil
 end
 
 task.spawn(function()
-    while Screen and Screen.Parent do
+    while GUI and GUI.Parent do
         task.wait(0.5)
         if S.ESPGun then
             for _, obj in ipairs(workspace:GetDescendants()) do
-                if obj:IsA("Tool") and isGun(obj) and not gunESP[obj] then
-                    createGunESP(obj)
-                end
+                if obj:IsA("Tool") and isGun(obj) and not gunESPData[obj] then createGunESP(obj) end
             end
-            for tool, _ in pairs(gunESP) do
-                if not tool.Parent then removeGunESP(tool) end
-            end
+            for tool in pairs(gunESPData) do if not tool.Parent then removeGunESP(tool) end end
         else
-            for tool, _ in pairs(gunESP) do removeGunESP(tool) end
+            for tool in pairs(gunESPData) do removeGunESP(tool) end
         end
     end
 end)
@@ -938,6 +908,15 @@ local function isSheriff()
         local n = tool.Name:lower()
         if n:find("gun") or n:find("pistol") or n:find("revolver") then return true end
     end
+    local backpack = LP:FindFirstChild("Backpack")
+    if backpack then
+        for _, t in ipairs(backpack:GetChildren()) do
+            if t:IsA("Tool") then
+                local n = t.Name:lower()
+                if n:find("gun") or n:find("pistol") or n:find("revolver") then return true end
+            end
+        end
+    end
     return false
 end
 
@@ -947,31 +926,29 @@ local function findMurderer()
     local center = Vector2.new(vp.X / 2, vp.Y / 2)
     local camPos = Camera.CFrame.Position
     local best, bestScore = nil, math.huge
-    
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= LP and getRole(plr) == "Murderer" then
-            local char = plr.Character
-            if char and char:FindFirstChildOfClass("Humanoid") then
+            local char = getCharacter(plr)
+            if char and isAlive(char) then
                 local head = char:FindFirstChild("Head")
                 if head then
                     local dist = (head.Position - camPos).Magnitude
                     if dist <= S.AimRange then
                         local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
                         if onScreen and pos.Z > 0 then
-                            local pd = (Vector2.new(pos.X, pos.Y) - center).Magnitude
-                            if pd <= S.AimFOV and pd < bestScore then
+                            local pixelDist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+                            if pixelDist <= S.AimFOV and pixelDist < bestScore then
                                 local visible = true
                                 if S.AimWall then
+                                    local filter = { Camera }
+                                    if LP.Character then table.insert(filter, LP.Character) end
                                     local params = RaycastParams.new()
                                     params.FilterType = Enum.RaycastFilterType.Exclude
-                                    params.FilterDescendantsInstances = { LP.Character, Camera }
+                                    params.FilterDescendantsInstances = filter
                                     local hit = workspace:Raycast(camPos, head.Position - camPos, params)
-                                    visible = not hit or hit.Instance:IsDescendantOf(char)
+                                    visible = (not hit) or hit.Instance:IsDescendantOf(char)
                                 end
-                                if visible then
-                                    best = plr
-                                    bestScore = pd
-                                end
+                                if visible then best = plr; bestScore = pixelDist end
                             end
                         end
                     end
@@ -983,287 +960,327 @@ local function findMurderer()
 end
 
 --========================================================--
+-- VISUALS (FPS/Ping/Watermark)
+--========================================================--
+local fpsLabel = Create("TextLabel", { Size = UDim2.fromOffset(120, 20), Position = UDim2.new(0, 12, 0, 12), BackgroundTransparency = 1, Text = "FPS: --", TextColor3 = C.green, TextSize = 13, Font = Enum.Font.Code, TextXAlignment = Enum.TextXAlignment.Left, Visible = false, Parent = GUI })
+local pingLabel = Create("TextLabel", { Size = UDim2.fromOffset(120, 20), Position = UDim2.new(0, 12, 0, 30), BackgroundTransparency = 1, Text = "Ping: -- ms", TextColor3 = Color3.fromRGB(255, 200, 60), TextSize = 13, Font = Enum.Font.Code, TextXAlignment = Enum.TextXAlignment.Left, Visible = false, Parent = GUI })
+local watermarkLabel = Create("TextLabel", { Size = UDim2.fromOffset(200, 20), Position = UDim2.new(1, -212, 0, 12), BackgroundTransparency = 1, Text = "AD MM2 v1.8", TextColor3 = Color3.fromRGB(200, 200, 255), TextSize = 13, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Right, Visible = false, Parent = GUI })
+
+task.spawn(function()
+    while GUI and GUI.Parent do
+        local frames = 0
+        local startTime = tick()
+        while tick() - startTime < 1 do
+            RunService.RenderStepped:Wait()
+            frames = frames + 1
+        end
+        if S.ShowFPS then fpsLabel.Text = "FPS: " .. frames end
+    end
+end)
+
+task.spawn(function()
+    while GUI and GUI.Parent do
+        local ok, ping = pcall(function() return LP:GetNetworkPing() end)
+        if ok and S.ShowPing then pingLabel.Text = string.format("Ping: %d ms", math.floor(ping * 1000)) end
+        task.wait(1)
+    end
+end)
+
+--========================================================--
 -- FLY
 --========================================================--
 local flyBV, flyBG = nil, nil
-local flyVel = Vector3.zero
+local flyLastVel = Vector3.zero
 
-function startFly()
+local function stopFly()
+    if flyBV then flyBV:Destroy() flyBV = nil end
+    if flyBG then flyBG:Destroy() flyBG = nil end
+    flyLastVel = Vector3.zero
+end
+
+local function startFly()
     stopFly()
     local char = LP.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     flyBV = Instance.new("BodyVelocity")
     flyBV.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+    flyBV.P = 5000
     flyBV.Velocity = Vector3.zero
     flyBV.Parent = hrp
     flyBG = Instance.new("BodyGyro")
     flyBG.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
     flyBG.P = 12000
+    flyBG.D = 200
     flyBG.Parent = hrp
 end
 
-function stopFly()
-    if flyBV then flyBV:Destroy() flyBV = nil end
-    if flyBG then flyBG:Destroy() flyBG = nil end
-    flyVel = Vector3.zero
-end
+bind(RunService.Heartbeat:Connect(function(dt)
+    if S.Fly then
+        local char = LP.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hrp and hum and flyBV and flyBG then
+            local move = hum.MoveDirection
+            local look = Camera.CFrame.LookVector
+            local targetVel = Vector3.zero
+            if move.Magnitude > 0.05 then
+                targetVel = move.Unit * S.FlySpeed
+                local forwardDot = move:Dot(Vector3.new(look.X, 0, look.Z).Unit)
+                if forwardDot > 0.1 then targetVel = targetVel + Vector3.new(0, look.Y * S.FlySpeed * forwardDot, 0) end
+            end
+            flyLastVel = flyLastVel:Lerp(targetVel, math.clamp(dt * 12, 0, 1))
+            flyBV.Velocity = flyLastVel
+            flyBG.CFrame = Camera.CFrame
+        end
+    else
+        if flyBV or flyBG then stopFly() end
+    end
+end))
 
 --========================================================--
 -- AUTO GUN
 --========================================================--
 local autoGunRunning = false
-function autoGunOneShot()
+local function autoGunOneShot()
     if autoGunRunning then return end
-    local char = LP.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    
+    local myChar = LP.Character
+    local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    if not myHrp then return end
     local bestGun, bestDist = nil, math.huge
     for _, obj in ipairs(workspace:GetDescendants()) do
         if isGun(obj) then
             local handle = obj:FindFirstChild("Handle")
             if handle then
-                local d = (handle.Position - hrp.Position).Magnitude
-                if d < bestDist then bestDist = d bestGun = handle end
+                local d = (handle.Position - myHrp.Position).Magnitude
+                if d < bestDist and d < 800 then bestDist = d; bestGun = handle end
             end
         end
     end
-    if not bestGun then return end
+    if not bestGun then print("[AD] Пистолет не найден") return end
     autoGunRunning = true
     task.spawn(function()
-        local savedPos = hrp.CFrame
-        pcall(function() hrp.CFrame = CFrame.new(bestGun.Position + Vector3.new(0, 2, 0)) end)
+        local savedPos = myHrp.CFrame
+        pcall(function() myHrp.CFrame = CFrame.new(bestGun.Position + Vector3.new(0, 2, 0)) end)
         for i = 1, 30 do
             task.wait(0.1)
-            if char and char:FindFirstChildOfClass("Tool") then break end
+            local curChar = LP.Character
+            if curChar and curChar:FindFirstChildOfClass("Tool") then break end
         end
         task.wait(0.3)
-        pcall(function() hrp.CFrame = savedPos end)
+        pcall(function()
+            local curChar = LP.Character
+            local curHrp = curChar and curChar:FindFirstChild("HumanoidRootPart")
+            if curHrp then curHrp.CFrame = savedPos end
+        end)
         autoGunRunning = false
     end)
 end
 
 --========================================================--
--- OVERLAYS
+-- FARM / MURDERER / SPECTATE / INF JUMP
 --========================================================--
-local fpsLbl = New("TextLabel", {
-    Size = UDim2.fromOffset(90, 16), Position = UDim2.new(0, 8, 0, 8),
-    BackgroundTransparency = 1, Text = "FPS: --", TextColor3 = C.green,
-    TextSize = 11, Font = Enum.Font.Code, Visible = false, ZIndex = 50
-}, Screen)
-
-local pingLbl = New("TextLabel", {
-    Size = UDim2.fromOffset(90, 16), Position = UDim2.new(0, 8, 0, 24),
-    BackgroundTransparency = 1, Text = "Ping: --", TextColor3 = C.yellow,
-    TextSize = 11, Font = Enum.Font.Code, Visible = false, ZIndex = 50
-}, Screen)
-
-local wmLbl = New("TextLabel", {
-    Size = UDim2.fromOffset(150, 16), Position = UDim2.new(1, -158, 0, 8),
-    BackgroundTransparency = 1, Text = "AD MM2 v2.2",
-    TextColor3 = Color3.fromRGB(200, 200, 255), TextSize = 11,
-    Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Right,
-    Visible = false, ZIndex = 50
-}, Screen)
-
 task.spawn(function()
-    while Screen and Screen.Parent do
-        local frames = 0
-        local start = tick()
-        while tick() - start < 1 do
-            RunService.RenderStepped:Wait()
-            frames = frames + 1
-        end
-        if S.ShowFPS then fpsLbl.Text = "FPS: " .. frames end
-    end
-end)
-
-task.spawn(function()
-    while Screen and Screen.Parent do
-        local ok, ping = pcall(function() return LP:GetNetworkPing() end)
-        if ok and S.ShowPing then
-            pingLbl.Text = "Ping: " .. math.floor(ping * 1000) .. "ms"
-        end
-        task.wait(1)
-    end
-end)
-
---========================================================--
--- MAIN LOOPS
---========================================================--
-bind(RunService.RenderStepped:Connect(function(dt)
-    if S.AimAuto and isSheriff() then
-        local target = findMurderer()
-        if target then
-            local char = target.Character
-            local head = char and char:FindFirstChild("Head")
-            if head then
-                local desired = CFrame.lookAt(Camera.CFrame.Position, head.Position)
-                if S.AimFast then
-                    Camera.CFrame = desired
-                else
-                    Camera.CFrame = Camera.CFrame:Lerp(desired, math.clamp(S.AimSmooth * dt * 60, 0.05, 1))
-                end
-            end
-        end
-    end
-    
-    for plr, d in pairs(ESPData) do
-        local role = getRole(plr)
-        local char = plr.Character
-        local show = false
-        if role == "Murderer" and S.ESPMurderer then show = true
-        elseif role == "Sheriff" and S.ESPSheriff then show = true
-        elseif role == "Hero" and S.ESPHero then show = true
-        elseif role == "Innocent" and S.ESPInnocent then show = true end
-        
-        if char and show then
-            local humanoid = char:FindFirstChildOfClass("Humanoid")
-            local root = char:FindFirstChild("HumanoidRootPart")
-            local head = char:FindFirstChild("Head")
-            if humanoid and humanoid.Health > 0 and root then
-                local dist = (root.Position - Camera.CFrame.Position).Magnitude
-                if dist <= S.ESPMaxDistance then
-                    d.Info.Enabled = true
-                    d.Info.Adornee = head or root
-                    local color = COLORS[role] or COLORS.Innocent
-                    d.Name.Text = plr.Name
-                    d.Name.TextColor3 = color
-                    d.Name.Visible = S.ESPName
-                    d.Role.Text = role:upper()
-                    d.Role.TextColor3 = color
-                    d.Role.Visible = true
-                    d.Dist.Text = math.floor(dist) .. "m"
-                    d.Dist.Visible = S.ESPDistance
-                    d.Highlight.Enabled = S.ESPHighlight
-                    d.Highlight.FillColor = color
-                    d.Highlight.Adornee = char
-                else
-                    d.Info.Enabled = false
-                    d.Highlight.Enabled = false
-                end
-            else
-                d.Info.Enabled = false
-                d.Highlight.Enabled = false
-            end
-        else
-            d.Info.Enabled = false
-            d.Highlight.Enabled = false
-        end
-    end
-end))
-
-bind(RunService.Heartbeat:Connect(function(dt)
-    local char = LP.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    local tool = char and char:FindFirstChildOfClass("Tool")
-    local isKnife = tool and (tool.Name:lower():find("knife") or tool.Name:lower():find("dagger"))
-    
-    if S.Fly and hrp and hum and flyBV and flyBG then
-        local move = hum.MoveDirection
-        local look = Camera.CFrame.LookVector
-        local target = Vector3.zero
-        if move.Magnitude > 0.05 then
-            target = move.Unit * S.FlySpeed
-            local fd = move:Dot(Vector3.new(look.X, 0, look.Z).Unit)
-            if fd > 0.1 then
-                target = target + Vector3.new(0, look.Y * S.FlySpeed * fd, 0)
-            end
-        end
-        flyVel = flyVel:Lerp(target, math.clamp(dt * 12, 0, 1))
-        flyBV.Velocity = flyVel
-        flyBG.CFrame = Camera.CFrame
-    end
-    
-    if S.KillAura and isKnife and hrp then
-        for _, plr in ipairs(Players:GetPlayers()) do
-            if plr ~= LP then
-                local tc = plr.Character
-                local th = tc and tc:FindFirstChildOfClass("Humanoid")
-                local tr = tc and tc:FindFirstChild("HumanoidRootPart")
-                if th and th.Health > 0 and tr then
-                    if (tr.Position - hrp.Position).Magnitude <= S.KillAuraRange then
-                        pcall(function() hrp.CFrame = tr.CFrame tool:Activate() end)
+    while GUI and GUI.Parent do
+        task.wait(0.5)
+        if S.AutoCoin then
+            local myChar = LP.Character
+            local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+            if myHrp then
+                local myPos = myHrp.Position
+                local best, bestDist = nil, math.huge
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if obj:IsA("BasePart") and obj.Name:lower():find("coin") and obj.Transparency < 1 then
+                        local d = (obj.Position - myPos).Magnitude
+                        if d < bestDist and d < 200 then bestDist = d; best = obj end
                     end
                 end
+                if best and myHrp then pcall(function() myHrp.CFrame = CFrame.new(best.Position + Vector3.new(0, 3, 0)) end) end
             end
         end
     end
-    
-    if S.AutoKillNearest and isKnife and hrp then
+end)
+
+bind(RunService.Heartbeat:Connect(function(dt)
+    local myChar = LP.Character
+    local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
+    local myTool = myChar and myChar:FindFirstChildOfClass("Tool")
+    local isKnife = myTool and (myTool.Name:lower():find("knife") or myTool.Name:lower():find("dagger") or myTool.Name:lower():find("sword") or myTool.Name:lower():find("blade"))
+
+    if S.KillAura and isKnife and myHrp then
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LP then
+                local tchar = plr.Character
+                local thum = tchar and tchar:FindFirstChildOfClass("Humanoid")
+                local thrp = tchar and tchar:FindFirstChild("HumanoidRootPart")
+                if thum and thum.Health > 0 and thrp then
+                    local d = (thrp.Position - myHrp.Position).Magnitude
+                    if d <= S.KillAuraRange then pcall(function() myHrp.CFrame = thrp.CFrame; myTool:Activate() end) end
+                end
+            end
+        end
+    end
+
+    if S.AutoKillNearest and isKnife and myHrp then
         local best, bestD = nil, math.huge
         for _, plr in ipairs(Players:GetPlayers()) do
             if plr ~= LP then
-                local tr = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-                if tr then
-                    local d = (tr.Position - hrp.Position).Magnitude
-                    if d < bestD then bestD = d best = tr end
+                local tchar = plr.Character
+                local thrp = tchar and tchar:FindFirstChild("HumanoidRootPart")
+                if thrp then
+                    local d = (thrp.Position - myHrp.Position).Magnitude
+                    if d < bestD then bestD = d; best = thrp end
                 end
             end
         end
-        if best then
-            pcall(function() hrp.CFrame = best.CFrame tool:Activate() end)
-        end
+        if best then pcall(function() myHrp.CFrame = best.CFrame; myTool:Activate() end) end
     end
-    
-    if S.KnifeThrow and isKnife and hrp then
+
+    if S.KnifeThrow and isKnife and myHrp then
         local now = tick()
-        if not _G.__KTLast or now - _G.__KTLast > S.KnifeThrowCooldown then
+        if not _G.__KnifeThrowLast or now - _G.__KnifeThrowLast > S.KnifeThrowCooldown then
             local best, bestD = nil, math.huge
             for _, plr in ipairs(Players:GetPlayers()) do
                 if plr ~= LP and getRole(plr) ~= "Sheriff" then
-                    local tr = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-                    if tr then
-                        local d = (tr.Position - hrp.Position).Magnitude
-                        if d <= S.KnifeThrowRange and d < bestD then
-                            bestD = d best = plr
-                        end
+                    local tchar = plr.Character
+                    local thrp = tchar and tchar:FindFirstChild("HumanoidRootPart")
+                    if thrp then
+                        local d = (thrp.Position - myHrp.Position).Magnitude
+                        if d <= S.KnifeThrowRange and d < bestD then bestD = d; best = plr end
                     end
                 end
             end
             if best then
-                local tr = best.Character and best.Character:FindFirstChild("HumanoidRootPart")
-                if tr then
-                    pcall(function()
-                        Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, tr.Position)
-                        tool:Activate()
-                    end)
-                    _G.__KTLast = now
+                local tchar = best.Character
+                local thrp = tchar and tchar:FindFirstChild("HumanoidRootPart")
+                if thrp then
+                    pcall(function() Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, thrp.Position) end)
+                    pcall(function() myTool:Activate() end)
+                    _G.__KnifeThrowLast = now
                 end
             end
         end
     end
-    
+
     if S.SpectateMurderer and Camera then
+        local found = false
         for _, plr in ipairs(Players:GetPlayers()) do
             if plr ~= LP and getRole(plr) == "Murderer" then
-                local th = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
-                if th then Camera.CameraSubject = th end
+                local tchar = plr.Character
+                local thum = tchar and tchar:FindFirstChildOfClass("Humanoid")
+                if thum then Camera.CameraSubject = thum; found = true end
                 break
             end
         end
+        if not found and myHum and Camera.CameraSubject ~= myHum then Camera.CameraSubject = myHum end
+    elseif myHum and Camera and Camera.CameraSubject ~= myHum then
+        Camera.CameraSubject = myHum
     end
-    
-    if S.InfiniteJump and hum then
-        if UIS:IsKeyDown(Enum.KeyCode.Space) then
-            hum:ChangeState(Enum.HumanoidStateType.Jumping)
+
+    if S.InfiniteJump and myHum then
+        if UIS:IsKeyDown(Enum.KeyCode.Space) or myHum:GetState() == Enum.HumanoidStateType.Jumping then
+            myHum:ChangeState(Enum.HumanoidStateType.Jumping)
         end
     end
 end))
+
+--========================================================--
+-- MAIN RENDER
+--========================================================--
+local accum = 0
+local UPDATE_STEP = 1 / 20
+
+bind(RunService.RenderStepped:Connect(function(dt)
+    if S.AimAuto and isSheriff() then
+        local target = findMurderer()
+        if target then
+            local char = getCharacter(target)
+            local head = char and char:FindFirstChild("Head")
+            if head then
+                local desired = CFrame.lookAt(Camera.CFrame.Position, head.Position)
+                local baseSmooth = S.AimFast and 0.98 or S.AimSmooth
+                if baseSmooth >= 0.99 then
+                    Camera.CFrame = desired
+                else
+                    local sm = math.clamp(baseSmooth * (dt * 60), 0.05, 1)
+                    Camera.CFrame = Camera.CFrame:Lerp(desired, sm)
+                end
+            end
+        end
+    end
+
+    accum = accum + dt
+    if accum >= UPDATE_STEP then
+        accum = 0
+        if S.ESPMurderer or S.ESPSheriff or S.ESPHero or S.ESPInnocent then
+            for plr, d in pairs(ESPData) do
+                local role = getRole(plr)
+                local char = getCharacter(plr)
+                local showRole =
+                    (role == "Murderer" and S.ESPMurderer) or
+                    (role == "Sheriff" and S.ESPSheriff) or
+                    (role == "Hero" and S.ESPHero) or
+                    (role ~= "Murderer" and role ~= "Sheriff" and role ~= "Hero" and S.ESPInnocent)
+                if char and isAlive(char) and showRole then
+                    local root = getRoot(char)
+                    local head = getHead(char)
+                    local camPos = Camera.CFrame.Position
+                    if root then
+                        local distance = (root.Position - camPos).Magnitude
+                        if distance > S.ESPMaxDistance then
+                            d.Info.Enabled = false; d.Highlight.Enabled = false
+                        else
+                            d.Info.Enabled = true; d.Info.Adornee = head or root; d.Info.MaxDistance = S.ESPMaxDistance
+                            local color = role == "Murderer" and COLOR_MURDERER or role == "Sheriff" and COLOR_SHERIFF or role == "Hero" and COLOR_HERO or COLOR_INNOCENT
+                            d.Name.Text = plr.Name; d.Name.TextColor3 = color
+                            d.Role.Text = role == "Murderer" and "УБИЙЦА" or role == "Sheriff" and "ШЕРИФ" or role == "Hero" and "ГЕРОЙ" or "МИРНЫЙ"
+                            d.Role.TextColor3 = color
+                            d.Dist.Text = string.format("%d м", math.floor(distance))
+                            d.Dist.Visible = S.ESPDistance
+                            d.Name.Visible = S.ESPName
+                            d.Highlight.Enabled = S.ESPHighlight
+                            d.Highlight.FillColor = color
+                            d.Highlight.Adornee = char
+                        end
+                    end
+                else
+                    d.Info.Enabled = false; d.Highlight.Enabled = false
+                end
+            end
+        else
+            for _, d in pairs(ESPData) do d.Info.Enabled = false; d.Highlight.Enabled = false end
+        end
+    end
+end))
+
+--========================================================--
+-- SPEED / JUMP / NOCLIP
+--========================================================--
+local humanoidHooks = {}
+local function hookHumanoid(hum)
+    if humanoidHooks[hum] then return end
+    humanoidHooks[hum] = true
+    bind(hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+        if S.SpeedBoost and hum.WalkSpeed ~= S.SpeedValue then hum.WalkSpeed = S.SpeedValue end
+    end))
+    bind(hum:GetPropertyChangedSignal("JumpPower"):Connect(function()
+        if S.JumpBoost and hum.JumpPower ~= S.JumpValue then hum.JumpPower = S.JumpValue end
+    end))
+end
 
 bind(RunService.Stepped:Connect(function()
     local char = LP.Character
     if not char then return end
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not hum then return end
-    hum.UseJumpPower = true
+    hookHumanoid(hum)
     if S.SpeedBoost then
         if hum.WalkSpeed ~= S.SpeedValue then hum.WalkSpeed = S.SpeedValue end
     else
         if hum.WalkSpeed ~= 16 then hum.WalkSpeed = 16 end
     end
+    hum.UseJumpPower = true
     if S.JumpBoost then
         if hum.JumpPower ~= S.JumpValue then hum.JumpPower = S.JumpValue end
     else
@@ -1271,116 +1288,239 @@ bind(RunService.Stepped:Connect(function()
     end
     if S.NoClip then
         for _, d in ipairs(char:GetDescendants()) do
-            if d:IsA("BasePart") and d.CanCollide then
-                pcall(function() d.CanCollide = false end)
-            end
+            if d:IsA("BasePart") and d.CanCollide then pcall(function() d.CanCollide = false end) end
         end
     end
 end))
 
-task.spawn(function()
-    while Screen and Screen.Parent do
-        task.wait(0.5)
-        if S.AutoCoin then
-            local char = LP.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local best, bestD = nil, math.huge
-                for _, obj in ipairs(workspace:GetDescendants()) do
-                    if obj:IsA("BasePart") and obj.Name:lower():find("coin") and obj.Transparency < 1 then
-                        local d = (obj.Position - hrp.Position).Magnitude
-                        if d < bestD and d < 200 then bestD = d best = obj end
-                    end
-                end
-                if best then
-                    pcall(function() hrp.CFrame = CFrame.new(best.Position + Vector3.new(0, 3, 0)) end)
+--========================================================--
+-- PAGES
+--========================================================--
+local function MainPage()
+    Clear()
+    Title.Text = "AD · MM2"
+    Subtitle.Text = "ГЛАВНОЕ"
+    Section("РАЗДЕЛЫ")
+    Button("ESP",            function() ESPPage() end)
+    Button("АИМ",            function() AimPage() end)
+    Button("Убийца",         function() MurdererPage() end)
+    Button("Скины (визуал)", function() VisualsPage() end)
+    Button("Фарм",           function() FarmPage() end)
+    Button("Движение",       function() MovePage() end)
+    Button("Разное",         function() MiscExtraPage() end)
+    Button("Утилиты",        function() UtilPage() end)
+    PageFade()
+end
+
+function ESPPage()
+    Clear()
+    Title.Text = "ESP"
+    Subtitle.Text = "Подсветка ролей"
+    Section("РОЛИ")
+    Toggle("ESP Убийца", S.ESPMurderer, function(v) S.ESPMurderer = v end)
+    Toggle("ESP Шериф",  S.ESPSheriff,  function(v) S.ESPSheriff = v end)
+    Toggle("ESP Герой",  S.ESPHero,     function(v) S.ESPHero = v end)
+    Toggle("ESP Мирные", S.ESPInnocent, function(v) S.ESPInnocent = v end)
+    Toggle("ESP Пистолет", S.ESPGun,    function(v) S.ESPGun = v end)
+    Section("ОТОБРАЖЕНИЕ")
+    Toggle("Имя",         S.ESPName,      function(v) S.ESPName = v end)
+    Toggle("Дистанция",   S.ESPDistance,  function(v) S.ESPDistance = v end)
+    Toggle("Обводка",     S.ESPHighlight, function(v) S.ESPHighlight = v end)
+    Slider("Макс. дистанция", S.ESPMaxDistance, 50, 2000, function(v) S.ESPMaxDistance = v end)
+    PageFade()
+end
+
+function AimPage()
+    Clear()
+    Title.Text = "АИМ"
+    Subtitle.Text = "Только для Шерифа"
+    Section("ОСНОВНОЕ")
+    Toggle("Включить АИМ", S.AimAuto, function(v) S.AimAuto = v end)
+    Toggle("WallCheck", S.AimWall, function(v) S.AimWall = v end)
+    Toggle("Быстрое наведение", S.AimFast, function(v) S.AimFast = v end)
+    Section("ПАРАМЕТРЫ")
+    Slider("FOV (пиксели)", S.AimFOV, 20, 600, function(v) S.AimFOV = v end)
+    Slider("Дистанция", S.AimRange, 20, 1000, function(v) S.AimRange = v end)
+    Slider("Плавность", math.floor(S.AimSmooth * 100), 0, 100, function(v) S.AimSmooth = math.clamp(v / 100, 0.01, 1) end)
+    Info("АИМ активен только если у тебя пистолет в руках.")
+    PageFade()
+end
+
+function MurdererPage()
+    Clear()
+    Title.Text = "Убийца"
+    Subtitle.Text = "Только с ножом"
+    Section("ОСНОВНОЕ")
+    Toggle("Kill Aura", S.KillAura, function(v) S.KillAura = v end)
+    Slider("Радиус ауры", S.KillAuraRange, 5, 50, function(v) S.KillAuraRange = v end)
+    Toggle("Авто-убийство ближайшего", S.AutoKillNearest, function(v) S.AutoKillNearest = v end)
+    Section("КИДАНИЕ НОЖА")
+    Toggle("Авто-кидание", S.KnifeThrow, function(v) S.KnifeThrow = v end)
+    Slider("Дистанция", S.KnifeThrowRange, 10, 200, function(v) S.KnifeThrowRange = v end)
+    Slider("Задержка x10", S.KnifeThrowCooldown * 10, 1, 30, function(v) S.KnifeThrowCooldown = v / 10 end)
+    Section("РУЧНОЕ")
+    Button("Кинуть нож", function()
+        local char = LP.Character
+        local tool = char and char:FindFirstChildOfClass("Tool")
+        if not tool then return end
+        pcall(function() tool:Activate() end)
+    end)
+    Button("Убить ближайшего", function()
+        local char = LP.Character
+        local myHrp = char and char:FindFirstChild("HumanoidRootPart")
+        local tool = char and char:FindFirstChildOfClass("Tool")
+        if not tool or not myHrp then return end
+        local best, bestD = nil, math.huge
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LP then
+                local tchar = plr.Character
+                local thrp = tchar and tchar:FindFirstChild("HumanoidRootPart")
+                if thrp then
+                    local d = (thrp.Position - myHrp.Position).Magnitude
+                    if d < bestD then bestD = d; best = thrp end
                 end
             end
         end
+        if best then pcall(function() myHrp.CFrame = best.CFrame; tool:Activate() end) end
+    end)
+    PageFade()
+end
+
+function VisualsPage()
+    Clear()
+    Title.Text = "Визуалы"
+    Subtitle.Text = "Скины · только у тебя"
+    Info("Скины видны только тебе. Другие игроки видят твой настоящий нож.")
+    Section("СБРОС")
+    Button("Сбросить на стандартный", function() applySkin("Standard") end)
+    Section("СКИНЫ")
+    for name, _ in pairs(SKINS) do
+        if name ~= "Standard" then
+            Button(name, function() applySkin(name) end)
+        end
     end
-end)
+    PageFade()
+end
+
+function FarmPage()
+    Clear()
+    Title.Text = "Фарм"
+    Subtitle.Text = "Авто-сбор"
+    Section("МОНЕТЫ")
+    Toggle("Auto Coin Farm", S.AutoCoin, function(v) S.AutoCoin = v end)
+    Info("Телепорт к ближайшей монете каждые 0.5 сек.")
+    PageFade()
+end
+
+function MovePage()
+    Clear()
+    Title.Text = "Движение"
+    Subtitle.Text = "Скорость · полёт · коллизии"
+    Section("СКОРОСТЬ")
+    Toggle("Буст скорости", S.SpeedBoost, function(v) S.SpeedBoost = v end)
+    Slider("Значение", S.SpeedValue, 16, 200, function(v) S.SpeedValue = v end)
+    Section("ПРЫЖОК")
+    Toggle("Буст прыжка", S.JumpBoost, function(v) S.JumpBoost = v end)
+    Slider("Значение", S.JumpValue, 50, 500, function(v) S.JumpValue = v end)
+    Section("ПОЛЁТ")
+    Toggle("Fly", S.Fly, function(v) S.Fly = v; if v then startFly() else stopFly() end end)
+    Slider("Скорость полёта", S.FlySpeed, 10, 300, function(v) S.FlySpeed = v end)
+    Section("КОЛЛИЗИИ")
+    Toggle("NoClip", S.NoClip, function(v)
+        S.NoClip = v
+        if not v then
+            local char = LP.Character
+            if char then for _, d in ipairs(char:GetDescendants()) do if d:IsA("BasePart") then pcall(function() d.CanCollide = true end) end end end
+        end
+    end)
+    PageFade()
+end
+
+function MiscExtraPage()
+    Clear()
+    Title.Text = "Разное"
+    Subtitle.Text = "Пистолет · камера · защита"
+    Section("ПИСТОЛЕТ")
+    Button("Подобрать пистолет (1 клик)", function() autoGunOneShot() end)
+    Info("Находит пистолет, летит, подбирает, возвращает назад.")
+    Section("КАМЕРА")
+    Toggle("Spectate Убийцу", S.SpectateMurderer, function(v) S.SpectateMurderer = v end)
+    Section("ЗАЩИТА")
+    Toggle("Anti-Fling", S.AntiFling, function(v)
+        S.AntiFling = v
+        if v then
+            local char = LP.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local bv = Instance.new("BodyVelocity")
+                bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+                bv.Velocity = Vector3.zero
+                bv.Parent = hrp
+                _G.__AntiFlingBV = bv
+            end
+        else
+            if _G.__AntiFlingBV then pcall(function() _G.__AntiFlingBV:Destroy() end); _G.__AntiFlingBV = nil end
+        end
+    end)
+    Section("ПРЫЖОК")
+    Toggle("Infinite Jump", S.InfiniteJump, function(v) S.InfiniteJump = v end)
+    PageFade()
+end
+
+function UtilPage()
+    Clear()
+    Title.Text = "Утилиты"
+    Subtitle.Text = "FPS · Ping · Watermark"
+    Section("ПОКАЗАТЬ")
+    Toggle("FPS", S.ShowFPS, function(v) S.ShowFPS = v; fpsLabel.Visible = v end)
+    Toggle("Ping", S.ShowPing, function(v) S.ShowPing = v; pingLabel.Visible = v end)
+    Toggle("Watermark", S.ShowWatermark, function(v) S.ShowWatermark = v; watermarkLabel.Visible = v end)
+    PageFade()
+end
 
 --========================================================--
--- DRAG & OPEN/CLOSE
+-- DRAG & BUTTONS
 --========================================================--
 local function MakeDraggable(handle, target)
     local dragging, dragStart, startPos = false, nil, nil
     handle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = target.Position
+            dragging = true; dragStart = input.Position; startPos = target.Position
         end
     end)
     handle.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
-        end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
     end)
-    bind(UIS.InputChanged:Connect(function(input)
+    UIS.InputChanged:Connect(function(input)
         if not dragging then return end
         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
             local delta = input.Position - dragStart
-            target.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
+            target.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
-    end))
+    end)
 end
+MakeDraggable(Header, Main)
+MakeDraggable(IconWrapper, IconWrapper)
 
-MakeDraggable(Header, Window)
-MakeDraggable(Icon, Icon)
+Close.MouseButton1Click:Connect(function() Main.Visible = false end)
 
-local opened = false
-local busy = false
-
-local function SetOpen(state)
-    if busy or opened == state then return end
-    busy = true
-    opened = state
-    if opened then
-        Window.Visible = true
-        local targetScale = Scale.Scale
-        Scale.Scale = targetScale * 0.9
-        Tween(Scale, { Scale = targetScale }, 0.25)
-        task.delay(0.25, function() busy = false end)
-    else
-        Tween(Scale, { Scale = Scale.Scale * 0.9 }, 0.15)
-        task.delay(0.15, function()
-            Window.Visible = false
-            busy = false
-        end)
+Icon.MouseButton1Click:Connect(function()
+    Main.Visible = not Main.Visible
+    if Main.Visible then
+        MainScale.Scale = 0.85
+        Play(MainScale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
+        MainPage()
     end
-end
-
-Icon.Activated:Connect(function() SetOpen(not opened) end)
-CloseBtn.Activated:Connect(function() SetOpen(false) end)
-
-bind(UIS.InputBegan:Connect(function(input, processed)
-    if not processed and input.KeyCode == Enum.KeyCode.RightShift then
-        SetOpen(not opened)
-    end
-end))
+    Play(Icon, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Rotation = 15 })
+    task.delay(0.15, function() Play(Icon, TweenInfo.new(0.2, Enum.EasingStyle.Back), { Rotation = 0 }) end)
+end)
 
 --========================================================--
 -- INIT
 --========================================================--
-for _, plr in ipairs(Players:GetPlayers()) do
-    if plr ~= LP then createESP(plr) end
-end
-
-bind(Players.PlayerAdded:Connect(function(plr)
-    task.wait(0.5)
-    createESP(plr)
-end))
-
-bind(Players.PlayerRemoving:Connect(function(plr)
-    removeESP(plr)
-    RoleCache[plr.Name] = nil
-end))
-
-SelectTab("ESP")
+for _, plr in ipairs(Players:GetPlayers()) do if plr ~= LP then createESP(plr) end end
+bind(Players.PlayerAdded:Connect(function(plr) if plr ~= LP then task.wait(0.5) createESP(plr) end end))
+bind(Players.PlayerRemoving:Connect(removeESP))
 
 _G.__ADMM2_CLEANUP = function()
     local char = LP.Character
@@ -1389,12 +1529,15 @@ _G.__ADMM2_CLEANUP = function()
             if d:IsA("BasePart") then pcall(function() d.CanCollide = true end) end
         end
         local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum then pcall(function() hum.WalkSpeed = 16 hum.JumpPower = 50 end) end
+        if hum then pcall(function() hum.WalkSpeed = 16; hum.JumpPower = 50 end) end
     end
     disconnectAll()
     stopFly()
-    if _G.__AntiFlingBV then pcall(function() _G.__AntiFlingBV:Destroy() end) end
-    pcall(function() Screen:Destroy() end)
+    if _G.__AntiFlingBV then pcall(function() _G.__AntiFlingBV:Destroy() end); _G.__AntiFlingBV = nil end
+    pcall(function() GUI:Destroy() end)
+    pcall(function() espFolder:Destroy() end)
+    pcall(function() gunEspFolder:Destroy() end)
 end
 
-print("[AD MM2 v2.2] Loaded")
+MainPage()
+print("[AD MM2 v1.8] загружен — улучшенное меню + новая иконка")
