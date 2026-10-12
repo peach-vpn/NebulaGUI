@@ -1,17 +1,28 @@
 --================================================
---           AD MM2 v2.0 — PREMIUM UI
+--           AD MM2 v2.1 — PREMIUM UI (FIXED)
 --================================================
 
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
 
 local LP = Players.LocalPlayer
 local PlayerGui = LP:WaitForChild("PlayerGui")
 local Camera = workspace.CurrentCamera
 
-local old = PlayerGui:FindFirstChild("AD_MM2_V2")
+--// ВЫБОР РОДИТЕЛЯ (главный фикс)
+local function getParent()
+    if gethui then
+        local ok, h = pcall(gethui)
+        if ok and h then return h end
+    end
+    return CoreGui or PlayerGui
+end
+local PARENT = getParent()
+
+local old = PARENT:FindFirstChild("AD_MM2_V2")
 if old then old:Destroy() end
 
 if _G.__ADMM2_CLEANUP then pcall(_G.__ADMM2_CLEANUP) _G.__ADMM2_CLEANUP = nil end
@@ -46,41 +57,33 @@ local C = {
 
 --// SETTINGS
 local S = {
-    -- ESP
     ESPMurderer=true, ESPSheriff=true, ESPHero=true, ESPInnocent=false,
     ESPGun=true,
     ESPName=true, ESPDistance=true, ESPHighlight=true,
     ESPMaxDistance=600,
 
-    -- AIM
     AimAuto=false, AimWall=true, AimFast=true,
     AimFOV=180, AimRange=250, AimSmooth=0.9,
 
-    -- FARM
     AutoCoin=false,
 
-    -- MOVE
     SpeedBoost=false, SpeedValue=60,
     JumpBoost=false, JumpValue=100,
     Fly=false, FlySpeed=70,
     NoClip=false,
 
-    -- MURDERER
     KillAura=false, KillAuraRange=15,
     AutoKillNearest=false,
     KnifeThrow=false, KnifeThrowRange=60, KnifeThrowCooldown=0.5,
 
-    -- MISC
     AutoGunDelay=0.5,
     SpectateMurderer=false,
     AntiFling=false,
     InfiniteJump=false,
 
-    -- VISUALS
     CurrentSkin="Standard",
     OriginalMesh=nil, OriginalTexture=nil,
 
-    -- UTIL
     ShowFPS=false, ShowPing=false,
 }
 
@@ -102,11 +105,12 @@ local function Tween(obj, props, duration)
     return t
 end
 
---// SCREEN
+--// SCREEN (DisplayOrder = max)
 local Screen = New("ScreenGui", {
     Name="AD_MM2_V2", ResetOnSpawn=false, IgnoreGuiInset=true,
-    DisplayOrder=999, ZIndexBehavior=Enum.ZIndexBehavior.Sibling
-}, PlayerGui)
+    DisplayOrder=2147483647, ZIndexBehavior=Enum.ZIndexBehavior.Sibling,
+    Enabled=true
+}, PARENT)
 
 --// DRAG
 local lastIconDrag = 0
@@ -143,7 +147,7 @@ end
 
 --// ICON
 local Icon = New("TextButton", {
-    Name="ADIcon", Size=UDim2.fromOffset(44, 44), Position=UDim2.new(0, 18, 0.5, -22),
+    Name="ADIcon", Size=UDim2.fromOffset(48, 48), Position=UDim2.new(0, 18, 0.5, -24),
     BackgroundColor3=C.bg, Text="AD", TextColor3=C.text, TextSize=15,
     Font=Enum.Font.GothamBlack, AutoButtonColor=false, ZIndex=20
 }, Screen)
@@ -341,7 +345,7 @@ local function ActionButton(parent, text, callback)
     Round(b, 8)
     Outline(b)
 
-    local lbl = New("TextLabel", {
+    New("TextLabel", {
         Position=UDim2.fromOffset(12, 0), Size=UDim2.new(1, -32, 1, 0),
         BackgroundTransparency=1, Text=text, TextColor3=C.text, TextSize=11,
         Font=Enum.Font.GothamSemibold, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=6
@@ -1224,4 +1228,4 @@ _G.__ADMM2_CLEANUP = function()
     pcall(function() gunFolder:Destroy() end)
 end
 
-print("[AD MM2 v2.0] Premium UI loaded")
+print("[AD MM2 v2.1] Premium UI loaded")
