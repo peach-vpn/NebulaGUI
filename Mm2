@@ -1,6 +1,6 @@
 --========================================================--
---   AD MM2 v1.6 — Sheriff Aim · Gun ESP · Auto Gun 1-click--
---   Clean UI · Hero ESP · ESP Gun · Одна кнопка подбора    --
+--   AD MM2 v1.7 — Визуалы (Skin Changer local)            --
+--   AIM Sheriff · ESP · ESP Gun · Auto Gun · Скины        --
 --========================================================--
 
 if _G.__ADMM2_CLEANUP then pcall(_G.__ADMM2_CLEANUP) _G.__ADMM2_CLEANUP = nil end
@@ -28,6 +28,61 @@ bind(workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
 end))
 
 --// =========================================================
+--// СПИСОК СКИНОВ (имя → MeshId/TextureId)
+--// =========================================================
+local SKINS = {
+    ["Standard"]     = { Mesh = nil, Texture = nil }, -- вернуть оригинал
+    ["Classic"]      = { Mesh = "rbxassetid://583707893", Texture = "rbxassetid://584117262" },
+    ["Samurai"]      = { Mesh = "rbxassetid://424649574", Texture = "rbxassetid://424649618" },
+    ["Ghost"]        = { Mesh = "rbxassetid://221360285", Texture = "rbxassetid://221360322" },
+    ["Fang"]         = { Mesh = "rbxassetid://583707893", Texture = "rbxassetid://584117262" },
+    ["Gingerbread"]  = { Mesh = "rbxassetid://583707893", Texture = "rbxassetid://584117262" },
+    ["Laser"]        = { Mesh = "rbxassetid://583707893", Texture = "rbxassetid://584117262" },
+    ["Icewing"]      = { Mesh = "rbxassetid://583707893", Texture = "rbxassetid://584117262" },
+    ["BattleAxe"]    = { Mesh = "rbxassetid://583707893", Texture = "rbxassetid://584117262" },
+    ["VampireEdge"]  = { Mesh = "rbxassetid://583707893", Texture = "rbxassetid://584117262" },
+    ["Pixel"]        = { Mesh = "rbxassetid://583707893", Texture = "rbxassetid://584117262" },
+    ["ChromaSeer"]   = { Mesh = "rbxassetid://583707893", Texture = "rbxassetid://584117262" },
+    ["Legendary"]    = { Mesh = "rbxassetid://583707893", Texture = "rbxassetid://584117262" },
+}
+
+--// =========================================================
+--// НАСТРОЙКИ
+--// =========================================================
+local S = {
+    ESPMurderer=true, ESPSheriff=true, ESPHero=true, ESPInnocent=false,
+    ESPGun=true,
+    ESPName=true, ESPDistance=true, ESPHighlight=true,
+    ESPMaxDistance=600,
+
+    AimAuto=false, AimWall=true, AimFast=true,
+    AimFOV=180, AimRange=250, AimSmooth=0.9,
+
+    AutoCoin=false,
+
+    SpeedBoost=false, SpeedValue=60,
+    JumpBoost=false, JumpValue=100,
+    Fly=false, FlySpeed=70,
+    NoClip=false,
+
+    KillAura=false, KillAuraRange=15,
+    AutoKillNearest=false,
+    KnifeThrow=false, KnifeThrowRange=60, KnifeThrowCooldown=0.5,
+
+    AutoGunDelay=0.5,
+    SpectateMurderer=false,
+    AntiFling=false,
+    InfiniteJump=false,
+
+    ShowFPS=false, ShowPing=false, ShowWatermark=false,
+
+    -- VISUALS
+    CurrentSkin = "Standard",
+    OriginalMesh = nil,
+    OriginalTexture = nil,
+}
+
+--// =========================================================
 --// ЛОКАЛИЗАЦИЯ
 --// =========================================================
 local Locale = {
@@ -35,14 +90,15 @@ local Locale = {
         title_main="Главное", title_esp="ESP", title_aim="АИМ",
         title_farm="Фарм", title_move="Движение", title_util="Утилиты",
         title_settings="Настройки", title_misc="Разное", title_murderer="Убийца",
+        title_visuals="Визуалы",
         btn_esp="ESP", btn_aim="АИМ", btn_farm="Фарм",
         btn_move="Движение", btn_util="Утилиты", btn_settings="Настройки",
-        btn_misc="Разное", btn_murderer="Убийца",
+        btn_misc="Разное", btn_murderer="Убийца", btn_visuals="Визуалы",
         sec_main="ГЛАВНОЕ",
         sec_esp_roles="РОЛИ",
         esp_murderer="ESP Убийца", esp_sheriff="ESP Шериф",
         esp_hero="ESP Герой", esp_innocent="ESP Мирные",
-        esp_gun="ESP Пистолет (выпавший)",
+        esp_gun="ESP Пистолет",
         esp_name="Имя", esp_dist="Дистанция", esp_highlight="Обводка",
         sec_esp_params="ПАРАМЕТРЫ",
         esp_max_dist="Макс. дистанция",
@@ -52,8 +108,7 @@ local Locale = {
         sec_aim_params="ПАРАМЕТРЫ",
         aim_fov="FOV (пиксели)", aim_range="Дистанция захвата",
         aim_smooth="Плавность",
-        sec_farm="АВТО-ФАРМ",
-        farm_coin="Auto Coin Farm",
+        sec_farm="АВТО-ФАРМ", farm_coin="Auto Coin Farm",
         sec_move="ДВИЖЕНИЕ",
         move_speed="Буст скорости", move_speed_val="Скорость",
         move_jump="Буст прыжка", move_jump_val="Прыжок",
@@ -68,14 +123,15 @@ local Locale = {
         title_main="Main", title_esp="ESP", title_aim="AIM",
         title_farm="Farm", title_move="Movement", title_util="Utilities",
         title_settings="Settings", title_misc="Misc", title_murderer="Murderer",
+        title_visuals="Visuals",
         btn_esp="ESP", btn_aim="AIM", btn_farm="Farm",
         btn_move="Movement", btn_util="Utilities", btn_settings="Settings",
-        btn_misc="Misc", btn_murderer="Murderer",
+        btn_misc="Misc", btn_murderer="Murderer", btn_visuals="Visuals",
         sec_main="MAIN",
         sec_esp_roles="ROLES",
         esp_murderer="ESP Murderer", esp_sheriff="ESP Sheriff",
         esp_hero="ESP Hero", esp_innocent="ESP Innocent",
-        esp_gun="ESP Gun (dropped)",
+        esp_gun="ESP Gun",
         esp_name="Name", esp_dist="Distance", esp_highlight="Highlight",
         sec_esp_params="PARAMETERS",
         esp_max_dist="Max Distance",
@@ -85,8 +141,7 @@ local Locale = {
         sec_aim_params="PARAMETERS",
         aim_fov="FOV (pixels)", aim_range="Aim Range",
         aim_smooth="Smoothness",
-        sec_farm="AUTO FARM",
-        farm_coin="Auto Coin Farm",
+        sec_farm="AUTO FARM", farm_coin="Auto Coin Farm",
         sec_move="MOVEMENT",
         move_speed="Speed Boost", move_speed_val="Speed",
         move_jump="Jump Boost", move_jump_val="Jump",
@@ -132,44 +187,6 @@ local function applyTheme()
 end
 
 --// =========================================================
---// НАСТРОЙКИ
---// =========================================================
-local S = {
-    -- ESP
-    ESPMurderer=true, ESPSheriff=true, ESPHero=true, ESPInnocent=false,
-    ESPGun=true,
-    ESPName=true, ESPDistance=true, ESPHighlight=true,
-    ESPMaxDistance=600,
-
-    -- AIM
-    AimAuto=false, AimWall=true, AimFast=true,
-    AimFOV=180, AimRange=250, AimSmooth=0.9,
-
-    -- FARM
-    AutoCoin=false,
-
-    -- MOVE
-    SpeedBoost=false, SpeedValue=60,
-    JumpBoost=false, JumpValue=100,
-    Fly=false, FlySpeed=70,
-    NoClip=false,
-
-    -- MURDERER
-    KillAura=false, KillAuraRange=15,
-    AutoKillNearest=false,
-    KnifeThrow=false, KnifeThrowRange=60, KnifeThrowCooldown=0.5,
-
-    -- MISC
-    AutoGunDelay=0.5,
-    SpectateMurderer=false,
-    AntiFling=false,
-    InfiniteJump=false,
-
-    -- UTIL
-    ShowFPS=false, ShowPing=false, ShowWatermark=false,
-}
-
---// =========================================================
 --// GUI ROOT
 --// =========================================================
 local function guiParent()
@@ -178,7 +195,7 @@ local function guiParent()
     return PlayerGui
 end
 local PARENT = guiParent()
-local old = PARENT:FindFirstChild("AD_MM2_v16")
+local old = PARENT:FindFirstChild("AD_MM2_v17")
 if old then old:Destroy() end
 
 local function Create(class, props)
@@ -193,7 +210,7 @@ local function Stroke(p, c, th, tr) return Create("UIStroke", { Color = c or T.A
 local function Play(o, i, pr) TweenService:Create(o, i, pr):Play() end
 
 local GUI = Create("ScreenGui", {
-    Name="AD_MM2_v16", ResetOnSpawn=false, IgnoreGuiInset=true,
+    Name="AD_MM2_v17", ResetOnSpawn=false, IgnoreGuiInset=true,
     ZIndexBehavior=Enum.ZIndexBehavior.Sibling, Parent=PARENT
 })
 bind(GUI.Destroying:Connect(disconnectAll))
@@ -218,7 +235,7 @@ Corner(Header, UDim.new(0, 10))
 
 local Title = Create("TextLabel", {
     Size=UDim2.new(1,-72,1,0), Position=UDim2.fromOffset(10,0),
-    BackgroundTransparency=1, Text="AD MM2 v1.6", TextColor3=T.Accent, TextSize=14,
+    BackgroundTransparency=1, Text="AD MM2 v1.7", TextColor3=T.Accent, TextSize=14,
     Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, Parent=Header
 })
 
@@ -453,69 +470,121 @@ reg(Close, "BackgroundColor3", "Bg")
 reg(Close, "TextColor3", "Text")
 
 --// =========================================================
---// РОЛИ (постоянный кэш)
+--// SKIN CHANGER (локальный)
+--// =========================================================
+local function getMyTool()
+    local char = LP.Character
+    if not char then return nil end
+    return char:FindFirstChildOfClass("Tool")
+end
+
+local function saveOriginalSkin(tool)
+    if S.OriginalMesh then return end
+    local handle = tool:FindFirstChild("Handle")
+    if not handle then return end
+    S.OriginalMesh = handle:FindFirstChild("Mesh") and handle.Mesh.MeshId or nil
+    S.OriginalTexture = handle:FindFirstChildOfClass("SpecialMesh") and handle:FindFirstChildOfClass("SpecialMesh").TextureId or nil
+    -- Сохраняем как rbxassetid если есть
+    local mesh = handle:FindFirstChildOfClass("SpecialMesh")
+    if mesh then
+        S.OriginalMesh = mesh.MeshId
+        S.OriginalTexture = mesh.TextureId
+    end
+end
+
+local function applySkin(skinName)
+    local tool = getMyTool()
+    if not tool then
+        print("[AD] Нет Tool в руках")
+        return
+    end
+    local handle = tool:FindFirstChild("Handle")
+    if not handle then return end
+
+    -- Сохраняем оригинал при первом применении
+    saveOriginalSkin(tool)
+
+    if skinName == "Standard" then
+        -- Восстановить оригинал
+        local mesh = handle:FindFirstChildOfClass("SpecialMesh")
+        if mesh then
+            if S.OriginalMesh then mesh.MeshId = S.OriginalMesh end
+            if S.OriginalTexture then mesh.TextureId = S.OriginalTexture end
+        end
+        print("[AD] Скин сброшен на стандартный")
+        return
+    end
+
+    local skin = SKINS[skinName]
+    if not skin then return end
+
+    local mesh = handle:FindFirstChildOfClass("SpecialMesh")
+    if not mesh then
+        mesh = Instance.new("SpecialMesh")
+        mesh.Parent = handle
+    end
+    if skin.Mesh then mesh.MeshId = skin.Mesh end
+    if skin.Texture then mesh.TextureId = skin.Texture end
+    S.CurrentSkin = skinName
+    print("[AD] Скин изменён на: " .. skinName .. " (только у тебя)")
+end
+
+-- Периодически применяем скин (если игра его сбрасывает)
+task.spawn(function()
+    while GUI and GUI.Parent do
+        task.wait(1)
+        if S.CurrentSkin ~= "Standard" then
+            local tool = getMyTool()
+            if tool then
+                local handle = tool:FindFirstChild("Handle")
+                if handle then
+                    local mesh = handle:FindFirstChildOfClass("SpecialMesh")
+                    local skin = SKINS[S.CurrentSkin]
+                    if skin and mesh then
+                        if skin.Mesh and mesh.MeshId ~= skin.Mesh then mesh.MeshId = skin.Mesh end
+                        if skin.Texture and mesh.TextureId ~= skin.Texture then mesh.TextureId = skin.Texture end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+--// =========================================================
+--// РОЛИ
 --// =========================================================
 local RoleCache = {}
-
 local function cacheRole(name, role)
     if not name or not role then return end
     RoleCache[name] = tostring(role)
 end
-
-local function resetRoleCache()
-    RoleCache = {}
-end
-
-bind(LP.CharacterAdded:Connect(function()
-    task.wait(1)
-    resetRoleCache()
-end))
+local function resetRoleCache() RoleCache = {} end
+bind(LP.CharacterAdded:Connect(function() task.wait(1) resetRoleCache() end))
 
 local function getRole(plr)
     if RoleCache[plr.Name] then return RoleCache[plr.Name] end
     local char = plr.Character
     if not char then return "Innocent" end
-
     local role = plr:GetAttribute("Role") or plr:GetAttribute("role")
     if role then cacheRole(plr.Name, role) return tostring(role) end
     role = char:GetAttribute("Role") or char:GetAttribute("role")
     if role then cacheRole(plr.Name, role) return tostring(role) end
-
     local tool = char:FindFirstChildOfClass("Tool")
     if tool then
         local n = tool.Name:lower()
-        if n:find("knife") or n:find("dagger") or n:find("sword") or n:find("blade") then
-            cacheRole(plr.Name, "Murderer") return "Murderer"
-        end
-        if n:find("gun") or n:find("pistol") or n:find("revolver") then
-            cacheRole(plr.Name, "Sheriff") return "Sheriff"
-        end
+        if n:find("knife") or n:find("dagger") or n:find("sword") or n:find("blade") then cacheRole(plr.Name, "Murderer") return "Murderer" end
+        if n:find("gun") or n:find("pistol") or n:find("revolver") then cacheRole(plr.Name, "Sheriff") return "Sheriff" end
     end
-
     local backpack = plr:FindFirstChild("Backpack")
     if backpack then
         for _, t in ipairs(backpack:GetChildren()) do
             if t:IsA("Tool") then
                 local n = t.Name:lower()
-                if n:find("knife") or n:find("dagger") or n:find("blade") then
-                    cacheRole(plr.Name, "Murderer") return "Murderer"
-                end
-                if n:find("gun") or n:find("pistol") or n:find("revolver") then
-                    cacheRole(plr.Name, "Sheriff") return "Sheriff"
-                end
+                if n:find("knife") or n:find("dagger") then cacheRole(plr.Name, "Murderer") return "Murderer" end
+                if n:find("gun") or n:find("pistol") then cacheRole(plr.Name, "Sheriff") return "Sheriff" end
             end
         end
     end
-
-    local folder = char:FindFirstChild("Role") or char:FindFirstChild("Roles")
-    if folder then
-        for _, v in ipairs(folder:GetChildren()) do
-            if v:IsA("StringValue") and v.Value ~= "" then
-                cacheRole(plr.Name, v.Value) return v.Value
-            end
-        end
-    end
-
     return "Innocent"
 end
 
@@ -545,7 +614,6 @@ local function getRoot(char)
 end
 local function getHumanoid(char) return char and char:FindFirstChildOfClass("Humanoid") end
 local function getHead(char) return char and char:FindFirstChild("Head") end
-
 local function isAlive(char)
     if not char or not char.Parent or not char:IsDescendantOf(workspace) then return false end
     local hum = char:FindFirstChildOfClass("Humanoid")
@@ -553,11 +621,10 @@ local function isAlive(char)
 end
 
 --// =========================================================
---// ESP (игроки)
+--// ESP
 --// =========================================================
 local espFolder = Create("Folder", { Name="AD_MM2_ESP", Parent=PARENT })
 local ESPData = {}
-
 local COLOR_MURDERER = Color3.fromRGB(255, 50, 50)
 local COLOR_SHERIFF  = Color3.fromRGB(50, 130, 255)
 local COLOR_HERO     = Color3.fromRGB(80, 200, 255)
@@ -583,10 +650,10 @@ local function createESP(plr)
 end
 
 --// =========================================================
---// GUN ESP (выпавший пистолет в мире)
+--// GUN ESP
 --// =========================================================
 local gunEspFolder = Create("Folder", { Name="AD_MM2_GunESP", Parent=PARENT })
-local gunESPData = {}   -- [Tool] = { Highlight, Billboard }
+local gunESPData = {}
 
 local function isGun(tool)
     if not tool:IsA("Tool") then return false end
@@ -597,22 +664,9 @@ end
 local function createGunESP(tool)
     if gunESPData[tool] then return end
     local data = {}
-    data.Highlight = Create("Highlight", {
-        Name="GunHL", FillColor=Color3.fromRGB(255,60,60), FillTransparency=0.5,
-        OutlineColor=Color3.fromRGB(255,255,255), OutlineTransparency=0.2,
-        DepthMode=Enum.HighlightDepthMode.AlwaysOnTop, Adornee=tool, Parent=gunEspFolder
-    })
-    local bb = Create("BillboardGui", {
-        Name="GunInfo", Size=UDim2.fromOffset(100,16),
-        StudsOffsetWorldSpace=Vector3.new(0,2,0), AlwaysOnTop=true,
-        Adornee=tool, Parent=gunEspFolder
-    })
-    Create("TextLabel", {
-        Size=UDim2.new(1,0,1,0), BackgroundTransparency=1,
-        Text="🔫 ПИСТОЛЕТ", TextColor3=Color3.fromRGB(255,220,50),
-        TextStrokeTransparency=0.3, TextStrokeColor3=Color3.fromRGB(0,0,0),
-        Font=Enum.Font.GothamBold, TextSize=12, Parent=bb
-    })
+    data.Highlight = Create("Highlight", { Name="GunHL", FillColor=Color3.fromRGB(255,60,60), FillTransparency=0.5, OutlineColor=Color3.fromRGB(255,255,255), OutlineTransparency=0.2, DepthMode=Enum.HighlightDepthMode.AlwaysOnTop, Adornee=tool, Parent=gunEspFolder })
+    local bb = Create("BillboardGui", { Name="GunInfo", Size=UDim2.fromOffset(100,16), StudsOffsetWorldSpace=Vector3.new(0,2,0), AlwaysOnTop=true, Adornee=tool, Parent=gunEspFolder })
+    Create("TextLabel", { Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Text="🔫 ПИСТОЛЕТ", TextColor3=Color3.fromRGB(255,220,50), TextStrokeTransparency=0.3, TextStrokeColor3=Color3.fromRGB(0,0,0), Font=Enum.Font.GothamBold, TextSize=12, Parent=bb })
     data.Billboard = bb
     gunESPData[tool] = data
 end
@@ -625,20 +679,14 @@ local function removeGunESP(tool)
     gunESPData[tool] = nil
 end
 
--- Сканируем workspace на выпавшие пистолеты
 task.spawn(function()
     while GUI and GUI.Parent do
         task.wait(0.5)
         if S.ESPGun then
             for _, obj in ipairs(workspace:GetDescendants()) do
-                if obj:IsA("Tool") and isGun(obj) and not gunESPData[obj] then
-                    createGunESP(obj)
-                end
+                if obj:IsA("Tool") and isGun(obj) and not gunESPData[obj] then createGunESP(obj) end
             end
-            -- Чистим удалённые
-            for tool, d in pairs(gunESPData) do
-                if not tool.Parent then removeGunESP(tool) end
-            end
+            for tool, d in pairs(gunESPData) do if not tool.Parent then removeGunESP(tool) end end
         else
             for tool, d in pairs(gunESPData) do removeGunESP(tool) end
         end
@@ -674,7 +722,6 @@ local function findMurderer()
     local center = Vector2.new(vp.X/2, vp.Y/2)
     local camPos = Camera.CFrame.Position
     local best, bestScore = nil, math.huge
-
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= LP then
             local role = getRole(plr)
@@ -699,10 +746,7 @@ local function findMurderer()
                                         local hit = workspace:Raycast(camPos, head.Position - camPos, params)
                                         visible = (not hit) or hit.Instance:IsDescendantOf(char)
                                     end
-                                    if visible then
-                                        best = plr
-                                        bestScore = pixelDist
-                                    end
+                                    if visible then best = plr bestScore = pixelDist end
                                 end
                             end
                         end
@@ -719,7 +763,7 @@ end
 --// =========================================================
 local fpsLabel = Create("TextLabel", { Size=UDim2.fromOffset(120,20), Position=UDim2.new(0,10,0,10), BackgroundTransparency=1, Text="FPS: --", TextColor3=Color3.fromRGB(0,255,0), TextSize=13, Font=Enum.Font.Code, TextXAlignment=Enum.TextXAlignment.Left, Visible=false, Parent=GUI })
 local pingLabel = Create("TextLabel", { Size=UDim2.fromOffset(120,20), Position=UDim2.new(0,10,0,28), BackgroundTransparency=1, Text="Ping: -- ms", TextColor3=Color3.fromRGB(255,255,0), TextSize=13, Font=Enum.Font.Code, TextXAlignment=Enum.TextXAlignment.Left, Visible=false, Parent=GUI })
-local watermarkLabel = Create("TextLabel", { Size=UDim2.fromOffset(200,20), Position=UDim2.new(1,-210,0,10), BackgroundTransparency=1, Text="AD MM2 v1.6 | Delta", TextColor3=Color3.fromRGB(200,200,255), TextSize=13, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Right, Visible=false, Parent=GUI })
+local watermarkLabel = Create("TextLabel", { Size=UDim2.fromOffset(200,20), Position=UDim2.new(1,-210,0,10), BackgroundTransparency=1, Text="AD MM2 v1.7 | Delta", TextColor3=Color3.fromRGB(200,200,255), TextSize=13, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Right, Visible=false, Parent=GUI })
 
 task.spawn(function()
     while GUI and GUI.Parent do
@@ -732,7 +776,6 @@ task.spawn(function()
         if S.ShowFPS then fpsLabel.Text = "FPS: " .. frames end
     end
 end)
-
 task.spawn(function()
     while GUI and GUI.Parent do
         local ok, ping = pcall(function() return LP:GetNetworkPing() end)
@@ -782,9 +825,7 @@ bind(RunService.Heartbeat:Connect(function(dt)
             if move.Magnitude > 0.05 then
                 targetVel = move.Unit * S.FlySpeed
                 local forwardDot = move:Dot(Vector3.new(look.X, 0, look.Z).Unit)
-                if forwardDot > 0.1 then
-                    targetVel = targetVel + Vector3.new(0, look.Y * S.FlySpeed * forwardDot, 0)
-                end
+                if forwardDot > 0.1 then targetVel = targetVel + Vector3.new(0, look.Y * S.FlySpeed * forwardDot, 0) end
             end
             flyLastVel = flyLastVel:Lerp(targetVel, math.clamp(dt * 12, 0, 1))
             flyBV.Velocity = flyLastVel
@@ -796,7 +837,7 @@ bind(RunService.Heartbeat:Connect(function(dt)
 end))
 
 --// =========================================================
---// AUTO GUN — ОДНА КОМАНДА (сохранение позиции и возврат)
+--// AUTO GUN 1-CLICK
 --// =========================================================
 local autoGunRunning = false
 
@@ -805,69 +846,39 @@ local function autoGunOneShot()
     local myChar = LP.Character
     local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
     if not myHrp then return end
-
-    -- Ищем ближайший выпавший пистолет
     local bestGun, bestDist = nil, math.huge
     for _, obj in ipairs(workspace:GetDescendants()) do
         if isGun(obj) then
             local handle = obj:FindFirstChild("Handle")
             if handle then
                 local d = (handle.Position - myHrp.Position).Magnitude
-                if d < bestDist and d < 800 then
-                    bestDist = d
-                    bestGun = handle
-                end
+                if d < bestDist and d < 800 then bestDist = d bestGun = handle end
             end
         end
     end
-    if not bestGun then
-        print("[AD] Пистолет не найден")
-        return
-    end
-
+    if not bestGun then print("[AD] Пистолет не найден") return end
     autoGunRunning = true
     task.spawn(function()
         local savedPos = myHrp.CFrame
-        print("[AD] Пистолет найден на " .. math.floor(bestDist) .. " studs. Летим...")
-
-        pcall(function()
-            myHrp.CFrame = CFrame.new(bestGun.Position + Vector3.new(0, 2, 0))
-        end)
-
-        -- Ждём пока подберётся (макс 3 сек)
+        pcall(function() myHrp.CFrame = CFrame.new(bestGun.Position + Vector3.new(0, 2, 0)) end)
         local picked = false
         for i = 1, 30 do
             task.wait(0.1)
             local curChar = LP.Character
-            if curChar and curChar:FindFirstChildOfClass("Tool") then
-                picked = true
-                break
-            end
+            if curChar and curChar:FindFirstChildOfClass("Tool") then picked = true break end
         end
-
-        if picked then
-            print("[AD] Пистолет подобран! Возврат...")
-            task.wait(0.3)
-            pcall(function()
-                local curChar = LP.Character
-                local curHrp = curChar and curChar:FindFirstChild("HumanoidRootPart")
-                if curHrp then curHrp.CFrame = savedPos end
-            end)
-        else
-            print("[AD] Не удалось подобрать, возврат...")
-            pcall(function()
-                local curChar = LP.Character
-                local curHrp = curChar and curChar:FindFirstChild("HumanoidRootPart")
-                if curHrp then curHrp.CFrame = savedPos end
-            end)
-        end
-
+        task.wait(0.3)
+        pcall(function()
+            local curChar = LP.Character
+            local curHrp = curChar and curChar:FindFirstChild("HumanoidRootPart")
+            if curHrp then curHrp.CFrame = savedPos end
+        end)
         autoGunRunning = false
     end)
 end
 
 --// =========================================================
---// АВТО-ФАРМ МОНЕТ
+--// АВТО-ФАРМ / УБИЙЦА / SPECTATE / INFINITE JUMP
 --// =========================================================
 task.spawn(function()
     while GUI and GUI.Parent do
@@ -884,26 +895,19 @@ task.spawn(function()
                         if d < bestDist and d < 200 then bestDist = d best = obj end
                     end
                 end
-                if best and myHrp then
-                    pcall(function() myHrp.CFrame = CFrame.new(best.Position + Vector3.new(0, 3, 0)) end)
-                end
+                if best and myHrp then pcall(function() myHrp.CFrame = CFrame.new(best.Position + Vector3.new(0, 3, 0)) end) end
             end
         end
     end
 end)
 
---// =========================================================
---// УБИЙЦА / SPECTATE / INFINITE JUMP
---// =========================================================
 bind(RunService.Heartbeat:Connect(function(dt)
     local myChar = LP.Character
     local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
     local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
     local myTool = myChar and myChar:FindFirstChildOfClass("Tool")
-
     local isKnife = myTool and (myTool.Name:lower():find("knife") or myTool.Name:lower():find("dagger") or myTool.Name:lower():find("sword") or myTool.Name:lower():find("blade"))
 
-    -- KILL AURA
     if S.KillAura and isKnife and myHrp then
         for _, plr in ipairs(Players:GetPlayers()) do
             if plr ~= LP then
@@ -912,15 +916,12 @@ bind(RunService.Heartbeat:Connect(function(dt)
                 local thrp = tchar and tchar:FindFirstChild("HumanoidRootPart")
                 if thum and thum.Health > 0 and thrp then
                     local d = (thrp.Position - myHrp.Position).Magnitude
-                    if d <= S.KillAuraRange then
-                        pcall(function() myHrp.CFrame = thrp.CFrame myTool:Activate() end)
-                    end
+                    if d <= S.KillAuraRange then pcall(function() myHrp.CFrame = thrp.CFrame myTool:Activate() end) end
                 end
             end
         end
     end
 
-    -- AUTO KILL NEAREST
     if S.AutoKillNearest and isKnife and myHrp then
         local best, bestD = nil, math.huge
         for _, plr in ipairs(Players:GetPlayers()) do
@@ -936,7 +937,6 @@ bind(RunService.Heartbeat:Connect(function(dt)
         if best then pcall(function() myHrp.CFrame = best.CFrame myTool:Activate() end) end
     end
 
-    -- KNIFE THROW
     if S.KnifeThrow and isKnife and myHrp then
         local now = tick()
         if not _G.__KnifeThrowLast or now - _G.__KnifeThrowLast > S.KnifeThrowCooldown then
@@ -967,7 +967,6 @@ bind(RunService.Heartbeat:Connect(function(dt)
         end
     end
 
-    -- SPECTATE
     if S.SpectateMurderer and Camera then
         local found = false
         for _, plr in ipairs(Players:GetPlayers()) do
@@ -983,7 +982,6 @@ bind(RunService.Heartbeat:Connect(function(dt)
         Camera.CameraSubject = myHum
     end
 
-    -- INFINITE JUMP
     if S.InfiniteJump and myHum then
         if UIS:IsKeyDown(Enum.KeyCode.Space) or myHum:GetState() == Enum.HumanoidStateType.Jumping then
             myHum:ChangeState(Enum.HumanoidStateType.Jumping)
@@ -992,13 +990,12 @@ bind(RunService.Heartbeat:Connect(function(dt)
 end))
 
 --// =========================================================
---// ГЛАВНЫЙ ЦИКЛ (ESP + AIM)
+--// ГЛАВНЫЙ ЦИКЛ
 --// =========================================================
 local accum = 0
 local UPDATE_STEP = 1/20
 
 bind(RunService.RenderStepped:Connect(function(dt)
-    -- AIM (только Шериф)
     if S.AimAuto and isSheriff() then
         local target = findMurderer()
         if target then
@@ -1017,7 +1014,6 @@ bind(RunService.RenderStepped:Connect(function(dt)
         end
     end
 
-    -- ESP throttled
     accum = accum + dt
     if accum >= UPDATE_STEP then
         accum = 0
@@ -1030,7 +1026,6 @@ bind(RunService.RenderStepped:Connect(function(dt)
                     (role == "Sheriff" and S.ESPSheriff) or
                     (role == "Hero" and S.ESPHero) or
                     (role ~= "Murderer" and role ~= "Sheriff" and role ~= "Hero" and S.ESPInnocent)
-
                 if char and isAlive(char) and showRole then
                     local root = getRoot(char)
                     local head = getHead(char)
@@ -1038,46 +1033,27 @@ bind(RunService.RenderStepped:Connect(function(dt)
                     if root then
                         local distance = (root.Position - camPos).Magnitude
                         if distance > S.ESPMaxDistance then
-                            d.Info.Enabled = false
-                            d.Highlight.Enabled = false
+                            d.Info.Enabled = false d.Highlight.Enabled = false
                         else
-                            d.Info.Enabled = true
-                            d.Info.Adornee = head or root
-                            d.Info.MaxDistance = S.ESPMaxDistance
-
-                            local color = role == "Murderer" and COLOR_MURDERER
-                                       or role == "Sheriff" and COLOR_SHERIFF
-                                       or role == "Hero" and COLOR_HERO
-                                       or COLOR_INNOCENT
-
-                            d.Name.Text = plr.Name
-                            d.Name.TextColor3 = color
-                            d.Role.Text = role == "Murderer" and "УБИЙЦА"
-                                          or role == "Sheriff" and "ШЕРИФ"
-                                          or role == "Hero" and "ГЕРОЙ"
-                                          or "МИРНЫЙ"
+                            d.Info.Enabled = true d.Info.Adornee = head or root d.Info.MaxDistance = S.ESPMaxDistance
+                            local color = role == "Murderer" and COLOR_MURDERER or role == "Sheriff" and COLOR_SHERIFF or role == "Hero" and COLOR_HERO or COLOR_INNOCENT
+                            d.Name.Text = plr.Name d.Name.TextColor3 = color
+                            d.Role.Text = role == "Murderer" and "УБИЙЦА" or role == "Sheriff" and "ШЕРИФ" or role == "Hero" and "ГЕРОЙ" or "МИРНЫЙ"
                             d.Role.TextColor3 = color
-                            d.Role.Visible = true
-
                             d.Dist.Text = string.format("%d м", math.floor(distance))
                             d.Dist.Visible = S.ESPDistance
                             d.Name.Visible = S.ESPName
-
                             d.Highlight.Enabled = S.ESPHighlight
                             d.Highlight.FillColor = color
                             d.Highlight.Adornee = char
                         end
                     end
                 else
-                    d.Info.Enabled = false
-                    d.Highlight.Enabled = false
+                    d.Info.Enabled = false d.Highlight.Enabled = false
                 end
             end
         else
-            for _, d in pairs(ESPData) do
-                d.Info.Enabled = false
-                d.Highlight.Enabled = false
-            end
+            for _, d in pairs(ESPData) do d.Info.Enabled = false d.Highlight.Enabled = false end
         end
     end
 end))
@@ -1089,13 +1065,12 @@ local humanoidHooks = {}
 local function hookHumanoid(hum)
     if humanoidHooks[hum] then return end
     humanoidHooks[hum] = true
-    local c1 = hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+    bind(hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
         if S.SpeedBoost and hum.WalkSpeed ~= S.SpeedValue then hum.WalkSpeed = S.SpeedValue end
-    end)
-    local c2 = hum:GetPropertyChangedSignal("JumpPower"):Connect(function()
+    end))
+    bind(hum:GetPropertyChangedSignal("JumpPower"):Connect(function()
         if S.JumpBoost and hum.JumpPower ~= S.JumpValue then hum.JumpPower = S.JumpValue end
-    end)
-    bind(c1) bind(c2)
+    end))
 end
 
 bind(RunService.Stepped:Connect(function()
@@ -1123,7 +1098,7 @@ bind(RunService.Stepped:Connect(function()
 end))
 
 --// =========================================================
---// АНИМАЦИЯ СТРАНИЦ
+--// АНИМАЦИЯ
 --// =========================================================
 local function animatePageIn()
     Content.CanvasPosition = Vector2.new(0, 0)
@@ -1137,9 +1112,7 @@ local function animatePageIn()
             if oldTrans < 1 then el.BackgroundTransparency = 1 end
             task.delay((i-1) * 0.015, function()
                 if el and el.Parent then
-                    Play(el, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                        Position = oldPos, BackgroundTransparency = oldTrans,
-                    })
+                    Play(el, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Position = oldPos, BackgroundTransparency = oldTrans })
                 end
             end)
         end
@@ -1150,11 +1123,12 @@ end
 --// СТРАНИЦЫ
 --// =========================================================
 local function MainPage()
-    Clear(); Title.Text = "AD MM2 v1.6"; Back.Visible = false
+    Clear(); Title.Text = "AD MM2 v1.7"; Back.Visible = false
     Section(L("sec_main"))
     Button(L("btn_esp"),      function() ESPPage() end)
     Button(L("btn_aim"),      function() AimPage() end)
     Button("Убийца",          function() MurdererPage() end)
+    Button("Визуалы (скины)", function() VisualsPage() end)
     Button(L("btn_farm"),     function() FarmPage() end)
     Button(L("btn_move"),     function() MovePage() end)
     Button("Разное",          function() MiscExtraPage() end)
@@ -1172,8 +1146,8 @@ function ESPPage()
     Toggle(L("esp_innocent"), S.ESPInnocent, function(v) S.ESPInnocent=v end)
     Toggle(L("esp_gun"),      S.ESPGun,      function(v) S.ESPGun=v end)
     Section(L("sec_esp_params"))
-    Toggle(L("esp_name"),      S.ESPName,      function(v) S.ESPName=v end)
-    Toggle(L("esp_dist"),      S.ESPDistance,  function(v) S.ESPDistance=v end)
+    Toggle(L("esp_name"), S.ESPName, function(v) S.ESPName=v end)
+    Toggle(L("esp_dist"), S.ESPDistance, function(v) S.ESPDistance=v end)
     Toggle(L("esp_highlight"), S.ESPHighlight, function(v) S.ESPHighlight=v end)
     Number(L("esp_max_dist"), S.ESPMaxDistance, 50, 2000, function(v) S.ESPMaxDistance=v end)
     animatePageIn()
@@ -1189,36 +1163,47 @@ function AimPage()
     Number(L("aim_fov"), S.AimFOV, 20, 600, function(v) S.AimFOV=v end)
     Number(L("aim_range"), S.AimRange, 20, 1000, function(v) S.AimRange=v end)
     Slider(L("aim_smooth"), math.floor(S.AimSmooth*100), 0, 100, function(v) S.AimSmooth=math.clamp(v/100,0.01,1) end)
-    Info("АИМ работает ТОЛЬКО когда ты Шериф. Быстрый режим = мгновенное наведение.")
+    Info("АИМ только когда ты Шериф.")
+    animatePageIn()
+end
+
+function VisualsPage()
+    Clear(); Title.Text = "Визуалы · Скины"; Back.Visible = true
+    Section("СМЕНА СКИНА (только у тебя)")
+    Info("Тап по скину → твой нож меняет вид. Другие игроки не видят. В настоящем инвентаре MM2 ничего не появится.")
+    Button("🔄 Сбросить на стандартный", function()
+        applySkin("Standard")
+    end)
+    Section("ДОСТУПНЫЕ СКИНЫ")
+    for name, _ in pairs(SKINS) do
+        if name ~= "Standard" then
+            Button("📌 " .. name, function()
+                applySkin(name)
+            end)
+        end
+    end
     animatePageIn()
 end
 
 function MurdererPage()
     Clear(); Title.Text = "Убийца"; Back.Visible = true
-
     Section("ОСНОВНОЕ")
     Info("Работает только когда ты Убийца (нож в руках).")
     Toggle("Kill Aura", S.KillAura, function(v) S.KillAura = v end)
     Number("Радиус ауры (studs)", S.KillAuraRange, 5, 50, function(v) S.KillAuraRange = v end)
     Toggle("Авто-убийство ближайшего", S.AutoKillNearest, function(v) S.AutoKillNearest = v end)
-
     Section("КИДАНИЕ НОЖА")
     Toggle("Авто-кидание ножа", S.KnifeThrow, function(v) S.KnifeThrow = v end)
     Number("Дистанция поражения (studs)", S.KnifeThrowRange, 10, 200, function(v) S.KnifeThrowRange = v end)
     Number("Задержка (сек)", S.KnifeThrowCooldown, 0.1, 3, function(v) S.KnifeThrowCooldown = v end)
-
-    Section("РУЧНЫЕ ДЕЙСТВИЯ")
-    Button("Кинуть нож (разово)", function()
+    Section("РУЧНЫЕ")
+    Button("Кинуть нож", function()
         local char = LP.Character
         local tool = char and char:FindFirstChildOfClass("Tool")
-        if not tool then print("[AD] Ножа нет в руках") return end
+        if not tool then return end
         pcall(function() tool:Activate() end)
-        pcall(function()
-            local te = tool:FindFirstChild("Throw")
-            if te and te.FireServer then te:FireServer() end
-        end)
     end)
-    Button("Убить ближайшего (разово)", function()
+    Button("Убить ближайшего", function()
         local char = LP.Character
         local myHrp = char and char:FindFirstChild("HumanoidRootPart")
         local tool = char and char:FindFirstChildOfClass("Tool")
@@ -1268,15 +1253,11 @@ end
 
 function MiscExtraPage()
     Clear(); Title.Text = "Разное"; Back.Visible = true
-
     Section("ПИСТОЛЕТ")
     Button("⚡ Подобрать пистолет (1 клик)", function() autoGunOneShot() end)
-    Info("Скрипт находит выпавший пистолет, летит к нему, подбирает и возвращает тебя назад.")
-    Number("Задержка возврата (сек)", S.AutoGunDelay, 0.1, 3, function(v) S.AutoGunDelay = v end)
-
+    Info("Находит выпавший пистолет, летит, подбирает, возвращает назад.")
     Section("КАМЕРА")
     Toggle("Spectate Убийцу", S.SpectateMurderer, function(v) S.SpectateMurderer = v end)
-
     Section("ЗАЩИТА")
     Toggle("Anti-Fling", S.AntiFling, function(v)
         S.AntiFling = v
@@ -1294,10 +1275,8 @@ function MiscExtraPage()
             if _G.__AntiFlingBV then pcall(function() _G.__AntiFlingBV:Destroy() end) _G.__AntiFlingBV = nil end
         end
     end)
-
     Section("ПРЫЖОК")
     Toggle("Infinite Jump", S.InfiniteJump, function(v) S.InfiniteJump = v end)
-
     animatePageIn()
 end
 
@@ -1312,16 +1291,14 @@ end
 
 function SettingsPage()
     Clear(); Title.Text = L("title_settings"); Back.Visible = true
-    Section(L("set_lang"))
-    LanguageSelector()
-    Section(L("set_theme"))
-    ThemeSelector()
+    Section(L("set_lang")) LanguageSelector()
+    Section(L("set_theme")) ThemeSelector()
     Info(L("set_info"))
     animatePageIn()
 end
 
 --// =========================================================
---// ПЕРЕТАСКИВАНИЕ
+--// DRAG
 --// =========================================================
 local function MakeDraggable(handle, target)
     local dragging, dragStart, startPos = false, nil, nil
@@ -1351,21 +1328,16 @@ Back.MouseButton1Click:Connect(MainPage)
 Close.MouseButton1Click:Connect(function() Main.Visible = false end)
 AD.MouseButton1Click:Connect(function()
     Main.Visible = not Main.Visible
-    if Main.Visible then
-        pcall(MainPage)
-    end
+    if Main.Visible then pcall(MainPage) end
 end)
 
 --// =========================================================
---// INIT
+--// INIT + CLEANUP
 --// =========================================================
 for _, plr in ipairs(Players:GetPlayers()) do if plr ~= LP then createESP(plr) end end
 bind(Players.PlayerAdded:Connect(function(plr) if plr ~= LP then task.wait(0.5) createESP(plr) end end))
 bind(Players.PlayerRemoving:Connect(removeESP))
 
---// =========================================================
---// ОЧИСТКА
---// =========================================================
 _G.__ADMM2_CLEANUP = function()
     local char = LP.Character
     if char then
@@ -1384,4 +1356,4 @@ _G.__ADMM2_CLEANUP = function()
 end
 
 MainPage()
-print("[AD MM2 v1.6] загружен")
+print("[AD MM2 v1.7] загружен — раздел Визуалы + скины")
