@@ -1,6 +1,5 @@
 --========================================================--
---   AD MM2 v1.9 — TWO-COLUMN LAYOUT                       --
---   Sidebar слева · контент справа · скролл внутри       --
+--   AD MM2 v2.0 — COMPACT + OVERLAY (без скинов)          --
 --========================================================--
 
 if _G.__ADMM2_CLEANUP then pcall(_G.__ADMM2_CLEANUP) _G.__ADMM2_CLEANUP = nil end
@@ -54,44 +53,21 @@ local S = {
     ESPMurderer=true, ESPSheriff=true, ESPHero=true, ESPInnocent=false,
     ESPGun=true, ESPName=true, ESPDistance=true, ESPHighlight=true,
     ESPMaxDistance=600,
-
     AimAuto=false, AimWall=true, AimFast=true,
     AimFOV=180, AimRange=250, AimSmooth=0.9,
-
     AutoCoin=false,
-
     SpeedBoost=false, SpeedValue=60,
     JumpBoost=false, JumpValue=100,
     Fly=false, FlySpeed=70,
     NoClip=false,
-
     KillAura=false, KillAuraRange=15,
     AutoKillNearest=false,
     KnifeThrow=false, KnifeThrowRange=60, KnifeThrowCooldown=0.5,
-
     AutoGunDelay=0.5,
     SpectateMurderer=false,
     AntiFling=false,
     InfiniteJump=false,
-
-    ShowFPS=false, ShowPing=false, ShowWatermark=false,
-    CurrentSkin="Standard",
-    OriginalMesh=nil, OriginalTexture=nil,
-}
-
---========================================================--
--- SKINS
---========================================================--
-local SKINS = {
-    ["Standard"] = { Mesh=nil, Texture=nil },
-    ["Classic"] = { Mesh="rbxassetid://583707893", Texture="rbxassetid://584117262" },
-    ["Samurai"] = { Mesh="rbxassetid://424649574", Texture="rbxassetid://424649618" },
-    ["Ghost"]   = { Mesh="rbxassetid://221360285", Texture="rbxassetid://221360322" },
-    ["Icewing"] = { Mesh="rbxassetid://583707893", Texture="rbxassetid://584117262" },
-    ["BattleAxe"] = { Mesh="rbxassetid://583707893", Texture="rbxassetid://584117262" },
-    ["VampireEdge"] = { Mesh="rbxassetid://583707893", Texture="rbxassetid://584117262" },
-    ["Pixel"]   = { Mesh="rbxassetid://583707893", Texture="rbxassetid://584117262" },
-    ["Legendary"] = { Mesh="rbxassetid://583707893", Texture="rbxassetid://584117262" },
+    ShowFPS=true, ShowPing=true, ShowWatermark=true,
 }
 
 --========================================================--
@@ -117,33 +93,33 @@ local function guiParent()
     return PlayerGui
 end
 local PARENT = guiParent()
-local old = PARENT:FindFirstChild("AD_MM2_v19")
+local old = PARENT:FindFirstChild("AD_MM2_v20")
 if old then old:Destroy() end
 
 local GUI = Create("ScreenGui", {
-    Name = "AD_MM2_v19", ResetOnSpawn = false, IgnoreGuiInset = true,
+    Name = "AD_MM2_v20", ResetOnSpawn = false, IgnoreGuiInset = true,
     DisplayOrder = 2147483647, ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
     Parent = PARENT
 })
 bind(GUI.Destroying:Connect(disconnectAll))
 
 --========================================================--
--- ICON
+-- ICON (фиксированная слева)
 --========================================================--
 local Icon = Create("TextButton", {
-    Size = UDim2.fromOffset(52, 52),
-    Position = UDim2.new(0, 14, 0.5, -26),
+    Size = UDim2.fromOffset(48, 48),
+    Position = UDim2.new(0, 14, 0.5, -24),
     BackgroundColor3 = C.bg,
     Text = "AD",
     TextColor3 = C.accent2,
-    TextSize = 16,
+    TextSize = 15,
     Font = Enum.Font.GothamBlack,
     AutoButtonColor = false,
     ZIndex = 100,
     Parent = GUI
 })
 Corner(Icon, UDim.new(1, 0))
-local IconStroke = Stroke(Icon, C.accent, 2, 0.2)
+Stroke(Icon, C.accent, 2, 0.2)
 Create("UIGradient", {
     Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, C.accent),
@@ -154,12 +130,76 @@ Create("UIGradient", {
 })
 
 --========================================================--
--- WINDOW
+-- OVERLAY (FPS / Ping / Watermark)
+--========================================================--
+local OverlayHolder = Create("Frame", {
+    Size = UDim2.fromOffset(180, 62),
+    Position = UDim2.new(1, -192, 0, 12),
+    BackgroundColor3 = C.bg,
+    BackgroundTransparency = 0.15,
+    BorderSizePixel = 0,
+    ZIndex = 90,
+    Parent = GUI
+})
+Corner(OverlayHolder, UDim.new(0, 8))
+Stroke(OverlayHolder, C.accent, 1, 0.4)
+
+-- верхняя полоска акцента
+Create("Frame", {
+    Size = UDim2.new(1, 0, 0, 2),
+    BackgroundColor3 = C.accent,
+    BorderSizePixel = 0,
+    ZIndex = 91,
+    Parent = OverlayHolder
+})
+
+local WatermarkLabel = Create("TextLabel", {
+    Size = UDim2.new(1, -12, 0, 18),
+    Position = UDim2.fromOffset(8, 4),
+    BackgroundTransparency = 1,
+    Text = "AD · MM2",
+    TextColor3 = C.accent2,
+    TextSize = 13,
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 92,
+    Parent = OverlayHolder
+})
+
+local WatermarkSub = Create("TextLabel", {
+    Size = UDim2.new(1, -12, 0, 12),
+    Position = UDim2.fromOffset(8, 20),
+    BackgroundTransparency = 1,
+    Text = "v2.0 · PREMIUM",
+    TextColor3 = C.muted,
+    TextSize = 9,
+    Font = Enum.Font.Gotham,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 92,
+    Parent = OverlayHolder
+})
+
+local StatsLabel = Create("TextLabel", {
+    Size = UDim2.new(1, -12, 0, 16),
+    Position = UDim2.fromOffset(8, 38),
+    BackgroundTransparency = 1,
+    Text = "FPS: -- | Ping: --",
+    TextColor3 = C.text,
+    TextSize = 11,
+    Font = Enum.Font.Code,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 92,
+    Parent = OverlayHolder
+})
+
+--========================================================--
+-- WINDOW (420x300, фиксированное)
 --========================================================--
 local Window = Create("Frame", {
     Name = "Window",
-    Size = UDim2.fromOffset(520, 340),
-    Position = UDim2.new(0.5, -260, 0.5, -170),
+    AnchorPoint = Vector2.new(0.5, 0.5),
+    Size = UDim2.fromOffset(420, 300),
+    Position = UDim2.new(0.5, 0, 0.5, 0),
     BackgroundColor3 = C.bg,
     Visible = false,
     ClipsDescendants = true,
@@ -167,15 +207,14 @@ local Window = Create("Frame", {
     Parent = GUI
 })
 Corner(Window, UDim.new(0, 12))
-local WindowStroke = Stroke(Window, C.accent, 1.5, 0.2)
-
+Stroke(Window, C.accent, 1.5, 0.2)
 local WindowScale = Create("UIScale", { Scale = 1, Parent = Window })
 
 --========================================================--
--- HEADER (перетаскивание)
+-- HEADER (40px, БЕЗ перетаскивания)
 --========================================================--
 local Header = Create("Frame", {
-    Size = UDim2.new(1, 0, 0, 44),
+    Size = UDim2.new(1, 0, 0, 40),
     BackgroundColor3 = C.panel,
     BorderSizePixel = 0,
     ZIndex = 11,
@@ -191,13 +230,13 @@ Create("Frame", {
 })
 
 local Logo = Create("Frame", {
-    Size = UDim2.fromOffset(28, 28),
-    Position = UDim2.fromOffset(10, 8),
+    Size = UDim2.fromOffset(26, 26),
+    Position = UDim2.fromOffset(8, 7),
     BackgroundColor3 = C.accent,
     ZIndex = 13,
     Parent = Header
 })
-Corner(Logo, UDim.new(0, 8))
+Corner(Logo, UDim.new(0, 7))
 Create("UIGradient", {
     Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, C.accent), ColorSequenceKeypoint.new(1, C.accent3) }),
     Rotation = 135,
@@ -205,30 +244,30 @@ Create("UIGradient", {
 })
 Create("TextLabel", {
     Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1,
-    Text = "AD", TextColor3 = C.text, TextSize = 12,
+    Text = "AD", TextColor3 = C.text, TextSize = 11,
     Font = Enum.Font.GothamBlack, ZIndex = 14, Parent = Logo
 })
 
-local Title = Create("TextLabel", {
-    Size = UDim2.new(1, -100, 0, 16),
-    Position = UDim2.fromOffset(46, 6),
+Create("TextLabel", {
+    Size = UDim2.new(1, -100, 0, 15),
+    Position = UDim2.fromOffset(42, 5),
     BackgroundTransparency = 1,
     Text = "AD · MM2",
     TextColor3 = C.text,
-    TextSize = 13,
+    TextSize = 12,
     Font = Enum.Font.GothamBold,
     TextXAlignment = Enum.TextXAlignment.Left,
     ZIndex = 13,
     Parent = Header
 })
 
-local Subtitle = Create("TextLabel", {
-    Size = UDim2.new(1, -100, 0, 12),
-    Position = UDim2.fromOffset(46, 24),
+Create("TextLabel", {
+    Size = UDim2.new(1, -100, 0, 11),
+    Position = UDim2.fromOffset(42, 22),
     BackgroundTransparency = 1,
-    Text = "v1.9 · PREMIUM",
+    Text = "v2.0",
     TextColor3 = C.muted,
-    TextSize = 9,
+    TextSize = 8,
     Font = Enum.Font.Gotham,
     TextXAlignment = Enum.TextXAlignment.Left,
     ZIndex = 13,
@@ -236,12 +275,12 @@ local Subtitle = Create("TextLabel", {
 })
 
 local CloseBtn = Create("TextButton", {
-    Size = UDim2.fromOffset(26, 26),
-    Position = UDim2.new(1, -34, 0, 9),
+    Size = UDim2.fromOffset(24, 24),
+    Position = UDim2.new(1, -30, 0, 8),
     BackgroundColor3 = C.card,
     Text = "X",
     TextColor3 = C.text,
-    TextSize = 13,
+    TextSize = 12,
     Font = Enum.Font.GothamBold,
     AutoButtonColor = false,
     ZIndex = 14,
@@ -251,35 +290,35 @@ Corner(CloseBtn, UDim.new(0, 6))
 Stroke(CloseBtn, C.border, 1, 0.3)
 
 --========================================================--
--- SIDEBAR (левая колонка с разделами)
+-- SIDEBAR (95px)
 --========================================================--
 local Sidebar = Create("Frame", {
-    Size = UDim2.new(0, 110, 1, -44),
-    Position = UDim2.fromOffset(0, 44),
+    Size = UDim2.new(0, 95, 1, -40),
+    Position = UDim2.fromOffset(0, 40),
     BackgroundColor3 = C.panel,
     BorderSizePixel = 0,
     ZIndex = 11,
     Parent = Window
 })
 Create("UIPadding", {
-    PaddingTop = UDim.new(0, 8),
-    PaddingLeft = UDim.new(0, 6),
-    PaddingRight = UDim.new(0, 6),
-    PaddingBottom = UDim.new(0, 8),
+    PaddingTop = UDim.new(0, 6),
+    PaddingLeft = UDim.new(0, 5),
+    PaddingRight = UDim.new(0, 5),
+    PaddingBottom = UDim.new(0, 6),
     Parent = Sidebar
 })
-local SidebarLayout = Create("UIListLayout", {
-    Padding = UDim.new(0, 4),
+Create("UIListLayout", {
+    Padding = UDim.new(0, 3),
     SortOrder = Enum.SortOrder.LayoutOrder,
     Parent = Sidebar
 })
 
 --========================================================--
--- CONTENT (правая колонка с функциями)
+-- CONTENT
 --========================================================--
 local Content = Create("ScrollingFrame", {
-    Size = UDim2.new(1, -110, 1, -44),
-    Position = UDim2.fromOffset(110, 44),
+    Size = UDim2.new(1, -95, 1, -40),
+    Position = UDim2.fromOffset(95, 40),
     BackgroundColor3 = C.bg2,
     BorderSizePixel = 0,
     ScrollBarThickness = 3,
@@ -292,23 +331,23 @@ local Content = Create("ScrollingFrame", {
     Parent = Window
 })
 Create("UIPadding", {
-    PaddingTop = UDim.new(0, 10),
-    PaddingLeft = UDim.new(0, 10),
-    PaddingRight = UDim.new(0, 10),
-    PaddingBottom = UDim.new(0, 10),
+    PaddingTop = UDim.new(0, 8),
+    PaddingLeft = UDim.new(0, 8),
+    PaddingRight = UDim.new(0, 8),
+    PaddingBottom = UDim.new(0, 8),
     Parent = Content
 })
 Create("UIListLayout", {
-    Padding = UDim.new(0, 6),
+    Padding = UDim.new(0, 5),
     SortOrder = Enum.SortOrder.LayoutOrder,
     Parent = Content
 })
 
 --========================================================--
--- TABS REGISTRY
+-- TABS
 --========================================================--
-local Tabs = {}   -- [name] = { Button, Bar, Icon, Label }
-local Pages = {}  -- [name] = render function
+local Tabs = {}
+local Pages = {}
 
 local function ClearContent()
     for _, v in ipairs(Content:GetChildren()) do
@@ -319,9 +358,7 @@ end
 local function SelectTab(name)
     for tabName, item in pairs(Tabs) do
         local selected = tabName == name
-        Play(item.Button, TweenInfo.new(0.15), {
-            BackgroundColor3 = selected and C.card or C.panel,
-        })
+        Play(item.Button, TweenInfo.new(0.15), { BackgroundColor3 = selected and C.card or C.panel })
         item.Bar.Visible = selected
         item.Label.TextColor3 = selected and C.text or C.muted
         item.Icon.TextColor3 = selected and C.accent2 or C.muted
@@ -334,7 +371,7 @@ end
 local function CreateTab(name, symbol, order, renderFn)
     local btn = Create("TextButton", {
         Name = name .. "Tab",
-        Size = UDim2.new(1, 0, 0, 32),
+        Size = UDim2.new(1, 0, 0, 28),
         BackgroundColor3 = C.panel,
         Text = "",
         AutoButtonColor = false,
@@ -342,11 +379,11 @@ local function CreateTab(name, symbol, order, renderFn)
         ZIndex = 12,
         Parent = Sidebar
     })
-    Corner(btn, UDim.new(0, 7))
+    Corner(btn, UDim.new(0, 6))
 
     local bar = Create("Frame", {
-        Size = UDim2.new(0, 3, 0, 14),
-        Position = UDim2.new(0, 0, 0.5, -7),
+        Size = UDim2.new(0, 3, 0, 12),
+        Position = UDim2.new(0, 0, 0.5, -6),
         BackgroundColor3 = C.accent,
         BorderSizePixel = 0,
         Visible = false,
@@ -356,24 +393,24 @@ local function CreateTab(name, symbol, order, renderFn)
     Corner(bar, UDim.new(1, 0))
 
     local icon = Create("TextLabel", {
-        Size = UDim2.fromOffset(16, 32),
-        Position = UDim2.fromOffset(8, 0),
+        Size = UDim2.fromOffset(14, 28),
+        Position = UDim2.fromOffset(7, 0),
         BackgroundTransparency = 1,
         Text = symbol,
         TextColor3 = C.muted,
-        TextSize = 12,
+        TextSize = 11,
         Font = Enum.Font.GothamBold,
         ZIndex = 13,
         Parent = btn
     })
 
     local label = Create("TextLabel", {
-        Size = UDim2.new(1, -28, 1, 0),
-        Position = UDim2.fromOffset(26, 0),
+        Size = UDim2.new(1, -24, 1, 0),
+        Position = UDim2.fromOffset(22, 0),
         BackgroundTransparency = 1,
         Text = name,
         TextColor3 = C.muted,
-        TextSize = 11,
+        TextSize = 10,
         Font = Enum.Font.GothamSemibold,
         TextXAlignment = Enum.TextXAlignment.Left,
         ZIndex = 13,
@@ -383,23 +420,21 @@ local function CreateTab(name, symbol, order, renderFn)
     Tabs[name] = { Button = btn, Bar = bar, Icon = icon, Label = label }
     Pages[name] = renderFn
 
-    local function handle()
-        SelectTab(name)
-    end
+    local function handle() SelectTab(name) end
     btn.Activated:Connect(handle)
     btn.MouseButton1Click:Connect(handle)
 end
 
 --========================================================--
--- COMPONENTS (внутри Content)
+-- COMPONENTS
 --========================================================--
 local function SectionTitle(txt)
     return Create("TextLabel", {
-        Size = UDim2.new(1, 0, 0, 20),
+        Size = UDim2.new(1, 0, 0, 18),
         BackgroundTransparency = 1,
         Text = txt,
         TextColor3 = C.accent2,
-        TextSize = 11,
+        TextSize = 10,
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Left,
         Parent = Content
@@ -408,13 +443,13 @@ end
 
 local function InfoCard(txt)
     local f = Create("TextLabel", {
-        Size = UDim2.new(1, 0, 0, 28),
+        Size = UDim2.new(1, 0, 0, 26),
         BackgroundColor3 = C.bg,
         BorderSizePixel = 0,
         Text = "   " .. txt,
         TextWrapped = true,
         TextColor3 = C.muted,
-        TextSize = 10,
+        TextSize = 9,
         Font = Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextYAlignment = Enum.TextYAlignment.Center,
@@ -427,7 +462,7 @@ end
 local function ToggleRow(txt, initial, cb)
     local state = { v = initial }
     local b = Create("TextButton", {
-        Size = UDim2.new(1, 0, 0, 32),
+        Size = UDim2.new(1, 0, 0, 30),
         BackgroundColor3 = C.card,
         Text = "",
         AutoButtonColor = false,
@@ -437,20 +472,20 @@ local function ToggleRow(txt, initial, cb)
     Stroke(b, C.border, 1, 0.3)
 
     Create("TextLabel", {
-        Size = UDim2.new(1, -56, 1, 0),
-        Position = UDim2.fromOffset(12, 0),
+        Size = UDim2.new(1, -54, 1, 0),
+        Position = UDim2.fromOffset(10, 0),
         BackgroundTransparency = 1,
         Text = txt,
         TextColor3 = C.text,
-        TextSize = 12,
+        TextSize = 11,
         Font = Enum.Font.GothamMedium,
         TextXAlignment = Enum.TextXAlignment.Left,
         Parent = b
     })
 
     local sw = Create("Frame", {
-        Size = UDim2.fromOffset(36, 20),
-        Position = UDim2.new(1, -46, 0.5, -10),
+        Size = UDim2.fromOffset(34, 18),
+        Position = UDim2.new(1, -44, 0.5, -9),
         BackgroundColor3 = state.v and C.accent or Color3.fromRGB(45, 45, 60),
         BorderSizePixel = 0,
         Parent = b
@@ -458,8 +493,8 @@ local function ToggleRow(txt, initial, cb)
     Corner(sw, UDim.new(1, 0))
 
     local dot = Create("Frame", {
-        Size = UDim2.fromOffset(14, 14),
-        Position = state.v and UDim2.fromOffset(19, 3) or UDim2.fromOffset(3, 3),
+        Size = UDim2.fromOffset(12, 12),
+        Position = state.v and UDim2.fromOffset(20, 3) or UDim2.fromOffset(3, 3),
         BackgroundColor3 = Color3.fromRGB(240, 240, 250),
         BorderSizePixel = 0,
         ZIndex = 2,
@@ -469,7 +504,7 @@ local function ToggleRow(txt, initial, cb)
 
     local function apply(instant)
         local col = state.v and C.accent or Color3.fromRGB(45, 45, 60)
-        local pos = state.v and UDim2.fromOffset(19, 3) or UDim2.fromOffset(3, 3)
+        local pos = state.v and UDim2.fromOffset(20, 3) or UDim2.fromOffset(3, 3)
         if instant then
             sw.BackgroundColor3 = col
             dot.Position = pos
@@ -490,7 +525,7 @@ end
 
 local function NumberRow(txt, initial, min, max, cb)
     local f = Create("Frame", {
-        Size = UDim2.new(1, 0, 0, 32),
+        Size = UDim2.new(1, 0, 0, 30),
         BackgroundColor3 = C.card,
         BorderSizePixel = 0,
         Parent = Content
@@ -499,25 +534,25 @@ local function NumberRow(txt, initial, min, max, cb)
     Stroke(f, C.border, 1, 0.3)
 
     Create("TextLabel", {
-        Size = UDim2.new(1, -80, 1, 0),
-        Position = UDim2.fromOffset(12, 0),
+        Size = UDim2.new(1, -76, 1, 0),
+        Position = UDim2.fromOffset(10, 0),
         BackgroundTransparency = 1,
         Text = txt,
         TextColor3 = C.text,
-        TextSize = 12,
+        TextSize = 11,
         Font = Enum.Font.GothamMedium,
         TextXAlignment = Enum.TextXAlignment.Left,
         Parent = f
     })
 
     local box = Create("TextBox", {
-        Size = UDim2.fromOffset(60, 22),
-        Position = UDim2.new(1, -70, 0.5, -11),
+        Size = UDim2.fromOffset(58, 20),
+        Position = UDim2.new(1, -66, 0.5, -10),
         BackgroundColor3 = C.bg,
         BorderSizePixel = 0,
         Text = tostring(initial),
         TextColor3 = C.accent2,
-        TextSize = 11,
+        TextSize = 10,
         Font = Enum.Font.GothamBold,
         ClearTextOnFocus = false,
         Parent = f
@@ -537,7 +572,7 @@ end
 
 local function SliderRow(txt, initial, min, max, cb)
     local frame = Create("Frame", {
-        Size = UDim2.new(1, 0, 0, 48),
+        Size = UDim2.new(1, 0, 0, 44),
         BackgroundColor3 = C.card,
         BorderSizePixel = 0,
         Parent = Content
@@ -546,32 +581,32 @@ local function SliderRow(txt, initial, min, max, cb)
     Stroke(frame, C.border, 1, 0.3)
 
     Create("TextLabel", {
-        Size = UDim2.new(0.65, -12, 0, 18),
-        Position = UDim2.fromOffset(12, 5),
+        Size = UDim2.new(0.65, -10, 0, 16),
+        Position = UDim2.fromOffset(10, 4),
         BackgroundTransparency = 1,
         Text = txt,
         TextColor3 = C.text,
-        TextSize = 12,
+        TextSize = 11,
         Font = Enum.Font.GothamMedium,
         TextXAlignment = Enum.TextXAlignment.Left,
         Parent = frame
     })
 
     local valueLabel = Create("TextLabel", {
-        Size = UDim2.new(0.35, -12, 0, 18),
-        Position = UDim2.new(0.65, 0, 0, 5),
+        Size = UDim2.new(0.35, -10, 0, 16),
+        Position = UDim2.new(0.65, 0, 0, 4),
         BackgroundTransparency = 1,
         Text = tostring(math.floor(initial)),
         TextColor3 = C.accent2,
-        TextSize = 11,
+        TextSize = 10,
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Right,
         Parent = frame
     })
 
     local track = Create("Frame", {
-        Size = UDim2.new(1, -24, 0, 6),
-        Position = UDim2.new(0, 12, 0, 32),
+        Size = UDim2.new(1, -20, 0, 6),
+        Position = UDim2.new(0, 10, 0, 28),
         BackgroundColor3 = Color3.fromRGB(40, 40, 55),
         BorderSizePixel = 0,
         Parent = frame
@@ -587,7 +622,7 @@ local function SliderRow(txt, initial, min, max, cb)
     Corner(fill, UDim.new(1, 0))
 
     local knob = Create("Frame", {
-        Size = UDim2.fromOffset(16, 16),
+        Size = UDim2.fromOffset(14, 14),
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.new(0, 0, 0.5, 0),
         BackgroundColor3 = Color3.fromRGB(240, 244, 255),
@@ -599,8 +634,8 @@ local function SliderRow(txt, initial, min, max, cb)
     Stroke(knob, C.accent, 2, 0)
 
     local hitbox = Create("TextButton", {
-        Size = UDim2.new(1, 0, 0, 32),
-        Position = UDim2.new(0, 0, 0, -13),
+        Size = UDim2.new(1, 0, 0, 30),
+        Position = UDim2.new(0, 0, 0, -12),
         BackgroundTransparency = 1,
         Text = "",
         AutoButtonColor = false,
@@ -635,7 +670,7 @@ local function SliderRow(txt, initial, min, max, cb)
     hitbox.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
-            Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(22, 22) })
+            Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(20, 20) })
             setFromX(input.Position.X)
         end
     end)
@@ -649,7 +684,7 @@ local function SliderRow(txt, initial, min, max, cb)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             if dragging then
                 dragging = false
-                Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(16, 16) })
+                Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(14, 14) })
             end
         end
     end))
@@ -659,7 +694,7 @@ end
 
 local function ActionRow(txt, cb)
     local b = Create("TextButton", {
-        Size = UDim2.new(1, 0, 0, 32),
+        Size = UDim2.new(1, 0, 0, 30),
         BackgroundColor3 = C.card,
         Text = "",
         AutoButtonColor = false,
@@ -669,23 +704,23 @@ local function ActionRow(txt, cb)
     Stroke(b, C.border, 1, 0.3)
 
     Create("TextLabel", {
-        Size = UDim2.new(1, -32, 1, 0),
-        Position = UDim2.fromOffset(12, 0),
+        Size = UDim2.new(1, -30, 1, 0),
+        Position = UDim2.fromOffset(10, 0),
         BackgroundTransparency = 1,
         Text = txt,
         TextColor3 = C.text,
-        TextSize = 12,
+        TextSize = 11,
         Font = Enum.Font.GothamMedium,
         TextXAlignment = Enum.TextXAlignment.Left,
         Parent = b
     })
     Create("TextLabel", {
-        Size = UDim2.fromOffset(18, 32),
-        Position = UDim2.new(1, -26, 0, 0),
+        Size = UDim2.fromOffset(16, 30),
+        Position = UDim2.new(1, -24, 0, 0),
         BackgroundTransparency = 1,
         Text = ">",
         TextColor3 = C.accent,
-        TextSize = 14,
+        TextSize = 13,
         Font = Enum.Font.GothamBold,
         Parent = b
     })
@@ -699,75 +734,6 @@ local function ActionRow(txt, cb)
     end)
     return b
 end
-
---========================================================--
--- SKIN FUNCTIONS
---========================================================--
-local function getMyTool()
-    local char = LP.Character
-    if not char then return nil end
-    return char:FindFirstChildOfClass("Tool")
-end
-
-local function saveOriginalSkin(tool)
-    if S.OriginalMesh then return end
-    local handle = tool:FindFirstChild("Handle")
-    if not handle then return end
-    local mesh = handle:FindFirstChildOfClass("SpecialMesh")
-    if mesh then
-        S.OriginalMesh = mesh.MeshId
-        S.OriginalTexture = mesh.TextureId
-    end
-end
-
-local function applySkin(skinName)
-    local tool = getMyTool()
-    if not tool then print("[AD] Нет Tool в руках") return end
-    local handle = tool:FindFirstChild("Handle")
-    if not handle then return end
-    saveOriginalSkin(tool)
-
-    if skinName == "Standard" then
-        local mesh = handle:FindFirstChildOfClass("SpecialMesh")
-        if mesh then
-            if S.OriginalMesh then mesh.MeshId = S.OriginalMesh end
-            if S.OriginalTexture then mesh.TextureId = S.OriginalTexture end
-        end
-        S.CurrentSkin = "Standard"
-        return
-    end
-
-    local skin = SKINS[skinName]
-    if not skin then return end
-    local mesh = handle:FindFirstChildOfClass("SpecialMesh")
-    if not mesh then
-        mesh = Instance.new("SpecialMesh")
-        mesh.Parent = handle
-    end
-    if skin.Mesh then mesh.MeshId = skin.Mesh end
-    if skin.Texture then mesh.TextureId = skin.Texture end
-    S.CurrentSkin = skinName
-end
-
-task.spawn(function()
-    while GUI and GUI.Parent do
-        task.wait(1)
-        if S.CurrentSkin ~= "Standard" then
-            local tool = getMyTool()
-            if tool then
-                local handle = tool:FindFirstChild("Handle")
-                if handle then
-                    local mesh = handle:FindFirstChildOfClass("SpecialMesh")
-                    local skin = SKINS[S.CurrentSkin]
-                    if skin and mesh then
-                        if skin.Mesh and mesh.MeshId ~= skin.Mesh then mesh.MeshId = skin.Mesh end
-                        if skin.Texture and mesh.TextureId ~= skin.Texture then mesh.TextureId = skin.Texture end
-                    end
-                end
-            end
-        end
-    end
-end)
 
 --========================================================--
 -- ROLES
@@ -979,11 +945,10 @@ local function findMurderer()
 end
 
 --========================================================--
--- OVERLAYS
+-- FPS/PING/PING LOOP (Overlay)
 --========================================================--
-local fpsLbl = Create("TextLabel", { Size=UDim2.fromOffset(100,16), Position=UDim2.new(0,10,0,10), BackgroundTransparency=1, Text="FPS: --", TextColor3=C.green, TextSize=12, Font=Enum.Font.Code, TextXAlignment=Enum.TextXAlignment.Left, Visible=false, Parent=GUI })
-local pingLbl = Create("TextLabel", { Size=UDim2.fromOffset(100,16), Position=UDim2.new(0,10,0,28), BackgroundTransparency=1, Text="Ping: --", TextColor3=C.yellow, TextSize=12, Font=Enum.Font.Code, TextXAlignment=Enum.TextXAlignment.Left, Visible=false, Parent=GUI })
-local wmLbl = Create("TextLabel", { Size=UDim2.fromOffset(180,16), Position=UDim2.new(1,-190,0,10), BackgroundTransparency=1, Text="AD MM2 v1.9", TextColor3=Color3.fromRGB(200,200,255), TextSize=12, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Right, Visible=false, Parent=GUI })
+local lastFPS = 0
+local lastPing = 0
 
 task.spawn(function()
     while GUI and GUI.Parent do
@@ -993,15 +958,35 @@ task.spawn(function()
             RunService.RenderStepped:Wait()
             frames = frames + 1
         end
-        if S.ShowFPS then fpsLbl.Text = "FPS: " .. frames end
+        lastFPS = frames
     end
 end)
 
 task.spawn(function()
     while GUI and GUI.Parent do
         local ok, ping = pcall(function() return LP:GetNetworkPing() end)
-        if ok and S.ShowPing then pingLbl.Text = string.format("Ping: %d", math.floor(ping * 1000)) end
-        task.wait(1)
+        if ok then lastPing = math.floor(ping * 1000) end
+        task.wait(0.5)
+    end
+end)
+
+task.spawn(function()
+    while GUI and GUI.Parent do
+        local parts = {}
+        if S.ShowFPS then table.insert(parts, "FPS: " .. lastFPS) end
+        if S.ShowPing then table.insert(parts, "Ping: " .. lastPing) end
+        if #parts > 0 then
+            StatsLabel.Text = table.concat(parts, "  |  ")
+            StatsLabel.Visible = true
+        else
+            StatsLabel.Visible = false
+        end
+
+        WatermarkLabel.Visible = S.ShowWatermark
+        WatermarkSub.Visible = S.ShowWatermark
+
+        OverlayHolder.Visible = S.ShowFPS or S.ShowPing or S.ShowWatermark
+        task.wait(0.3)
     end
 end)
 
@@ -1097,7 +1082,7 @@ local function autoGunOneShot()
 end
 
 --========================================================--
--- FARM / MURDERER / MISC LOOPS
+-- FARM / MURDERER / MISC
 --========================================================--
 task.spawn(function()
     while GUI and GUI.Parent do
@@ -1203,7 +1188,7 @@ bind(RunService.Heartbeat:Connect(function(dt)
 end))
 
 --========================================================--
--- MAIN RENDER
+-- MAIN RENDER (AIM + ESP)
 --========================================================--
 local accum = 0
 local STEP = 1/20
@@ -1310,7 +1295,7 @@ bind(RunService.Stepped:Connect(function()
 end))
 
 --========================================================--
--- РЕНДЕР СТРАНИЦ (каждая пишет в Content)
+-- PAGE RENDERS
 --========================================================--
 local function RenderESP()
     SectionTitle("РОЛИ")
@@ -1340,7 +1325,7 @@ local function RenderAim()
     SliderRow("Дистанция", S.AimRange, 20, 1000, function(v) S.AimRange = v end)
     SliderRow("Плавность", math.floor(S.AimSmooth * 100), 0, 100, function(v) S.AimSmooth = math.clamp(v/100, 0.01, 1) end)
 
-    InfoCard("Работает только когда ты Шериф (пистолет в руках).")
+    InfoCard("Работает только когда ты Шериф.")
 end
 
 local function RenderMurderer()
@@ -1378,21 +1363,7 @@ local function RenderMurderer()
         if best then pcall(function() myHrp.CFrame = best.CFrame tool:Activate() end) end
     end)
 
-    InfoCard("Работает только когда ты Убийца (нож в руках).")
-end
-
-local function RenderSkins()
-    InfoCard("Скины видны только тебе. Другие видят оригинал.")
-
-    SectionTitle("СБРОС")
-    ActionRow("Сбросить на стандартный", function() applySkin("Standard") end)
-
-    SectionTitle("СКИНЫ")
-    for name, _ in pairs(SKINS) do
-        if name ~= "Standard" then
-            ActionRow(name, function() applySkin(name) end)
-        end
-    end
+    InfoCard("Работает только когда ты Убийца.")
 end
 
 local function RenderFarm()
@@ -1454,11 +1425,12 @@ local function RenderMisc()
     ToggleRow("Infinite Jump", S.InfiniteJump, function(v) S.InfiniteJump = v end)
 end
 
-local function RenderUtil()
-    SectionTitle("ПОКАЗАТЬ")
-    ToggleRow("FPS", S.ShowFPS, function(v) S.ShowFPS = v; fpsLbl.Visible = v end)
-    ToggleRow("Ping", S.ShowPing, function(v) S.ShowPing = v; pingLbl.Visible = v end)
-    ToggleRow("Watermark", S.ShowWatermark, function(v) S.ShowWatermark = v; wmLbl.Visible = v end)
+local function RenderVisuals()
+    SectionTitle("ОВЕРЛЕЙ НА ЭКРАНЕ")
+    ToggleRow("Watermark (AD · MM2)", S.ShowWatermark, function(v) S.ShowWatermark = v end)
+    ToggleRow("FPS счётчик", S.ShowFPS, function(v) S.ShowFPS = v end)
+    ToggleRow("Ping счётчик", S.ShowPing, function(v) S.ShowPing = v end)
+    InfoCard("Показывается в правом верхнем углу экрана.")
 end
 
 --========================================================--
@@ -1467,41 +1439,14 @@ end
 CreateTab("ESP",       "*", 1, RenderESP)
 CreateTab("АИМ",       "+", 2, RenderAim)
 CreateTab("Убийца",    "/", 3, RenderMurderer)
-CreateTab("Скины",     "~", 4, RenderSkins)
-CreateTab("Фарм",      "$", 5, RenderFarm)
-CreateTab("Движение",  ">", 6, RenderMove)
-CreateTab("Разное",    "=", 7, RenderMisc)
-CreateTab("Утилиты",   "@", 8, RenderUtil)
+CreateTab("Фарм",      "$", 4, RenderFarm)
+CreateTab("Движение",  ">", 5, RenderMove)
+CreateTab("Разное",    "=", 6, RenderMisc)
+CreateTab("Визуалы",   "@", 7, RenderVisuals)
 
 --========================================================--
--- DRAG / OPEN-CLOSE
+-- OPEN/CLOSE
 --========================================================--
-local function MakeDraggable(handle, target)
-    local dragging, dragStart, startPos = false, nil, nil
-    handle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = target.Position
-        end
-    end)
-    handle.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
-        end
-    end)
-    bind(UIS.InputChanged:Connect(function(input)
-        if not dragging then return end
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            local delta = input.Position - dragStart
-            target.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end))
-end
-
-MakeDraggable(Header, Window)
-MakeDraggable(Icon, Icon)
-
 local opened = false
 local function SetOpen(state)
     opened = state
@@ -1544,4 +1489,4 @@ _G.__ADMM2_CLEANUP = function()
     pcall(function() gunFolder:Destroy() end)
 end
 
-print("[AD MM2 v1.9] загружен — two-column layout")
+print("[AD MM2 v2.0] загружен — overlay + без скинов")
