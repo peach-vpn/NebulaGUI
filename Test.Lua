@@ -1,5 +1,5 @@
 --========================================================--
---           AD BloxStrike v1.0 — AIM + ESP               --
+--           AD BloxStrike v1.1 — FIXED + BHOP            --
 --========================================================--
 
 if _G.__BS_CLEANUP then pcall(_G.__BS_CLEANUP) _G.__BS_CLEANUP = nil end
@@ -32,21 +32,24 @@ end))
 local S = {
     -- AIM
     AimEnabled = false,
-    AimPart = "Head",           -- "Head" | "Body"
-    AimFOV = 120,
-    AimRange = 400,
-    AimSmooth = 0.35,
+    AimPart = "Head",
+    AimFOV = 150,
+    AimRange = 500,
+    AimSmooth = 0.4,
     AimWallCheck = true,
     AimTeamCheck = true,
     AimPrediction = true,
+    AimAlwaysOn = true,          -- ФИКС: на телефоне AIM всегда включён
 
     -- ESP
     ESPEnabled = true,
     ESPBox = true,
     ESPName = true,
     ESPHealth = true,
-    ESPDistance = true,
-    ESPMaxDist = 500,
+    ESPMaxDist = 600,
+
+    -- BHOP
+    BunnyHop = false,
 }
 
 --========================================================--
@@ -54,7 +57,6 @@ local S = {
 --========================================================--
 local C = {
     bg      = Color3.fromRGB(12, 12, 18),
-    bg2     = Color3.fromRGB(18, 18, 26),
     panel   = Color3.fromRGB(22, 22, 32),
     card    = Color3.fromRGB(28, 27, 40),
     accent  = Color3.fromRGB(153, 91, 255),
@@ -91,11 +93,11 @@ local function guiParent()
     return PG
 end
 local PARENT = guiParent()
-local old = PARENT:FindFirstChild("AD_BS_v1")
+local old = PARENT:FindFirstChild("AD_BS_v11")
 if old then old:Destroy() end
 
 local GUI = Create("ScreenGui", {
-    Name = "AD_BS_v1", ResetOnSpawn = false, IgnoreGuiInset = true,
+    Name = "AD_BS_v11", ResetOnSpawn = false, IgnoreGuiInset = true,
     DisplayOrder = 2147483647, ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
     Parent = PARENT
 })
@@ -116,7 +118,7 @@ Stroke(Icon, C.accent, 2, 0.2)
 -- WINDOW
 local Win = Create("Frame", {
     AnchorPoint = Vector2.new(0.5, 0.5),
-    Size = UDim2.fromOffset(400, 320),
+    Size = UDim2.fromOffset(400, 340),
     Position = UDim2.new(0.5, 0, 0.5, 0),
     BackgroundColor3 = C.bg, Visible = false,
     ClipsDescendants = true, ZIndex = 10, Parent = GUI
@@ -142,7 +144,7 @@ Create("TextLabel", {
 })
 Create("TextLabel", {
     Size = UDim2.new(1, -70, 0, 11), Position = UDim2.fromOffset(10, 21),
-    BackgroundTransparency = 1, Text = "v1.0 · AIM + ESP",
+    BackgroundTransparency = 1, Text = "v1.1 · FIXED",
     TextColor3 = C.muted, TextSize = 9, Font = Enum.Font.Gotham,
     TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13, Parent = Header
 })
@@ -158,7 +160,7 @@ Stroke(CloseBtn, C.border, 1, 0.3)
 
 -- CONTENT
 local Content = Create("ScrollingFrame", {
-    Size = UDim2.new(1, -12, 1, -46),
+    Size = UDim2.new(1, -12, 1, -80),
     Position = UDim2.fromOffset(6, 40),
     BackgroundTransparency = 1, BorderSizePixel = 0,
     ScrollBarThickness = 2, ScrollBarImageColor3 = C.accent,
@@ -355,10 +357,10 @@ local function Picker(txt, options, initial, cb)
 end
 
 --========================================================--
--- TEAM / ROLE
+-- TEAM / ROLE (FIXED)
 --========================================================--
 local function getTeamColor(player)
-    -- 1) Через player.Team
+    -- 1) Через player.Team [citation:3]
     local team = player.Team
     if team and team.TeamColor then
         local bc = team.TeamColor
@@ -369,7 +371,7 @@ local function getTeamColor(player)
         end
     end
 
-    -- 2) Через иерархию workspace [citation:4]
+    -- 2) Через иерархию workspace [citation:3]
     local char = player.Character
     if char and char.Parent then
         local pName = char.Parent.Name:lower()
@@ -380,7 +382,7 @@ local function getTeamColor(player)
         end
     end
 
-    -- 3) Fallback: свои — синие, враги — оранжевые
+    -- 3) Fallback: свои — синие, враги — оранжевые [citation:3]
     if player.Team and LP.Team and player.Team == LP.Team then
         return C.blue
     end
@@ -400,7 +402,7 @@ local function isAlive(char)
 end
 
 --========================================================--
--- ESP
+-- ESP (FIXED — Highlight вместо BoxHandleAdornment)
 --========================================================--
 local espFolder = Create("Folder", { Name = "AD_BS_ESP", Parent = PARENT })
 local ESPData = {}
@@ -418,14 +420,15 @@ local function createESP(player)
     if player == LP or ESPData[player] then return end
     local d = {}
 
-    -- Box (BoxHandleAdornment) [citation:5]
-    d.Box = Create("BoxHandleAdornment", {
-        Name = "ESP_Box",
-        Size = Vector3.new(2, 3, 1),
-        AlwaysOnTop = true,
-        ZIndex = 6,
-        Transparency = 0.7,
-        Visible = false,
+    -- ФИКС: Highlight (обводка тела) вместо BoxHandleAdornment [citation:4]
+    d.Highlight = Create("Highlight", {
+        Name = "ESP_HL",
+        FillColor = C.orange,
+        FillTransparency = 0.6,
+        OutlineColor = Color3.fromRGB(255, 255, 255),
+        OutlineTransparency = 0.3,
+        DepthMode = Enum.HighlightDepthMode.AlwaysOnTop,
+        Enabled = false,
         Parent = espFolder
     })
 
@@ -465,7 +468,7 @@ local function createESP(player)
 end
 
 --========================================================--
--- AIM
+-- AIM (FIXED — всегда включён + prediction safe)
 --========================================================--
 local LockedTarget = nil
 
@@ -528,19 +531,22 @@ local accum = 0
 local STEP = 1/25
 
 bind(RunService.RenderStepped:Connect(function(dt)
-    -- AIM (только при зажатии правой кнопки мыши) [citation:3]
-    if S.AimEnabled and UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+    -- AIM (ФИКС: всегда включён, если AimEnabled)
+    if S.AimEnabled then
         local target = findTarget()
         if target then
             local char = target.Character
             local part = getAimPart(char)
             if part then
-                -- Prediction: учитываем движение цели [citation:3]
+                -- Prediction: безопасная проверка velocity
                 local aimPos = part.Position
                 if S.AimPrediction then
-                    local dist = (part.Position - Camera.CFrame.Position).Magnitude
-                    local factor = math.clamp(0.05 + (dist / 2000), 0.02, 0.12)
-                    aimPos = part.Position + (part.AssemblyLinearVelocity * factor)
+                    local vel = part.AssemblyLinearVelocity or part.Velocity
+                    if vel and vel.Magnitude > 1 then
+                        local dist = (part.Position - Camera.CFrame.Position).Magnitude
+                        local factor = math.clamp(0.05 + (dist / 2000), 0.02, 0.12)
+                        aimPos = part.Position + (vel * factor)
+                    end
                 end
 
                 local desired = CFrame.lookAt(Camera.CFrame.Position, aimPos)
@@ -567,19 +573,16 @@ bind(RunService.RenderStepped:Connect(function(dt)
                 if root then
                     local dist = (root.Position - Camera.CFrame.Position).Magnitude
                     if dist > S.ESPMaxDist then
-                        d.Box.Visible = false
+                        d.Highlight.Enabled = false
                         d.Info.Enabled = false
                     else
                         local teamColor = getTeamColor(player)
 
-                        -- Box
-                        d.Box.Visible = S.ESPBox
+                        -- Highlight (ФИКС)
+                        d.Highlight.Enabled = S.ESPBox
                         if S.ESPBox then
-                            d.Box.Adornee = root
-                            d.Box.Size = Vector3.new(2, 3, 1)
-                            d.Box.Color3 = teamColor
-                        else
-                            d.Box.Adornee = nil
+                            d.Highlight.Adornee = char
+                            d.Highlight.FillColor = teamColor
                         end
 
                         -- Info
@@ -598,15 +601,33 @@ bind(RunService.RenderStepped:Connect(function(dt)
                             d.HPLbl.Visible = false
                         end
 
-                        if S.ESPDistance then
+                        if S.ESPName and S.ESPHealth then
                             d.HPLbl.Text = d.HPLbl.Text .. "  " .. math.floor(dist) .. "m"
                         end
                     end
                 end
             else
-                d.Box.Visible = false
+                d.Highlight.Enabled = false
                 d.Info.Enabled = false
             end
+        end
+    end
+end))
+
+--========================================================--
+-- BUNNY HOP
+--========================================================--
+bind(RunService.Heartbeat:Connect(function()
+    if not S.BunnyHop then return end
+    local char = LP.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+
+    -- Проверка что на земле и нажата кнопка прыжка [citation:13][citation:20]
+    if hum.FloorMaterial ~= Enum.Material.Air then
+        if UIS:IsKeyDown(Enum.KeyCode.Space) then
+            hum:ChangeState(Enum.HumanoidStateType.Jumping)
         end
     end
 end))
@@ -638,12 +659,17 @@ local function ESPPage()
     Clear()
     Section("ESP")
     Toggle("Включить ESP", S.ESPEnabled, function(v) S.ESPEnabled = v end)
-    Toggle("Box (рамка)", S.ESPBox, function(v) S.ESPBox = v end)
+    Toggle("Highlight (обводка)", S.ESPBox, function(v) S.ESPBox = v end)
     Toggle("Имя", S.ESPName, function(v) S.ESPName = v end)
     Toggle("HP", S.ESPHealth, function(v) S.ESPHealth = v end)
-    Toggle("Дистанция", S.ESPDistance, function(v) S.ESPDistance = v end)
     Section("ПАРАМЕТРЫ")
     Slider("Макс. дистанция", S.ESPMaxDist, 50, 1000, function(v) S.ESPMaxDist = v end)
+end
+
+local function MiscPage()
+    Clear()
+    Section("BUNNY HOP")
+    Toggle("Bunny Hop", S.BunnyHop, function(v) S.BunnyHop = v end)
 end
 
 --========================================================--
@@ -656,14 +682,13 @@ local NavBar = Create("Frame", {
     ZIndex = 12, Parent = Win
 })
 Corner(NavBar, UDim.new(0, 7))
-Create("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder, Parent = NavBar })
+Create("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder, Parent = NavBar })
 
-local currentPage = nil
 local buttons = {}
 
 local function createNavBtn(name, pageFn)
     local b = Create("TextButton", {
-        Size = UDim2.new(0.5, -3, 1, 0),
+        Size = UDim2.new(1/3, -2, 1, 0),
         BackgroundColor3 = C.card, Text = name,
         TextColor3 = C.muted, TextSize = 10, Font = Enum.Font.GothamBold,
         AutoButtonColor = false, Parent = NavBar
@@ -682,6 +707,7 @@ end
 
 createNavBtn("AIM", AimPage)
 createNavBtn("ESP", ESPPage)
+createNavBtn("MISC", MiscPage)
 
 --========================================================--
 -- OPEN / CLOSE
@@ -724,4 +750,4 @@ _G.__BS_CLEANUP = function()
     pcall(function() espFolder:Destroy() end)
 end
 
-print("[AD BloxStrike v1.0] загружен")
+print("[AD BloxStrike v1.1] загружен — AIM + ESP + Bunny Hop")
