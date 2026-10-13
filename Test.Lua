@@ -1,10 +1,7 @@
 --============================================================--
---                ★ AURA MM2 — ULTIMATE ★                     --
---        ESP · Aimbot · Kill Aura · AutoGun · Skins          --
---              Farm · Movement · Misc · Themes               --
+--        ★ AURA MM2 — FIXED (menu opens everywhere) ★        --
 --============================================================--
 
--- Cleanup old
 if _G.AURA_CLEANUP then pcall(_G.AURA_CLEANUP) end
 
 local Players    = game:GetService("Players")
@@ -12,14 +9,21 @@ local UIS        = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Tween      = game:GetService("TweenService")
 local Stats      = game:GetService("Stats")
+local CoreGui    = game:GetService("CoreGui")
 
 local LP      = Players.LocalPlayer
 local PG      = LP:WaitForChild("PlayerGui")
 local Camera  = workspace.CurrentCamera
 
---------------------------------------------------
--- CONNECTIONS
---------------------------------------------------
+-- ============ ГЛАВНЫЙ ФИКС: родитель через gethui ============
+local function GetGuiParent()
+    if gethui then
+        local ok, h = pcall(gethui)
+        if ok and h then return h end
+    end
+    return CoreGui or PG
+end
+
 local Connections = {}
 local function C(conn) table.insert(Connections, conn) return conn end
 
@@ -27,19 +31,15 @@ C(workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
     Camera = workspace.CurrentCamera
 end))
 
---------------------------------------------------
 -- CONFIG
---------------------------------------------------
 local CFG = {
-    -- ESP
     ESP = true,
     ESProles = { Murderer = true, Sheriff = true, Hero = true, Innocent = false },
     ESPName = true, ESPDist = true, ESPChams = true, ESPGun = true,
     ESPMaxDist = 1000,
 
-    -- AIM
     AimEnabled = false,
-    AimTarget = "Murderer",  -- "Murderer" | "Sheriff" | "All"
+    AimTarget = "Murderer",
     AimPart = "Head",
     AimFOV = 200,
     AimRange = 400,
@@ -48,34 +48,27 @@ local CFG = {
     AimWallCheck = true,
     AimVisibleFOV = false,
 
-    -- COMBAT (knife)
     KillAura = false,
     AuraRange = 12,
     AutoThrow = false,
     ThrowRange = 80,
 
-    -- GUN
     AutoGun = false,
 
-    -- MOVEMENT
     Speed = false, SpeedVal = 60,
     Jump = false, JumpVal = 100,
     Fly = false, FlySpeed = 60,
     Noclip = false,
     InfJump = false,
 
-    -- FARM
     AutoCoin = false,
 
-    -- MISC
     Spectate = false,
     AntiFling = false,
     FPS = false, Ping = false,
 }
 
---------------------------------------------------
 -- SKINS
---------------------------------------------------
 local SKINS = {
     { Name = "Icewing",      Mesh = "rbxassetid://4337254908", Tex = "rbxassetid://4337255336" },
     { Name = "BattleAxe",    Mesh = "rbxassetid://4337254133", Tex = "rbxassetid://4337254520" },
@@ -85,9 +78,7 @@ local SKINS = {
 }
 local SavedSkin = { Mesh = nil, Tex = nil }
 
---------------------------------------------------
 -- THEME
---------------------------------------------------
 local THEMES = {
     Void    = { a = Color3.fromRGB(153, 91, 255),  a2 = Color3.fromRGB(196, 151, 255), bg = Color3.fromRGB(10, 10, 16), panel = Color3.fromRGB(17, 17, 26), card = Color3.fromRGB(24, 24, 36), txt = Color3.fromRGB(245,245,255), sub = Color3.fromRGB(130,128,150), line = Color3.fromRGB(45,42,60) },
     Blood   = { a = Color3.fromRGB(255, 65, 85),   a2 = Color3.fromRGB(255, 130, 145), bg = Color3.fromRGB(16, 10, 12), panel = Color3.fromRGB(26, 17, 19), card = Color3.fromRGB(36, 24, 26), txt = Color3.fromRGB(255,245,245), sub = Color3.fromRGB(150,128,130), line = Color3.fromRGB(60,45,48) },
@@ -106,9 +97,7 @@ local function ApplyTheme()
     end
 end
 
---------------------------------------------------
 -- HELPERS
---------------------------------------------------
 local function new(class, props, parent)
     local o = Instance.new(class)
     for k, v in pairs(props) do if k ~= "Parent" then o[k] = v end end
@@ -121,45 +110,37 @@ local function tw(o, p, d, style)
     Tween:Create(o, TweenInfo.new(d or 0.22, style or Enum.EasingStyle.Quart, Enum.EasingDirection.Out), p):Play()
 end
 
---------------------------------------------------
--- GUI ROOT
---------------------------------------------------
-local Old = PG:FindFirstChild("AURA_MM2")
+-- ============ GUI ROOT (ФИКС) ============
+local PARENT = GetGuiParent()
+
+local Old = PARENT:FindFirstChild("AURA_MM2")
 if Old then Old:Destroy() end
 
 local Screen = new("ScreenGui", {
     Name = "AURA_MM2", ResetOnSpawn = false, IgnoreGuiInset = true,
-    ZIndexBehavior = Enum.ZIndexBehavior.Sibling, DisplayOrder = 999
-}, PG)
+    ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+    DisplayOrder = 2147483647,   -- максимум
+    Enabled = true,
+}, PARENT)
 
--- ══════════════ FLOATING ICON ══════════════
+print("[AURA] GUI создан в:", PARENT.Name or PARENT.ClassName)
+
+-- FLOATING ICON
 local Icon = new("TextButton", {
-    Size = UDim2.fromOffset(52, 52),
-    Position = UDim2.new(0, 16, 0.5, -26),
+    Size = UDim2.fromOffset(56, 56),
+    Position = UDim2.new(0, 16, 0.5, -28),
     BackgroundColor3 = T.bg,
-    Text = "A", TextColor3 = T.a, TextSize = 20,
+    Text = "A", TextColor3 = T.a, TextSize = 22,
     Font = Enum.Font.GothamBlack, AutoButtonColor = false,
-    ZIndex = 60
+    ZIndex = 60,
+    Active = true,
 }, Screen)
 corner(Icon, 16)
 local IconStroke = stroke(Icon, T.a, 2)
 theme(Icon, "BackgroundColor3", "bg")
 theme(IconStroke, "Color", "a")
 
-new("UIGradient", {
-    Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, T.a),
-        ColorSequenceKeypoint.new(0.35, T.a),
-        ColorSequenceKeypoint.new(1, T.bg)
-    },
-    Rotation = 90, Transparency = NumberSequence.new{
-        NumberSequenceKeypoint.new(0, 0.85),
-        NumberSequenceKeypoint.new(0.35, 0.85),
-        NumberSequenceKeypoint.new(1, 0)
-    }
-}, Icon)
-
--- pulse animation
+-- pulse
 task.spawn(function()
     while Icon.Parent do
         tw(IconStroke, {Transparency = 0.4}, 1)
@@ -169,13 +150,13 @@ task.spawn(function()
     end
 end)
 
--- ══════════════ MAIN WINDOW ══════════════
+-- MAIN WINDOW
 local Win = new("Frame", {
     AnchorPoint = Vector2.new(0.5, 0.5),
     Position = UDim2.fromScale(0.5, 0.5),
     Size = UDim2.fromOffset(460, 300),
     BackgroundColor3 = T.bg, Visible = false,
-    ClipsDescendants = true, ZIndex = 10
+    ClipsDescendants = true, ZIndex = 10,
 }, Screen)
 corner(Win, 14)
 local WinStroke = stroke(Win, T.a, 1.5)
@@ -187,81 +168,61 @@ local UIScale = new("UIScale", {Scale = 1}, Win)
 -- TOP BAR
 local TopBar = new("Frame", {
     Size = UDim2.new(1, 0, 0, 42), BackgroundColor3 = T.panel,
-    BorderSizePixel = 0, ZIndex = 11
+    BorderSizePixel = 0, ZIndex = 11,
 }, Win)
 corner(TopBar, 14)
 theme(TopBar, "BackgroundColor3", "panel")
-
-local TopBarFix = new("Frame", {
-    Size = UDim2.new(1, 0, 0, 8), Position = UDim2.new(0, 0, 1, -8),
-    BackgroundColor3 = T.panel, BorderSizePixel = 0, ZIndex = 11
-}, TopBar)
-theme(TopBarFix, "BackgroundColor3", "panel")
 
 local Title = new("TextLabel", {
     Position = UDim2.fromOffset(14, 0), Size = UDim2.new(1, -60, 1, 0),
     BackgroundTransparency = 1, Text = "AURA",
     TextColor3 = T.txt, TextSize = 15, Font = Enum.Font.GothamBlack,
-    TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 12
+    TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 12,
 }, TopBar)
 theme(Title, "TextColor3", "txt")
 
-local TitleGlow = new("TextLabel", {
-    Position = UDim2.fromOffset(14, 0), Size = UDim2.new(1, -60, 1, 0),
-    BackgroundTransparency = 1, Text = "AURA",
-    TextColor3 = T.a, TextSize = 15, Font = Enum.Font.GothamBlack,
-    TextXAlignment = Enum.TextXAlignment.Left, TextTransparency = 0.7, ZIndex = 11
-}, TopBar)
-theme(TitleGlow, "TextColor3", "a")
-
 local VerLbl = new("TextLabel", {
-    Position = UDim2.new(1, -92, 0, 8), Size = UDim2.fromOffset(44, 12),
+    Position = UDim2.new(1, -92, 0, 8), Size = UDim2.fromOffset(44, 26),
     BackgroundColor3 = T.a, Text = "MM2", TextColor3 = T.bg,
-    TextSize = 8, Font = Enum.Font.GothamBlack, ZIndex = 12
+    TextSize = 9, Font = Enum.Font.GothamBlack, ZIndex = 12,
 }, TopBar)
-corner(VerLbl, 4)
+corner(VerLbl, 5)
 theme(VerLbl, "BackgroundColor3", "a")
 theme(VerLbl, "TextColor3", "bg")
 
 local CloseBtn = new("TextButton", {
-    Position = UDim2.new(1, -40, 0, 9), Size = UDim2.fromOffset(24, 24),
+    Position = UDim2.new(1, -40, 0, 9), Size = UDim2.fromOffset(26, 26),
     BackgroundColor3 = T.card, Text = "×", TextColor3 = T.txt,
-    TextSize = 17, Font = Enum.Font.GothamBold,
-    AutoButtonColor = false, ZIndex = 12
+    TextSize = 18, Font = Enum.Font.GothamBold,
+    AutoButtonColor = false, ZIndex = 12,
 }, TopBar)
 corner(CloseBtn, 6)
 theme(CloseBtn, "BackgroundColor3", "card")
 theme(CloseBtn, "TextColor3", "txt")
 
--- NAV BAR (bottom tabs)
+-- NAV (bottom tabs)
 local Nav = new("Frame", {
     Position = UDim2.new(0, 0, 1, -44), Size = UDim2.new(1, 0, 0, 44),
-    BackgroundColor3 = T.panel, BorderSizePixel = 0, ZIndex = 11
+    BackgroundColor3 = T.panel, BorderSizePixel = 0, ZIndex = 11,
 }, Win)
 corner(Nav, 14)
 theme(Nav, "BackgroundColor3", "panel")
 
-local NavFix = new("Frame", {
-    Size = UDim2.new(1, 0, 0, 8), BackgroundColor3 = T.panel,
-    BorderSizePixel = 0, ZIndex = 11
-}, Nav)
-theme(NavFix, "BackgroundColor3", "panel")
-
 local NavPad = new("Frame", {
-    Size = UDim2.new(1, -16, 1, -8), Position = UDim2.fromOffset(8, 4),
-    BackgroundTransparency = 1, ZIndex = 12
+    Size = UDim2.new(1, -12, 1, -8), Position = UDim2.fromOffset(6, 4),
+    BackgroundTransparency = 1, ZIndex = 12,
 }, Nav)
 
 new("UIListLayout", {
     FillDirection = Enum.FillDirection.Horizontal,
     HorizontalAlignment = Enum.HorizontalAlignment.Center,
-    Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder
+    Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder,
 }, NavPad)
 
 -- CONTENT
 local Content = new("Frame", {
     Position = UDim2.new(0, 0, 0, 42), Size = UDim2.new(1, 0, 1, -86),
-    BackgroundTransparency = 1, ClipsDescendants = true, ZIndex = 11
+    BackgroundTransparency = 1, ClipsDescendants = true, ZIndex = 11,
 }, Win)
 
 local Pages = {}
@@ -282,11 +243,10 @@ local function CreatePage(name)
         BackgroundTransparency = 1, BorderSizePixel = 0,
         ScrollBarThickness = 2, ScrollBarImageColor3 = T.a,
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        CanvasSize = UDim2.new(), Visible = false, ZIndex = 12
+        CanvasSize = UDim2.new(), Visible = false, ZIndex = 12,
     }, Content)
-    corner(pg, 0)
-    new("UIPadding", {PaddingTop = UDim.new(0, 10), PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12), PaddingBottom = UDim.new(0, 10)}, pg)
-    new("UIListLayout", {Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder}, pg)
+    new("UIPadding", {PaddingTop = UDim.new(0, 8), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), PaddingBottom = UDim.new(0, 8)}, pg)
+    new("UIListLayout", {Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder}, pg)
     theme(pg, "ScrollBarImageColor3", "a")
     Pages[name] = pg
     return pg
@@ -294,13 +254,11 @@ end
 
 local function SelectPage(name)
     for n, pg in pairs(Pages) do
-        local sel = n == name
-        pg.Visible = sel
-        if sel then pg.CanvasPosition = Vector2.zero end
+        pg.Visible = (n == name)
     end
     for n, btn in pairs(NavBtns) do
-        local sel = n == name
-        tw(btn, {BackgroundColor3 = sel and T.a or T.card}, 0.15)
+        local sel = (n == name)
+        tw(btn.Btn, {BackgroundColor3 = sel and T.a or T.card}, 0.15)
         btn.Icon.TextColor3 = sel and T.bg or T.sub
         btn.Lbl.TextColor3 = sel and T.bg or T.sub
     end
@@ -308,16 +266,17 @@ end
 
 local function CreateNav(name, iconChar, order)
     local b = new("TextButton", {
-        Size = UDim2.new(1/#NAV_ITEMS, -4, 1, 0),
+        Size = UDim2.new(1/#NAV_ITEMS, -3, 1, 0),
         BackgroundColor3 = T.card, Text = "", AutoButtonColor = false,
-        LayoutOrder = order, ZIndex = 13
+        LayoutOrder = order, ZIndex = 13, Active = true,
     }, NavPad)
     corner(b, 8)
-    local ic = new("TextLabel", {Size = UDim2.new(1, 0, 0, 16), Position = UDim2.fromOffset(0, 3), BackgroundTransparency = 1, Text = iconChar, TextColor3 = T.sub, TextSize = 12, Font = Enum.Font.GothamBold, ZIndex = 14}, b)
-    local lb = new("TextLabel", {Size = UDim2.new(1, 0, 0, 11), Position = UDim2.new(0, 0, 1, -14), BackgroundTransparency = 1, Text = name, TextColor3 = T.sub, TextSize = 7, Font = Enum.Font.GothamBold, ZIndex = 14}, b)
+    local ic = new("TextLabel", {Size = UDim2.new(1, 0, 0, 16), Position = UDim2.fromOffset(0, 4), BackgroundTransparency = 1, Text = iconChar, TextColor3 = T.sub, TextSize = 13, Font = Enum.Font.GothamBold, ZIndex = 14}, b)
+    local lb = new("TextLabel", {Size = UDim2.new(1, 0, 0, 11), Position = UDim2.new(0, 0, 1, -15), BackgroundTransparency = 1, Text = name, TextColor3 = T.sub, TextSize = 7, Font = Enum.Font.GothamBold, ZIndex = 14}, b)
     theme(b, "BackgroundColor3", "card")
     NavBtns[name] = {Btn = b, Icon = ic, Lbl = lb}
     b.Activated:Connect(function() SelectPage(name) end)
+    b.MouseButton1Click:Connect(function() SelectPage(name) end)
 end
 
 for i, item in ipairs(NAV_ITEMS) do
@@ -325,15 +284,13 @@ for i, item in ipairs(NAV_ITEMS) do
     CreatePage(item.Name)
 end
 
---------------------------------------------------
 -- COMPONENTS
---------------------------------------------------
 local function Header(parent, txt)
     local h = new("TextLabel", {
         Size = UDim2.new(1, 0, 0, 16), BackgroundTransparency = 1,
         Text = txt:upper(), TextColor3 = T.a, TextSize = 9,
         Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left,
-        LayoutOrder = -100, ZIndex = 13
+        LayoutOrder = -100, ZIndex = 13,
     }, parent)
     theme(h, "TextColor3", "a")
     return h
@@ -342,7 +299,7 @@ end
 local function Card(parent, height)
     local f = new("Frame", {
         Size = UDim2.new(1, 0, 0, height or 34),
-        BackgroundColor3 = T.card, BorderSizePixel = 0, ZIndex = 13
+        BackgroundColor3 = T.card, BorderSizePixel = 0, ZIndex = 13,
     }, parent)
     corner(f, 7)
     stroke(f)
@@ -350,70 +307,64 @@ local function Card(parent, height)
     return f
 end
 
-local function Toggle(parent, title, get, set, layoutOrder)
-    local f = Card(parent, 34)
-    f.LayoutOrder = layoutOrder or 0
+local function Toggle(parent, title, get, set)
+    local f = Card(parent, 32)
 
     new("TextLabel", {
         Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -52, 1, 0),
         BackgroundTransparency = 1, Text = title, TextColor3 = T.txt,
         TextSize = 11, Font = Enum.Font.GothamSemibold,
-        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 14
+        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 14,
     }, f)
 
     local btn = new("TextButton", {
         Position = UDim2.new(1, -42, 0.5, -8), Size = UDim2.fromOffset(32, 16),
         BackgroundColor3 = get() and T.a or T.line, Text = "",
-        AutoButtonColor = false, ZIndex = 14
+        AutoButtonColor = false, ZIndex = 14, Active = true,
     }, f)
     corner(btn, 8)
     local knob = new("Frame", {
         Position = UDim2.new(0, get() and 17 or 2, 0.5, -6),
-        Size = UDim2.fromOffset(12, 12), BackgroundColor3 = Color3.new(1,1,1), ZIndex = 15
+        Size = UDim2.fromOffset(12, 12), BackgroundColor3 = Color3.new(1,1,1), ZIndex = 15,
     }, btn)
     corner(knob, 6)
 
-    local function refresh()
+    btn.Activated:Connect(function()
+        set(not get())
         local on = get()
         tw(btn, {BackgroundColor3 = on and T.a or T.line}, 0.15)
         tw(knob, {Position = UDim2.new(0, on and 17 or 2, 0.5, -6)}, 0.2, Enum.EasingStyle.Back)
-    end
-
-    btn.Activated:Connect(function()
-        set(not get())
-        refresh()
     end)
-    return f, refresh
+    return f
 end
 
-local function Slider(parent, title, min, max, get, set, layoutOrder)
-    local f = Card(parent, 46)
-    f.LayoutOrder = layoutOrder or 0
+local function Slider(parent, title, min, max, get, set)
+    local f = Card(parent, 44)
 
     new("TextLabel", {
         Position = UDim2.fromOffset(10, 4), Size = UDim2.new(0.5, -10, 0, 14),
         BackgroundTransparency = 1, Text = title, TextColor3 = T.txt,
         TextSize = 10, Font = Enum.Font.GothamSemibold,
-        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 14
+        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 14,
     }, f)
 
     local valLbl = new("TextLabel", {
         Position = UDim2.new(0.5, 0, 0, 4), Size = UDim2.new(0.5, -10, 0, 14),
         BackgroundTransparency = 1, Text = tostring(get()), TextColor3 = T.a,
         TextSize = 10, Font = Enum.Font.GothamBold,
-        TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 14
+        TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 14,
     }, f)
     theme(valLbl, "TextColor3", "a")
 
     local track = new("Frame", {
         Position = UDim2.fromOffset(10, 26), Size = UDim2.new(1, -20, 0, 4),
-        BackgroundColor3 = T.line, BorderSizePixel = 0, ZIndex = 14
+        BackgroundColor3 = T.line, BorderSizePixel = 0, ZIndex = 14,
     }, f)
     corner(track, 2)
 
     local fill = new("Frame", {
         Size = UDim2.new((get()-min)/(max-min), 0, 1, 0),
-        BackgroundColor3 = T.a, BorderSizePixel = 0, ZIndex = 15
+        BackgroundColor3 = T.a, BorderSizePixel = 0, ZIndex = 15,
     }, track)
     corner(fill, 2)
     theme(fill, "BackgroundColor3", "a")
@@ -421,7 +372,7 @@ local function Slider(parent, title, min, max, get, set, layoutOrder)
     local knob = new("Frame", {
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.new((get()-min)/(max-min), 0, 0.5, 0),
-        Size = UDim2.fromOffset(10, 10), BackgroundColor3 = Color3.new(1,1,1), ZIndex = 16
+        Size = UDim2.fromOffset(10, 10), BackgroundColor3 = Color3.new(1,1,1), ZIndex = 16,
     }, track)
     corner(knob, 5)
     stroke(knob, T.a, 2)
@@ -438,7 +389,7 @@ local function Slider(parent, title, min, max, get, set, layoutOrder)
 
     local hit = new("TextButton", {
         Size = UDim2.new(1, 24, 1, 18), Position = UDim2.fromOffset(-12, -9),
-        BackgroundTransparency = 1, Text = "", ZIndex = 17
+        BackgroundTransparency = 1, Text = "", ZIndex = 17, Active = true,
     }, track)
 
     hit.InputBegan:Connect(function(i)
@@ -462,36 +413,35 @@ local function Slider(parent, title, min, max, get, set, layoutOrder)
     return f
 end
 
-local function ActionBtn(parent, title, desc, cb, layoutOrder)
-    local h = desc and 44 or 32
+local function ActionBtn(parent, title, desc, cb)
+    local h = desc and 42 or 30
     local f = Card(parent, h)
-    f.LayoutOrder = layoutOrder or 0
 
     new("TextLabel", {
         Position = UDim2.fromOffset(10, desc and 5 or 0),
-        Size = UDim2.new(1, -30, 0, desc and 14 or 32),
+        Size = UDim2.new(1, -30, 0, desc and 14 or 30),
         BackgroundTransparency = 1, Text = title, TextColor3 = T.txt,
         TextSize = 11, Font = Enum.Font.GothamSemibold,
         TextXAlignment = Enum.TextXAlignment.Left,
-        TextYAlignment = desc and Enum.TextYAlignment.Top or Enum.TextYAlignment.Center, ZIndex = 14
+        TextYAlignment = desc and Enum.TextYAlignment.Top or Enum.TextYAlignment.Center, ZIndex = 14,
     }, f)
 
     if desc then
         new("TextLabel", {
-            Position = UDim2.fromOffset(10, 20), Size = UDim2.new(1, -30, 0, 20),
+            Position = UDim2.fromOffset(10, 20), Size = UDim2.new(1, -30, 0, 18),
             BackgroundTransparency = 1, Text = desc, TextColor3 = T.sub,
             TextSize = 8, Font = Enum.Font.Gotham, TextWrapped = true,
-            TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 14
+            TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 14,
         }, f)
     end
 
     new("TextLabel", {
         Position = UDim2.new(1, -20, 0.5, -6), Size = UDim2.fromOffset(12, 12),
         BackgroundTransparency = 1, Text = "›", TextColor3 = T.a,
-        TextSize = 13, Font = Enum.Font.GothamBold, ZIndex = 14
+        TextSize = 13, Font = Enum.Font.GothamBold, ZIndex = 14,
     }, f)
 
-    local btn = new("TextButton", {Size = UDim2.fromScale(1,1), BackgroundTransparency = 1, Text = "", ZIndex = 15}, f)
+    local btn = new("TextButton", {Size = UDim2.fromScale(1,1), BackgroundTransparency = 1, Text = "", ZIndex = 15, Active = true}, f)
     btn.Activated:Connect(function()
         tw(f, {BackgroundColor3 = T.a}, 0.06)
         task.delay(0.08, function() tw(f, {BackgroundColor3 = T.card}, 0.18) end)
@@ -501,27 +451,26 @@ local function ActionBtn(parent, title, desc, cb, layoutOrder)
 end
 
 local function Note(parent, txt)
-    local f = new("Frame", {Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, LayoutOrder = 99, ZIndex = 13}, parent)
+    local f = new("Frame", {Size = UDim2.new(1, 0, 0, 22), BackgroundTransparency = 1, LayoutOrder = 99, ZIndex = 13}, parent)
     new("TextLabel", {
         Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = txt,
         TextColor3 = T.sub, TextSize = 8, Font = Enum.Font.Gotham,
-        TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 14
+        TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 14,
     }, f)
 end
 
--- cycle picker (для AimTarget и тем)
 local function Picker(parent, title, options, get, set)
-    local f = Card(parent, 32)
+    local f = Card(parent, 30)
     new("TextLabel", {
         Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -90, 1, 0),
         BackgroundTransparency = 1, Text = title, TextColor3 = T.txt,
         TextSize = 11, Font = Enum.Font.GothamSemibold,
-        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 14
+        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 14,
     }, f)
     local val = new("TextButton", {
         Position = UDim2.new(1, -76, 0.5, -9), Size = UDim2.fromOffset(66, 18),
         BackgroundColor3 = T.a, Text = tostring(get()), TextColor3 = T.bg,
-        TextSize = 9, Font = Enum.Font.GothamBlack, AutoButtonColor = false, ZIndex = 14
+        TextSize = 9, Font = Enum.Font.GothamBlack, AutoButtonColor = false, ZIndex = 14, Active = true,
     }, f)
     corner(val, 5)
     theme(val, "BackgroundColor3", "a")
@@ -532,21 +481,15 @@ local function Picker(parent, title, options, get, set)
         local nxt = options[(idx % #options) + 1]
         set(nxt)
         val.Text = tostring(nxt)
-        tw(val, {Size = UDim2.fromOffset(60, 18)}, 0.08)
-        task.delay(0.08, function() tw(val, {Size = UDim2.fromOffset(66, 18)}, 0.12) end)
     end)
     return f
 end
 
---------------------------------------------------
 -- BUILD PAGES
---------------------------------------------------
-
--- VISUAL PAGE
 local VisualPage = Pages.Visual
 Header(VisualPage, "ESP")
 Toggle(VisualPage, "Enable ESP", function() return CFG.ESP end, function(v) CFG.ESP = v end)
-Toggle(VisualPage, "Chams (through walls)", function() return CFG.ESPChams end, function(v) CFG.ESPChams = v end)
+Toggle(VisualPage, "Chams", function() return CFG.ESPChams end, function(v) CFG.ESPChams = v end)
 Toggle(VisualPage, "Show Names", function() return CFG.ESPName end, function(v) CFG.ESPName = v end)
 Toggle(VisualPage, "Show Distance", function() return CFG.ESPDist end, function(v) CFG.ESPDist = v end)
 Toggle(VisualPage, "Gun ESP", function() return CFG.ESPGun end, function(v) CFG.ESPGun = v end)
@@ -558,20 +501,19 @@ Toggle(VisualPage, "Innocent (green)", function() return CFG.ESProles.Innocent e
 Header(VisualPage, "Options")
 Slider(VisualPage, "Max Distance", 100, 3000, function() return CFG.ESPMaxDist end, function(v) CFG.ESPMaxDist = v end)
 
--- COMBAT PAGE
 local CombatPage = Pages.Combat
-Header(CombatPage, "Aimbot (Sheriff)")
+Header(CombatPage, "Aimbot")
 Toggle(CombatPage, "Enable Aimbot", function() return CFG.AimEnabled end, function(v) CFG.AimEnabled = v end)
 Toggle(CombatPage, "Sticky Target", function() return CFG.AimSticky end, function(v) CFG.AimSticky = v end)
 Toggle(CombatPage, "Wall Check", function() return CFG.AimWallCheck end, function(v) CFG.AimWallCheck = v end)
-Toggle(CombatPage, "Show FOV Circle", function() return CFG.AimVisibleFOV end, function(v) CFG.AimVisibleFOV = v FOVFrame.Visible = v end)
+Toggle(CombatPage, "Show FOV Circle", function() return CFG.AimVisibleFOV end, function(v) CFG.AimVisibleFOV = v if FOVFrame then FOVFrame.Visible = v end end)
 Picker(CombatPage, "Target", {"Murderer", "Sheriff", "All"}, function() return CFG.AimTarget end, function(v) CFG.AimTarget = v end)
 Picker(CombatPage, "Aim Part", {"Head", "Torso"}, function() return CFG.AimPart end, function(v) CFG.AimPart = v end)
 Header(CombatPage, "Aimbot Settings")
-Slider(CombatPage, "FOV Radius", 30, 600, function() return CFG.AimFOV end, function(v) CFG.AimFOV = v UpdateFOV() end)
+Slider(CombatPage, "FOV Radius", 30, 600, function() return CFG.AimFOV end, function(v) CFG.AimFOV = v if FOVFrame then FOVFrame.Size = UDim2.fromOffset(v*2, v*2) end end)
 Slider(CombatPage, "Max Range", 50, 1000, function() return CFG.AimRange end, function(v) CFG.AimRange = v end)
 Slider(CombatPage, "Smoothness %", 1, 100, function() return math.floor(CFG.AimSmooth*100) end, function(v) CFG.AimSmooth = v/100 end)
-Header(CombatPage, "Knife (Murderer)")
+Header(CombatPage, "Knife")
 Toggle(CombatPage, "Kill Aura", function() return CFG.KillAura end, function(v) CFG.KillAura = v end)
 Slider(CombatPage, "Aura Range", 5, 40, function() return CFG.AuraRange end, function(v) CFG.AuraRange = v end)
 Toggle(CombatPage, "Auto Throw", function() return CFG.AutoThrow end, function(v) CFG.AutoThrow = v end)
@@ -579,7 +521,6 @@ Slider(CombatPage, "Throw Range", 20, 200, function() return CFG.ThrowRange end,
 ActionBtn(CombatPage, "Grab Gun", "Teleport to dropped gun & back", function() AutoGunOnce() end)
 Toggle(CombatPage, "Auto Grab Gun", function() return CFG.AutoGun end, function(v) CFG.AutoGun = v end)
 
--- PLAYER PAGE
 local PlayerPage = Pages.Player
 Header(PlayerPage, "Movement")
 Toggle(PlayerPage, "Speed", function() return CFG.Speed end, function(v) CFG.Speed = v end)
@@ -591,54 +532,41 @@ Slider(PlayerPage, "Fly Speed", 10, 300, function() return CFG.FlySpeed end, fun
 Toggle(PlayerPage, "Noclip", function() return CFG.Noclip end, function(v) CFG.Noclip = v end)
 Toggle(PlayerPage, "Infinite Jump", function() return CFG.InfJump end, function(v) CFG.InfJump = v end)
 
--- FARM PAGE
 local FarmPage = Pages.Farm
 Header(FarmPage, "Auto Farm")
-Toggle(FarmPage, "Auto Coin", "Teleport to nearest coin", function() return CFG.AutoCoin end, function(v) CFG.AutoCoin = v end)
-Note(FarmPage, "Coin farm teleports you — can be detected. Use carefully.")
+Toggle(FarmPage, "Auto Coin", function() return CFG.AutoCoin end, function(v) CFG.AutoCoin = v end)
+Note(FarmPage, "Teleports to nearest coin. Use carefully.")
 
--- SKINS PAGE
 local SkinsPage = Pages.Skins
 Header(SkinsPage, "Knife Skins (local)")
-ActionBtn(SkinsPage, "Reset to Default", "Restore original knife", function() ApplySkin(nil) end, 1)
+ActionBtn(SkinsPage, "Reset to Default", "Restore original knife", function() ApplySkin(nil) end)
 for i, skin in ipairs(SKINS) do
-    ActionBtn(SkinsPage, skin.Name, "Apply " .. skin.Name, function() ApplySkin(skin) end, i + 1)
+    ActionBtn(SkinsPage, skin.Name, "Apply " .. skin.Name, function() ApplySkin(skin) end)
 end
-Note(SkinsPage, "Skins are client-side only — other players see your real knife.")
+Note(SkinsPage, "Client-side only. Others see your real knife.")
 
--- MISC PAGE
 local MiscPage = Pages.Misc
 Header(MiscPage, "Camera & Protection")
 Toggle(MiscPage, "Spectate Murderer", function() return CFG.Spectate end, function(v) CFG.Spectate = v end)
 Toggle(MiscPage, "Anti Fling", function() return CFG.AntiFling end, function(v) CFG.AntiFling = v end)
 Header(MiscPage, "Overlays")
-Toggle(MiscPage, "FPS Counter", function() return CFG.FPS end, function(v) CFG.FPS = v FpsLbl.Visible = v end)
-Toggle(MiscPage, "Ping Counter", function() return CFG.Ping end, function(v) CFG.Ping = v PingLbl.Visible = v end)
+Toggle(MiscPage, "FPS Counter", function() return CFG.FPS end, function(v) CFG.FPS = v; FpsLbl.Visible = v end)
+Toggle(MiscPage, "Ping Counter", function() return CFG.Ping end, function(v) CFG.Ping = v; PingLbl.Visible = v end)
 Header(MiscPage, "Theme")
-Picker(MiscPage, "Color Theme", {"Void", "Blood", "Ice", "Toxic"}, function() return ThemeName end, function(v) ThemeName = v ApplyTheme() end)
-Note(MiscPage, "RightShift — toggle menu")
+Picker(MiscPage, "Color Theme", {"Void", "Blood", "Ice", "Toxic"}, function() return ThemeName end, function(v) ThemeName = v; ApplyTheme() end)
 
---------------------------------------------------
 -- FOV CIRCLE
---------------------------------------------------
 local FOVFrame = new("Frame", {
     AnchorPoint = Vector2.new(0.5, 0.5),
     Position = UDim2.fromScale(0.5, 0.5),
     Size = UDim2.fromOffset(CFG.AimFOV*2, CFG.AimFOV*2),
-    BackgroundTransparency = 1, Visible = false, ZIndex = 5
+    BackgroundTransparency = 1, Visible = false, ZIndex = 5,
 }, Screen)
 corner(FOVFrame, 999)
 local FOVStroke = stroke(FOVFrame, T.a, 1.5)
 theme(FOVStroke, "Color", "a")
-new("Frame", {AnchorPoint = Vector2.new(0.5,0.5), Position = UDim2.fromScale(0.5,0.5), Size = UDim2.fromOffset(3,3), BackgroundColor3 = T.a, ZIndex = 5}, FOVFrame)
 
-local function UpdateFOV()
-    FOVFrame.Size = UDim2.fromOffset(CFG.AimFOV*2, CFG.AimFOV*2)
-end
-
---------------------------------------------------
 -- OVERLAYS
---------------------------------------------------
 local FpsLbl = new("TextLabel", {Size = UDim2.fromOffset(80, 16), Position = UDim2.new(0, 10, 0, 10), BackgroundTransparency = 1, Text = "60 FPS", TextColor3 = Color3.fromRGB(90,255,140), TextSize = 12, Font = Enum.Font.Code, TextXAlignment = Enum.TextXAlignment.Left, Visible = false, ZIndex = 50}, Screen)
 local PingLbl = new("TextLabel", {Size = UDim2.fromOffset(80, 16), Position = UDim2.new(0, 10, 0, 26), BackgroundTransparency = 1, Text = "0 ms", TextColor3 = Color3.fromRGB(255,220,90), TextSize = 12, Font = Enum.Font.Code, TextXAlignment = Enum.TextXAlignment.Left, Visible = false, ZIndex = 50}, Screen)
 
@@ -652,16 +580,16 @@ task.spawn(function()
 end)
 task.spawn(function()
     while Screen.Parent do
-        if CFG.Ping then PingLbl.Text = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue()) .. " ms" end
+        if CFG.Ping then
+            local ok, v = pcall(function() return Stats.Network.ServerStatsItem["Data Ping"]:GetValue() end)
+            if ok then PingLbl.Text = math.floor(v) .. " ms" end
+        end
         task.wait(0.5)
     end
 end)
 
---------------------------------------------------
--- ROLE SYSTEM
---------------------------------------------------
+-- ROLES
 local RoleCache = {}
-
 local function GetRole(plr)
     if RoleCache[plr.Name] then return RoleCache[plr.Name] end
     local char = plr.Character
@@ -709,9 +637,7 @@ local function IsGun(tool)
     return string.find(n, "gun") or string.find(n, "pistol") or string.find(n, "revolver")
 end
 
---------------------------------------------------
--- ESP SYSTEM
---------------------------------------------------
+-- ESP
 local EspFolder = new("Folder", {Name = "ESP"}, Screen)
 local EspData = {}
 
@@ -727,42 +653,22 @@ end
 local function CreateESP(plr)
     if plr == LP or EspData[plr] then return end
     local d = {}
-
-    d.Chams = new("Highlight", {
-        FillTransparency = 0.75, OutlineTransparency = 0.3,
-        DepthMode = Enum.HighlightDepthMode.AlwaysOnTop,
-        Enabled = false, Parent = EspFolder
-    })
-
-    d.Billboard = new("BillboardGui", {
-        Size = UDim2.fromOffset(110, 32), StudsOffset = Vector3.new(0, 2.9, 0),
-        AlwaysOnTop = true, Enabled = false, MaxDistance = CFG.ESPMaxDist, Parent = EspFolder
-    })
+    d.Chams = new("Highlight", {FillTransparency = 0.75, OutlineTransparency = 0.3, DepthMode = Enum.HighlightDepthMode.AlwaysOnTop, Enabled = false, Parent = EspFolder})
+    d.Billboard = new("BillboardGui", {Size = UDim2.fromOffset(110, 32), StudsOffset = Vector3.new(0, 2.9, 0), AlwaysOnTop = true, Enabled = false, MaxDistance = CFG.ESPMaxDist, Parent = EspFolder})
     d.Name = new("TextLabel", {Size = UDim2.new(1,0,0,13), BackgroundTransparency = 1, TextStrokeTransparency = 0.3, Font = Enum.Font.GothamBold, TextSize = 11, Text = plr.Name, Parent = d.Billboard})
     d.Dist = new("TextLabel", {Size = UDim2.new(1,0,0,11), Position = UDim2.fromOffset(0,13), BackgroundTransparency = 1, TextStrokeTransparency = 0.3, Font = Enum.Font.Gotham, TextSize = 9, Text = "", TextColor3 = Color3.fromRGB(190,255,190), Parent = d.Billboard})
-
     EspData[plr] = d
 end
 
--- Gun ESP
 local GunFolder = new("Folder", {Name = "Guns"}, Screen)
 local GunEsp = {}
-
 local function CreateGunESP(tool)
     if GunEsp[tool] then return end
-    new("Highlight", {
-        FillColor = Color3.fromRGB(255, 220, 60), FillTransparency = 0.5,
-        OutlineTransparency = 0.3, DepthMode = Enum.HighlightDepthMode.AlwaysOnTop,
-        Adornee = tool, Parent = GunFolder
-    })
-    local bb = new("BillboardGui", {
-        Size = UDim2.fromOffset(70, 14), StudsOffset = Vector3.new(0, 1.4, 0),
-        AlwaysOnTop = true, Adornee = tool, Parent = GunFolder
-    })
+    new("Highlight", {FillColor = Color3.fromRGB(255, 220, 60), FillTransparency = 0.5, OutlineTransparency = 0.3, DepthMode = Enum.HighlightDepthMode.AlwaysOnTop, Adornee = tool, Parent = GunFolder})
+    local bb = new("BillboardGui", {Size = UDim2.fromOffset(70, 14), StudsOffset = Vector3.new(0, 1.4, 0), AlwaysOnTop = true, Adornee = tool, Parent = GunFolder})
     new("TextLabel", {Size = UDim2.fromScale(1,1), BackgroundTransparency = 1, Text = "GUN", TextColor3 = Color3.fromRGB(255,220,60), TextStrokeTransparency = 0.2, Font = Enum.Font.GothamBlack, TextSize = 10, Parent = bb})
     GunEsp[tool] = true
 end
-
 local function RemoveGunESP(tool)
     for _, o in ipairs(GunFolder:GetChildren()) do
         if o.Adornee == tool then o:Destroy() end
@@ -775,9 +681,7 @@ task.spawn(function()
         task.wait(0.4)
         if CFG.ESPGun then
             for _, o in ipairs(workspace:GetDescendants()) do
-                if o:IsA("Tool") and IsGun(o) and not GunEsp[o] then
-                    CreateGunESP(o)
-                end
+                if o:IsA("Tool") and IsGun(o) and not GunEsp[o] then CreateGunESP(o) end
             end
             for tool in pairs(GunEsp) do
                 if not tool.Parent then RemoveGunESP(tool) end
@@ -788,18 +692,14 @@ task.spawn(function()
     end
 end)
 
--- init players
 for _, plr in ipairs(Players:GetPlayers()) do
     if plr ~= LP then CreateESP(plr) end
 end
 C(Players.PlayerAdded:Connect(function(plr) task.wait(0.3) CreateESP(plr) end))
 C(Players.PlayerRemoving:Connect(function(plr) RemoveESP(plr) RoleCache[plr.Name] = nil end))
 
---------------------------------------------------
--- AIMBOT
---------------------------------------------------
+-- AIM
 local LockedTarget = nil
-
 local function ValidTarget(plr)
     if not plr or plr == LP then return false end
     local role = GetRole(plr)
@@ -854,12 +754,9 @@ local function FindTarget()
     return best
 end
 
---------------------------------------------------
 -- FLY
---------------------------------------------------
 local FlyBV, FlyBG = nil, nil
 local FlyVel = Vector3.zero
-
 function StartFly()
     StopFly()
     local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
@@ -872,22 +769,18 @@ function StartFly()
     FlyBG.P = 9000
     FlyBG.Parent = hrp
 end
-
 function StopFly()
     if FlyBV then FlyBV:Destroy() FlyBV = nil end
     if FlyBG then FlyBG:Destroy() FlyBG = nil end
     FlyVel = Vector3.zero
 end
 
---------------------------------------------------
 -- AUTO GUN
---------------------------------------------------
 local GunBusy = false
 function AutoGunOnce()
     if GunBusy then return end
     local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
-
     local bestHandle, bestD = nil, math.huge
     for _, o in ipairs(workspace:GetDescendants()) do
         if o:IsA("Tool") and IsGun(o) then
@@ -899,7 +792,6 @@ function AutoGunOnce()
         end
     end
     if not bestHandle then return end
-
     GunBusy = true
     task.spawn(function()
         local saved = hrp.CFrame
@@ -914,15 +806,12 @@ function AutoGunOnce()
     end)
 end
 
---------------------------------------------------
 -- SKINS
---------------------------------------------------
 function ApplySkin(skin)
     local char = LP.Character
     local tool = char and char:FindFirstChildOfClass("Tool")
     local handle = tool and tool:FindFirstChild("Handle")
     if not handle then return end
-
     local mesh = handle:FindFirstChildOfClass("SpecialMesh")
     if mesh and not SavedSkin.Mesh then
         SavedSkin.Mesh = mesh.MeshId
@@ -932,7 +821,6 @@ function ApplySkin(skin)
         mesh = Instance.new("SpecialMesh")
         mesh.Parent = handle
     end
-
     if not skin then
         if SavedSkin.Mesh then mesh.MeshId = SavedSkin.Mesh end
         if SavedSkin.Tex then mesh.TextureId = SavedSkin.Tex end
@@ -942,29 +830,8 @@ function ApplySkin(skin)
     mesh.TextureId = skin.Tex
 end
 
-task.spawn(function()
-    while Screen.Parent do
-        task.wait(1.5)
-        -- reapply if game resets
-        local char = LP.Character
-        local tool = char and char:FindFirstChildOfClass("Tool")
-        local handle = tool and tool:FindFirstChild("Handle")
-        if handle then
-            local mesh = handle:FindFirstChildOfClass("SpecialMesh")
-            if mesh and SavedSkin.Mesh and mesh.MeshId ~= SavedSkin.Mesh then
-                -- игрок сменил нож — сохраняем новый оригинал
-                SavedSkin.Mesh = mesh.MeshId
-                SavedSkin.Tex = mesh.TextureId
-            end
-        end
-    end
-end)
-
---------------------------------------------------
 -- MAIN LOOP
---------------------------------------------------
 C(RunService.RenderStepped:Connect(function(dt)
-    -- ══ AIMBOT ══
     if CFG.AimEnabled then
         if not (CFG.AimSticky and LockedTarget and ValidTarget(LockedTarget)) then
             LockedTarget = FindTarget()
@@ -988,36 +855,29 @@ C(RunService.RenderStepped:Connect(function(dt)
         LockedTarget = nil
     end
 
-    -- ══ ESP UPDATE ══
     if CFG.ESP then
         for plr, d in pairs(EspData) do
             local role = GetRole(plr)
             local char = plr.Character
             local show = CFG.ESProles[role] == true
-
             if show and char then
                 local hum = char:FindFirstChildOfClass("Humanoid")
                 local root = char:FindFirstChild("HumanoidRootPart")
                 local head = char:FindFirstChild("Head")
-
                 if hum and hum.Health > 0 and root then
                     local dist = (root.Position - Camera.CFrame.Position).Magnitude
                     if dist <= CFG.ESPMaxDist then
                         local color = ROLE_COLORS[role] or ROLE_COLORS.Innocent
-
                         d.Billboard.Enabled = true
                         d.Billboard.Adornee = head or root
                         d.Billboard.MaxDistance = CFG.ESPMaxDist
-
                         d.Name.Visible = CFG.ESPName
                         d.Name.Text = plr.Name
                         d.Name.TextColor3 = color
-
                         d.Dist.Visible = CFG.ESPDist
                         if CFG.ESPDist then
                             d.Dist.Text = string.format("%s · %dm", role:upper(), math.floor(dist))
                         end
-
                         d.Chams.Enabled = CFG.ESPChams
                         d.Chams.Adornee = char
                         d.Chams.FillColor = color
@@ -1049,7 +909,6 @@ C(RunService.Heartbeat:Connect(function(dt)
     local tool = char and char:FindFirstChildOfClass("Tool")
     local isKnife = tool and (string.find(string.lower(tool.Name), "knife") or string.find(string.lower(tool.Name), "dagger"))
 
-    -- Fly
     if CFG.Fly and hrp and hum and FlyBV and FlyBG then
         local move = hum.MoveDirection
         local look = Camera.CFrame.LookVector
@@ -1069,7 +928,6 @@ C(RunService.Heartbeat:Connect(function(dt)
         FlyBG.CFrame = Camera.CFrame
     end
 
-    -- Kill Aura
     if CFG.KillAura and isKnife and hrp then
         for _, plr in ipairs(Players:GetPlayers()) do
             if plr ~= LP then
@@ -1086,7 +944,6 @@ C(RunService.Heartbeat:Connect(function(dt)
         end
     end
 
-    -- Auto Throw (на Sheriff не кидаем)
     if CFG.AutoThrow and isKnife and hrp then
         local now = tick()
         if not _G.AuraThrowCD or now - _G.AuraThrowCD > 0.6 then
@@ -1110,7 +967,6 @@ C(RunService.Heartbeat:Connect(function(dt)
         end
     end
 
-    -- Spectate
     if CFG.Spectate and Camera then
         local found = false
         for _, plr in ipairs(Players:GetPlayers()) do
@@ -1125,23 +981,19 @@ C(RunService.Heartbeat:Connect(function(dt)
         end
     end
 
-    -- Infinite Jump
     if CFG.InfJump and hum and UIS:IsKeyDown(Enum.KeyCode.Space) then
         hum:ChangeState(Enum.HumanoidStateType.Jumping)
     end
 end))
 
--- Speed/Jump/Noclip
 C(RunService.Stepped:Connect(function()
     local char = LP.Character
     if not char then return end
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not hum then return end
-
     hum.UseJumpPower = true
     hum.WalkSpeed = CFG.Speed and CFG.SpeedVal or 16
     hum.JumpPower = CFG.Jump and CFG.JumpVal or 50
-
     if CFG.Noclip then
         for _, p in ipairs(char:GetDescendants()) do
             if p:IsA("BasePart") and p.CanCollide then
@@ -1194,9 +1046,7 @@ task.spawn(function()
     end
 end)
 
---------------------------------------------------
 -- DRAG
---------------------------------------------------
 local function Draggable(handle, target)
     local drag, start, pos = false, nil, nil
     handle.InputBegan:Connect(function(i)
@@ -1217,13 +1067,10 @@ local function Draggable(handle, target)
     end))
 end
 
-local DragZone = new("Frame", {Size = UDim2.new(1, -100, 1, 0), BackgroundTransparency = 1, ZIndex = 13}, TopBar)
-Draggable(DragZone, Win)
+Draggable(TopBar, Win)
 Draggable(Icon, Icon)
 
---------------------------------------------------
--- OPEN / CLOSE
---------------------------------------------------
+-- OPEN/CLOSE
 local Opened, Busy = false, false
 local function SetOpen(state)
     if Busy or Opened == state then return end
@@ -1231,9 +1078,8 @@ local function SetOpen(state)
     Opened = state
     if state then
         Win.Visible = true
-        local s = UIScale.Scale
-        UIScale.Scale = s * 0.85
-        tw(UIScale, {Scale = s}, 0.3, Enum.EasingStyle.Back)
+        UIScale.Scale = 0.85
+        tw(UIScale, {Scale = 1}, 0.3, Enum.EasingStyle.Back)
         task.delay(0.3, function() Busy = false end)
     else
         tw(UIScale, {Scale = UIScale.Scale * 0.85}, 0.15)
@@ -1244,8 +1090,8 @@ local function SetOpen(state)
     end
 end
 
-Icon.Activated:Connect(function() SetOpen(not Opened) end)
-CloseBtn.Activated:Connect(function() SetOpen(false) end)
+Icon.MouseButton1Click:Connect(function() SetOpen(not Opened) end)
+CloseBtn.MouseButton1Click:Connect(function() SetOpen(false) end)
 C(UIS.InputBegan:Connect(function(i, p)
     if not p and i.KeyCode == Enum.KeyCode.RightShift then SetOpen(not Opened) end
 end))
@@ -1256,8 +1102,8 @@ local function Fit()
     if not cam then return end
     local vp = cam.ViewportSize
     local portrait = vp.X < vp.Y
-    local w = portrait and 340 or 460
-    local h = portrait and 400 or 300
+    local w = portrait and 360 or 460
+    local h = portrait and 420 or 300
     Win.Size = UDim2.fromOffset(w, h)
     UIScale.Scale = math.clamp(math.min((vp.X - 20) / w, (vp.Y - 20) / h), 0.5, 1)
 end
@@ -1268,9 +1114,7 @@ end
 
 SelectPage("Visual")
 
---------------------------------------------------
 -- CLEANUP
---------------------------------------------------
 _G.AURA_CLEANUP = function()
     local char = LP.Character
     if char then
@@ -1285,4 +1129,4 @@ _G.AURA_CLEANUP = function()
     pcall(function() Screen:Destroy() end)
 end
 
-print("★ AURA MM2 loaded — RightShift to open")
+print("★ AURA MM2 FIXED — RightShift or tap icon to open")
