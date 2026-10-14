@@ -1,0 +1,341 @@
+--========================================================--
+--           AD Dronefront v1.0 — FULL SCRIPT             --
+--   ESP · AIM · Auto-Collect · Player Table · Diagnostics --
+--========================================================--
+
+if _G.__DF_CLEANUP then pcall(_G.__DF_CLEANUP) _G.__DF_CLEANUP = nil end
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+
+local LP = Players.LocalPlayer
+if not LP then return end
+local PG = LP:WaitForChild("PlayerGui")
+local Camera = workspace.CurrentCamera
+
+local conns = {}
+local function bind(c) table.insert(conns, c) return c end
+local function disconnectAll()
+    for _, c in ipairs(conns) do pcall(function() c:Disconnect() end) end
+    conns = {}
+end
+
+bind(workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function() Camera = workspace.CurrentCamera end))
+
+-- [ ДИАГНОСТИКА ]
+local function RunDiagnostics()
+    print("=== AD DRONEFRONT ДИАГНОСТИКА ===")
+    for _, v in ipairs(workspace:GetDescendants()) do
+        local n = v.Name:lower()
+        if n:find("drone") or n:find("fpv") or n:find("uav") or n:find("fragment") or n:find("debris") then
+            print("[OBJ]", v.Name, "|", v.ClassName)
+        end
+    end
+    print("=== КОНЕЦ ===")
+end
+RunDiagnostics()
+
+-- [ НАСТРОЙКИ ]
+local S = {
+    ESPDrones = true, ESPFragments = true, ESPPlayers = false, ESPMaxDist = 2000,
+    AimEnabled = false, AimFOV = 200, AimRange = 1500, AimSmooth = 0.35, AimPrediction = true,
+    AutoCollect = false,
+    AttackTarget = nil, -- Выбранный игрок для слежки
+}
+
+local C = {
+    bg = Color3.fromRGB(12, 12, 18), panel = Color3.fromRGB(22, 22, 32), card = Color3.fromRGB(28, 27, 40),
+    accent = Color3.fromRGB(153, 91, 255), text = Color3.fromRGB(245, 245, 255),
+    muted = Color3.fromRGB(145, 143, 163), border = Color3.fromRGB(45, 42, 62),
+    red = Color3.fromRGB(255, 80, 80), green = Color3.fromRGB(94, 225, 151), blue = Color3.fromRGB(90, 150, 255), yellow = Color3.fromRGB(255, 220, 60),
+}
+
+local function Create(class, props) local o = Instance.new(class); for k, v in pairs(props) do if k ~= "Parent" then o[k] = v end end; o.Parent = props.Parent; return o end
+local function Corner(p, r) return Create("UICorner", { CornerRadius = r or UDim.new(0, 7), Parent = p }) end
+local function Stroke(p, c, th, tr) return Create("UIStroke", { Color = c or C.border, Thickness = th or 1, Transparency = tr or 0.3, Parent = p }) end
+local function Play(o, i, pr) TweenService:Create(o, i, pr):Play() end
+
+-- [ GUI ]
+local function guiParent() if gethui then local ok, h = pcall(gethui) if ok and h then return h end end; if CoreGui then return CoreGui end; return PG end
+local PARENT = guiParent()
+local old = PARENT:FindFirstChild("AD_DF_v1"); if old then old:Destroy() end
+
+local GUI = Create("ScreenGui", { Name = "AD_DF_v1", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 2147483647, ZIndexBehavior = Enum.ZIndexBehavior.Sibling, Parent = PARENT })
+bind(GUI.Destroying:Connect(disconnectAll))
+
+-- ICON
+local Icon = Create("TextButton", { Size = UDim2.fromOffset(50, 50), Position = UDim2.new(0, 14, 0.5, -25), BackgroundColor3 = C.bg, Text = "AD", TextColor3 = C.accent, TextSize = 15, Font = Enum.Font.GothamBlack, AutoButtonColor = false, ZIndex = 100, Parent = GUI })
+Corner(Icon, UDim.new(1, 0))
+Stroke(Icon, C.accent, 2, 0.2)
+
+-- WINDOW
+local Win = Create("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(420, 360), Position = UDim2.new(0.5, 0, 0.5, 0), BackgroundColor3 = C.bg, Visible = false, ClipsDescendants = true, ZIndex = 10, Parent = GUI })
+Corner(Win, UDim.new(0, 12))
+Stroke(Win, C.accent, 1.5, 0.2)
+local WinScale = Create("UIScale", { Scale = 1, Parent = Win })
+
+-- HEADER
+local Header = Create("Frame", { Size = UDim2.new(1, 0, 0, 38), BackgroundColor3 = C.panel, BorderSizePixel = 0, ZIndex = 11, Parent = Win })
+Corner(Header, UDim.new(0, 12))
+Create("Frame", { Size = UDim2.new(1, 0, 0, 2), BackgroundColor3 = C.accent, BorderSizePixel = 0, ZIndex = 12, Parent = Header })
+Create("TextLabel", { Size = UDim2.new(1, -70, 0, 15), Position = UDim2.fromOffset(10, 5), BackgroundTransparency = 1, Text = "AD · Dronefront", TextColor3 = C.text, TextSize = 13, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13, Parent = Header })
+Create("TextLabel", { Size = UDim2.new(1, -70, 0, 11), Position = UDim2.fromOffset(10, 21), BackgroundTransparency = 1, Text = "v1.0 · BETA", TextColor3 = C.muted, TextSize = 9, Font = Enum.Font.Gotham, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13, Parent = Header })
+local CloseBtn = Create("TextButton", { Size = UDim2.fromOffset(24, 24), Position = UDim2.new(1, -30, 0, 7), BackgroundColor3 = C.card, Text = "X", TextColor3 = C.text, TextSize = 12, Font = Enum.Font.GothamBold, AutoButtonColor = false, ZIndex = 14, Parent = Header })
+Corner(CloseBtn, UDim.new(0, 6)); Stroke(CloseBtn, C.border, 1, 0.3)
+
+-- NAV BAR (ВКЛАДКИ)
+local NavBar = Create("Frame", { Size = UDim2.new(1, -12, 0, 30), Position = UDim2.fromOffset(6, 42), BackgroundTransparency = 1, ZIndex = 12, Parent = Win })
+Create("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 4), Parent = NavBar })
+local navButtons = {}
+
+-- CONTENT
+local Content = Create("ScrollingFrame", { Size = UDim2.new(1, -12, 1, -80), Position = UDim2.fromOffset(6, 78), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = C.accent, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(), ZIndex = 11, Parent = Win })
+Create("UIPadding", { PaddingTop = UDim.new(0, 6), PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6), Parent = Content })
+Create("UIListLayout", { Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder, Parent = Content })
+
+-- КОМПОНЕНТЫ
+local function Section(txt) return Create("TextLabel", { Size = UDim2.new(1, 0, 0, 16), BackgroundTransparency = 1, Text = txt, TextColor3 = C.accent, TextSize = 10, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left, Parent = Content }) end
+
+local function Toggle(txt, initial, cb)
+    local state = { v = initial }
+    local b = Create("TextButton", { Size = UDim2.new(1, 0, 0, 30), BackgroundColor3 = C.card, Text = "", AutoButtonColor = false, Parent = Content })
+    Corner(b, UDim.new(0, 7)); Stroke(b, C.border, 1, 0.3)
+    Create("TextLabel", { Size = UDim2.new(1, -50, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, Text = txt, TextColor3 = C.text, TextSize = 11, Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Left, Parent = b })
+    local sw = Create("Frame", { Size = UDim2.fromOffset(34, 18), Position = UDim2.new(1, -44, 0.5, -9), BackgroundColor3 = state.v and C.accent or Color3.fromRGB(45, 45, 60), Parent = b }); Corner(sw, UDim.new(1, 0))
+    local dot = Create("Frame", { Size = UDim2.fromOffset(12, 12), Position = state.v and UDim2.fromOffset(20, 3) or UDim2.fromOffset(3, 3), BackgroundColor3 = Color3.new(1, 1, 1), Parent = sw }); Corner(dot, UDim.new(1, 0))
+    local function apply(instant) local col = state.v and C.accent or Color3.fromRGB(45, 45, 60); local pos = state.v and UDim2.fromOffset(20, 3) or UDim2.fromOffset(3, 3); if instant then sw.BackgroundColor3 = col; dot.Position = pos else Play(sw, TweenInfo.new(0.15), { BackgroundColor3 = col }); Play(dot, TweenInfo.new(0.25, Enum.EasingStyle.Back), { Position = pos }) end end
+    apply(true)
+    b.MouseButton1Click:Connect(function() state.v = not state.v; apply(false); if cb then pcall(cb, state.v) end end)
+    return b
+end
+
+local function Slider(txt, initial, min, max, cb)
+    local f = Create("Frame", { Size = UDim2.new(1, 0, 0, 44), BackgroundColor3 = C.card, Parent = Content })
+    Corner(f, UDim.new(0, 7)); Stroke(f, C.border, 1, 0.3)
+    Create("TextLabel", { Size = UDim2.new(0.6, -10, 0, 16), Position = UDim2.fromOffset(10, 4), BackgroundTransparency = 1, Text = txt, TextColor3 = C.text, TextSize = 11, Parent = f })
+    local valLbl = Create("TextLabel", { Size = UDim2.new(0.4, -10, 0, 16), Position = UDim2.new(0.6, 0, 0, 4), BackgroundTransparency = 1, Text = tostring(initial), TextColor3 = C.accent, TextSize = 10, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Right, Parent = f })
+    local track = Create("Frame", { Size = UDim2.new(1, -20, 0, 6), Position = UDim2.fromOffset(10, 28), BackgroundColor3 = Color3.fromRGB(40, 40, 55), Parent = f }); Corner(track, UDim.new(1, 0))
+    local fill = Create("Frame", { Size = UDim2.new((initial - min) / (max - min), 0, 1, 0), BackgroundColor3 = C.accent, Parent = track }); Corner(fill, UDim.new(1, 0))
+    local knob = Create("Frame", { Size = UDim2.fromOffset(14, 14), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new((initial - min) / (max - min), 0, 0.5, 0), BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 2, Parent = track }); Corner(knob, UDim.new(1, 0)); Stroke(knob, C.accent, 2)
+    local hit = Create("TextButton", { Size = UDim2.new(1, 0, 0, 30), Position = UDim2.new(0, 0, 0, -12), BackgroundTransparency = 1, Text = "", Parent = track })
+    local dragging = false; local value = initial
+    local function setX(x) local rel = math.clamp((x - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1); value = math.floor(min + rel * (max - min) + 0.5); fill.Size = UDim2.new(rel, 0, 1, 0); knob.Position = UDim2.new(rel, 0, 0.5, 0); valLbl.Text = tostring(value); if cb then pcall(cb, value) end end
+    hit.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragging = true; Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(20, 20) }); setX(i.Position.X) end end)
+    bind(UIS.InputChanged:Connect(function(i) if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then setX(i.Position.X) end end))
+    bind(UIS.InputEnded:Connect(function(i) if (i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch) and dragging then dragging = false; Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(14, 14) }) end end))
+    return f
+end
+
+-- [ ЛОГИКА ИГРЫ ]
+local DroneFolder = Instance.new("Folder", PARENT); DroneFolder.Name = "AD_DF_Drones"
+local FragmentFolder = Instance.new("Folder", PARENT); FragmentFolder.Name = "AD_DF_Fragments"
+local PlayerEspFolder = Instance.new("Folder", PARENT); PlayerEspFolder.Name = "AD_DF_Players"
+
+local function IsDrone(obj) local n = obj.Name:lower(); return n:find("drone") or n:find("fpv") or n:find("uav") end
+local function IsFragment(obj) local n = obj.Name:lower(); return n:find("fragment") or n:find("debris") or n:find("shell") end
+local function IsAlive(char) if not char or not char.Parent or not char:IsDescendantOf(workspace) then return false end; local hum = char:FindFirstChildOfClass("Humanoid"); return hum and hum.Health > 0 end
+
+-- ESP
+local DroneESP = {}; local FragmentESP = {}
+local function CreateDroneESP(obj)
+    if DroneESP[obj] then return end
+    local hl = Create("Highlight", { FillColor = C.red, FillTransparency = 0.5, OutlineColor = Color3.new(1, 1, 1), OutlineTransparency = 0.3, DepthMode = Enum.HighlightDepthMode.AlwaysOnTop, Adornee = obj, Parent = DroneFolder })
+    local bb = Create("BillboardGui", { Size = UDim2.fromOffset(100, 16), StudsOffsetWorldSpace = Vector3.new(0, 2, 0), AlwaysOnTop = true, Adornee = obj, Parent = DroneFolder })
+    local lbl = Create("TextLabel", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "DRONE", TextColor3 = C.red, TextStrokeTransparency = 0.3, Font = Enum.Font.GothamBold, TextSize = 11, Parent = bb })
+    DroneESP[obj] = { hl, bb, lbl }
+end
+local function RemoveDroneESP(obj) if DroneESP[obj] then for _, o in pairs(DroneESP[obj]) do pcall(function() o:Destroy() end) end; DroneESP[obj] = nil end end
+
+local function CreateFragmentESP(obj)
+    if FragmentESP[obj] then return end
+    local hl = Create("Highlight", { FillColor = C.green, FillTransparency = 0.4, OutlineColor = Color3.new(1, 1, 1), OutlineTransparency = 0.2, DepthMode = Enum.HighlightDepthMode.AlwaysOnTop, Adornee = obj, Parent = FragmentFolder })
+    local bb = Create("BillboardGui", { Size = UDim2.fromOffset(80, 14), StudsOffsetWorldSpace = Vector3.new(0, 1.5, 0), AlwaysOnTop = true, Adornee = obj, Parent = FragmentFolder })
+    local lbl = Create("TextLabel", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "FRAGMENT", TextColor3 = C.green, TextStrokeTransparency = 0.3, Font = Enum.Font.GothamBold, TextSize = 10, Parent = bb })
+    FragmentESP[obj] = { hl, bb, lbl }
+end
+local function RemoveFragmentESP(obj) if FragmentESP[obj] then for _, o in pairs(FragmentESP[obj]) do pcall(function() o:Destroy() end) end; FragmentESP[obj] = nil end end
+
+-- Player Table
+local PlayerData = {} -- [player] = { highlight, billboard, nameLbl }
+local function CreatePlayerESP(plr)
+    if plr == LP or PlayerData[plr] then return end
+    local hl = Create("Highlight", { FillColor = C.blue, FillTransparency = 0.6, OutlineColor = Color3.new(1, 1, 1), OutlineTransparency = 0.4, DepthMode = Enum.HighlightDepthMode.AlwaysOnTop, Enabled = false, Parent = PlayerEspFolder })
+    local bb = Create("BillboardGui", { Size = UDim2.fromOffset(120, 16), StudsOffsetWorldSpace = Vector3.new(0, 3, 0), AlwaysOnTop = true, Enabled = false, Parent = PlayerEspFolder })
+    local lbl = Create("TextLabel", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = plr.Name, TextColor3 = C.blue, TextStrokeTransparency = 0.4, Font = Enum.Font.GothamBold, TextSize = 11, Parent = bb })
+    PlayerData[plr] = { hl, bb, lbl }
+end
+local function RemovePlayerESP(plr) local d = PlayerData[plr]; if d then for _, o in pairs(d) do pcall(function() o:Destroy() end) end; PlayerData[plr] = nil end end
+
+-- Фоновые задачи
+task.spawn(function()
+    while GUI and GUI.Parent do
+        task.wait(1)
+        if S.ESPDrones then
+            for _, obj in ipairs(workspace:GetDescendants()) do if IsDrone(obj) and not DroneESP[obj] then CreateDroneESP(obj) end end
+            for obj in pairs(DroneESP) do if not obj.Parent then RemoveDroneESP(obj) end end
+        else for obj in pairs(DroneESP) do RemoveDroneESP(obj) end end
+
+        if S.ESPFragments then
+            for _, obj in ipairs(workspace:GetDescendants()) do if IsFragment(obj) and not FragmentESP[obj] then CreateFragmentESP(obj) end end
+            for obj in pairs(FragmentESP) do if not obj.Parent then RemoveFragmentESP(obj) end end
+        else for obj in pairs(FragmentESP) do RemoveFragmentESP(obj) end end
+
+        if S.ESPPlayers then
+            for _, plr in ipairs(Players:GetPlayers()) do CreatePlayerESP(plr) end
+        end
+    end
+end)
+
+-- AIM + Attack Target
+local function FindAimTarget()
+    local vp = Camera.ViewportSize; local center = Vector2.new(vp.X/2, vp.Y/2); local best, bestScore = nil, S.AimFOV
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if IsDrone(obj) then
+            local part = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart")
+            if part then
+                local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
+                if onScreen and pos.Z > 0 then
+                    local pd = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+                    if pd < bestScore then best = part; bestScore = pd end
+                end
+            end
+        end
+    end
+    return best
+end
+
+local accum = 0; local STEP = 1/25
+bind(RunService.RenderStepped:Connect(function(dt)
+    -- AIM
+    if S.AimEnabled then
+        local targetPart = FindAimTarget()
+        if targetPart then
+            local aimPos = targetPart.Position
+            if S.AimPrediction then
+                local vel = targetPart.AssemblyLinearVelocity
+                if vel and vel.Magnitude > 1 then aimPos = aimPos + vel * 0.1 end
+            end
+            local desired = CFrame.lookAt(Camera.CFrame.Position, aimPos)
+            local smooth = math.clamp(S.AimSmooth * (dt * 60), 0.02, 1)
+            Camera.CFrame = Camera.CFrame:Lerp(desired, smooth)
+        end
+    end
+
+    -- ESP Update (throttled)
+    accum = accum + dt
+    if accum >= STEP then
+        accum = 0
+        for plr, d in pairs(PlayerData) do
+            if S.ESPPlayers and plr.Character and IsAlive(plr.Character) then
+                d[2].Enabled = true; d[2].Adornee = plr.Character.Head or plr.Character.HumanoidRootPart
+                d[3].Text = plr.Name; if S.AttackTarget == plr then d[3].Text = ">>> " .. plr.Name .. " <<<"; d[3].TextColor3 = C.yellow else d[3].TextColor3 = C.blue end
+                d[1].Enabled = true; d[1].Adornee = plr.Character
+            else
+                d[1].Enabled = false; d[2].Enabled = false
+            end
+        end
+    end
+end))
+
+-- Auto Collect
+task.spawn(function()
+    while GUI and GUI.Parent do
+        task.wait(0.4)
+        if S.AutoCollect then
+            local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local best, bestD = nil, math.huge
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if IsFragment(obj) and obj:IsA("BasePart") then
+                        local d = (obj.Position - hrp.Position).Magnitude
+                        if d < bestD and d < 500 then bestD = d; best = obj end
+                    end
+                end
+                if best then pcall(function() hrp.CFrame = CFrame.new(best.Position + Vector3.new(0, 3, 0)) end) end
+            end
+        end
+    end
+end)
+
+-- [ СТРАНИЦЫ ]
+local function Clear() for _, v in ipairs(Content:GetChildren()) do if not v:IsA("UIListLayout") and not v:IsA("UIPadding") then v:Destroy() end end end
+
+local function VisualPage()
+    Clear(); Section("DRONE ESP")
+    Toggle("Включить ESP дронов", S.ESPDrones, function(v) S.ESPDrones = v end)
+    Section("FRAGMENT ESP")
+    Toggle("Включить ESP фрагментов", S.ESPFragments, function(v) S.ESPFragments = v end)
+    Section("PLAYER ESP")
+    Toggle("Включить ESP игроков", S.ESPPlayers, function(v) S.ESPPlayers = v end)
+    Section("НАСТРОЙКИ")
+    Slider("Макс. дистанция", S.ESPMaxDist, 100, 5000, function(v) S.ESPMaxDist = v end)
+end
+
+local function CombatPage()
+    Clear(); Section("AIMBOT (ДЛЯ ЗАЩИТНИКА)")
+    Toggle("Включить AIM", S.AimEnabled, function(v) S.AimEnabled = v end)
+    Toggle("Prediction", S.AimPrediction, function(v) S.AimPrediction = v end)
+    Section("ПАРАМЕТРЫ")
+    Slider("FOV", S.AimFOV, 20, 600, function(v) S.AimFOV = v end)
+    Slider("Дальность", S.AimRange, 100, 3000, function(v) S.AimRange = v end)
+    Slider("Плавность x100", math.floor(S.AimSmooth * 100), 1, 100, function(v) S.AimSmooth = v / 100 end)
+end
+
+local function AttackPage()
+    Clear(); Section("ВЫБОР ЦЕЛИ (СЛЕЖКА)")
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LP then
+            local b = Create("TextButton", { Size = UDim2.new(1, 0, 0, 28), BackgroundColor3 = C.card, Text = plr.Name, TextColor3 = C.text, TextSize = 11, Font = Enum.Font.GothamMedium, AutoButtonColor = false, Parent = Content })
+            Corner(b, UDim.new(0, 6)); Stroke(b, C.border, 1, 0.3)
+            b.MouseButton1Click:Connect(function()
+                if S.AttackTarget == plr then S.AttackTarget = nil else S.AttackTarget = plr end
+                AttackPage() -- обновить
+            end)
+            if S.AttackTarget == plr then b.BackgroundColor3 = C.accent; b.TextColor3 = C.bg; b.Text = ">>> " .. plr.Name .. " <<<" end
+        end
+    end
+    Section("ДЕЙСТВИЯ")
+    Toggle("Auto Collect Fragments", S.AutoCollect, function(v) S.AutoCollect = v end)
+end
+
+-- NAV
+local function CreateNavBtn(name, pageFn)
+    local b = Create("TextButton", { Size = UDim2.new(1/3, -3, 1, 0), BackgroundColor3 = C.card, Text = name, TextColor3 = C.muted, TextSize = 10, Font = Enum.Font.GothamBold, AutoButtonColor = false, Parent = NavBar })
+    Corner(b, UDim.new(0, 6))
+    navButtons[name] = b
+    b.MouseButton1Click:Connect(function()
+        for n, btn in pairs(navButtons) do btn.BackgroundColor3 = (n == name) and C.accent or C.card; btn.TextColor3 = (n == name) and C.bg or C.muted end
+        pageFn()
+    end)
+end
+
+CreateNavBtn("VISUAL", VisualPage); CreateNavBtn("COMBAT", CombatPage); CreateNavBtn("ATTACK", AttackPage)
+
+-- OPEN / CLOSE
+local opened = false
+local function SetOpen(state)
+    opened = state
+    if opened then Win.Visible = true; WinScale.Scale = 0.9; Play(WinScale, TweenInfo.new(0.22, Enum.EasingStyle.Back), { Scale = 1 })
+    else Play(WinScale, TweenInfo.new(0.15), { Scale = 0.9 }); task.delay(0.15, function() Win.Visible = false end) end
+end
+
+Icon.MouseButton1Click:Connect(function() SetOpen(not opened) end)
+CloseBtn.MouseButton1Click:Connect(function() SetOpen(false) end)
+bind(Players.PlayerAdded:Connect(function(plr) task.wait(0.5) CreatePlayerESP(plr) end))
+bind(Players.PlayerRemoving:Connect(RemovePlayerESP))
+
+-- INIT
+VisualPage(); navButtons["VISUAL"].BackgroundColor3 = C.accent; navButtons["VISUAL"].TextColor3 = C.bg
+
+_G.__DF_CLEANUP = function()
+    disconnectAll()
+    pcall(function() GUI:Destroy() end)
+    pcall(function() DroneFolder:Destroy() end)
+    pcall(function() FragmentFolder:Destroy() end)
+    pcall(function() PlayerEspFolder:Destroy() end)
+end
+
+print("[AD Dronefront v1.0] загружен. Скрипт в бета-режиме — пришли диагностику.")
