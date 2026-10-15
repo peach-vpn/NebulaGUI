@@ -1,0 +1,393 @@
+--[[
+    MM2 Dominance — Full Build
+    Target: Murder Mystery 2
+    Runtime: Luau / Executor
+    Features: ESP, KillAura, Aimbot, GodMode, Speed, Fly, Noclip, AutoFarm
+    UI: floating draggable icon -> animated menu
+--]]
+
+if not game:IsLoaded() then game.Loaded:Wait() end
+
+-- ==== CONFIG ====
+local CFG = {
+    KeyBind        = Enum.KeyCode.RightShift,
+    ESPColor       = Color3.fromRGB(255, 40, 40),
+    AimbotFOV      = 120,
+    AimbotSmooth   = 0.15,
+    KillAuraRange  = 18,
+    SpeedValue     = 60,
+    FlySpeed       = 90,
+    AutoFarm       = false,
+    GodMode        = false,
+}
+
+local Players          = game:GetService("Players")
+local RunService       = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService     = game:GetService("TweenService")
+local LocalPlayer      = Players.LocalPlayer
+local Camera           = workspace.CurrentCamera
+
+-- ==== UI CORE ====
+local function mk(class, props, parent)
+    local o = Instance.new(class)
+    for k, v in pairs(props or {}) do o[k] = v end
+    o.Parent = parent
+    return o
+end
+
+local gui = mk("ScreenGui", {
+    Name = "MM2_Dominance",
+    ResetOnSpawn = false,
+    IgnoreGuiInset = true,
+    ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+}, (gethui and gethui()) or game:GetService("CoreGui"))
+
+-- ==== FLOATING ICON ====
+local icon = mk("TextButton", {
+    Name = "Icon",
+    Size = UDim2.new(0, 56, 0, 56),
+    Position = UDim2.new(0, 20, 0.5, -28),
+    BackgroundColor3 = Color3.fromRGB(255, 40, 40),
+    BorderSizePixel = 0,
+    Text = "",
+    AutoButtonColor = false,
+    Active = true,
+}, gui)
+mk("UICorner", { CornerRadius = UDim.new(1, 0) }, icon)
+mk("UIStroke", { Color = Color3.fromRGB(255, 255, 255), Thickness = 1.5, Transparency = 0.3 }, icon)
+mk("ImageLabel", {
+    Name = "Logo",
+    Size = UDim2.new(0, 34, 0, 34),
+    Position = UDim2.new(0.5, -17, 0.5, -17),
+    BackgroundTransparency = 1,
+    Image = "rbxassetid://6031091004",
+    ImageColor3 = Color3.fromRGB(255, 255, 255),
+}, icon)
+
+TweenService:Create(icon, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+    Size = UDim2.new(0, 60, 0, 60),
+    Position = UDim2.new(0, 18, 0.5, -30),
+}):Play()
+
+-- drag icon
+local dragging, dragStart, startPos
+icon.InputBegan:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = i.Position
+        startPos = icon.Position
+        i.Changed:Connect(function()
+            if i.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+UserInputService.InputChanged:Connect(function(i)
+    if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+        local d = i.Position - dragStart
+        icon.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+    end
+end)
+
+-- ==== MAIN MENU ====
+local main = mk("Frame", {
+    Name = "Main",
+    Size = UDim2.new(0, 520, 0, 0),
+    Position = UDim2.new(0.5, -260, 0.5, -190),
+    BackgroundColor3 = Color3.fromRGB(15, 15, 20),
+    BorderSizePixel = 0,
+    Visible = false,
+    Draggable = false,
+}, gui)
+mk("UICorner", { CornerRadius = UDim.new(0, 14) }, main)
+mk("UIStroke", { Color = Color3.fromRGB(255, 40, 40), Thickness = 1.5, Transparency = 0.2 }, main)
+
+local top = mk("Frame", {
+    Size = UDim2.new(1, 0, 0, 44),
+    BackgroundColor3 = Color3.fromRGB(22, 22, 30),
+    BorderSizePixel = 0,
+}, main)
+mk("UICorner", { CornerRadius = UDim.new(0, 14) }, top)
+
+mk("TextLabel", {
+    Text = "  MM2 DOMINANCE",
+    Font = Enum.Font.GothamBold,
+    TextSize = 16,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    BackgroundTransparency = 1,
+    Size = UDim2.new(1, -80, 1, 0),
+    TextXAlignment = Enum.TextXAlignment.Left,
+}, top)
+
+local close = mk("TextButton", {
+    Text = "✕",
+    Font = Enum.Font.GothamBold,
+    TextSize = 16,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    BackgroundColor3 = Color3.fromRGB(255, 40, 40),
+    Size = UDim2.new(0, 32, 0, 32),
+    Position = UDim2.new(1, -40, 0.5, -16),
+    BorderSizePixel = 0,
+}, top)
+mk("UICorner", { CornerRadius = UDim.new(0, 8) }, close)
+
+local content = mk("Frame", {
+    Size = UDim2.new(1, -20, 1, -60),
+    Position = UDim2.new(0, 10, 0, 50),
+    BackgroundTransparency = 1,
+}, main)
+mk("UIListLayout", {
+    Padding = UDim.new(0, 6),
+    SortOrder = Enum.SortOrder.LayoutOrder,
+}, content)
+
+-- toggle row factory
+local function row(name, default, cb)
+    local f = mk("Frame", {
+        Size = UDim2.new(1, 0, 0, 36),
+        BackgroundColor3 = Color3.fromRGB(26, 26, 34),
+        BorderSizePixel = 0,
+    }, content)
+    mk("UICorner", { CornerRadius = UDim.new(0, 8) }, f)
+    mk("TextLabel", {
+        Text = "  " .. name,
+        Font = Enum.Font.Gotham,
+        TextSize = 14,
+        TextColor3 = Color3.fromRGB(230, 230, 230),
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, -70, 1, 0),
+        TextXAlignment = Enum.TextXAlignment.Left,
+    }, f)
+    local state = default
+    local btn = mk("TextButton", {
+        Text = state and "ON" or "OFF",
+        Font = Enum.Font.GothamBold,
+        TextSize = 13,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        BackgroundColor3 = state and Color3.fromRGB(40, 180, 90) or Color3.fromRGB(60, 60, 70),
+        Size = UDim2.new(0, 52, 0, 24),
+        Position = UDim2.new(1, -60, 0.5, -12),
+        BorderSizePixel = 0,
+    }, f)
+    mk("UICorner", { CornerRadius = UDim.new(0, 6) }, btn)
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.Text = state and "ON" or "OFF"
+        btn.BackgroundColor3 = state and Color3.fromRGB(40, 180, 90) or Color3.fromRGB(60, 60, 70)
+        cb(state)
+    end)
+end
+
+-- open/close animation
+local function openMenu()
+    main.Visible = true
+    main.Size = UDim2.new(0, 520, 0, 0)
+    TweenService:Create(main, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+        Size = UDim2.new(0, 520, 0, 380),
+    }):Play()
+end
+
+local function closeMenu()
+    local t = TweenService:Create(main, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+        Size = UDim2.new(0, 520, 0, 0),
+    })
+    t.Completed:Connect(function() main.Visible = false end)
+    t:Play()
+end
+
+icon.MouseButton1Click:Connect(function()
+    if main.Visible then closeMenu() else openMenu() end
+end)
+
+close.MouseButton1Click:Connect(closeMenu)
+
+-- ==== ROLES ====
+local function getRole(plr)
+    local ch = plr.Character
+    if not ch then return "?" end
+    local bp = plr.Backpack
+    local has = function(n)
+        return ch:FindFirstChild(n) or (bp and bp:FindFirstChild(n))
+    end
+    if has("Knife") or has("KnifeSE") then return "Sheriff" end
+    if has("Revolver") or has("Gun") then return "Murderer" end
+    return "Innocent"
+end
+
+-- ==== ESP ====
+local espFolder = mk("Folder", { Name = "MM2_ESP" }, workspace)
+local espActive = false
+local espCache = {}
+
+local function makeESP(plr)
+    if plr == LocalPlayer then return end
+    local box = mk("BillboardGui", {
+        Name = plr.Name,
+        Size = UDim2.new(0, 200, 0, 50),
+        AlwaysOnTop = true,
+        StudsOffset = Vector3.new(0, 3, 0),
+    }, espFolder)
+    local label = mk("TextLabel", {
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Font = Enum.Font.GothamBold,
+        TextSize = 14,
+        TextColor3 = CFG.ESPColor,
+        TextStrokeTransparency = 0.2,
+        Text = "",
+    }, box)
+    return box, label
+end
+
+local function refreshESP()
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and not espCache[p] then
+            espCache[p] = { makeESP(p) }
+        end
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    if not espActive then
+        for _, d in pairs(espCache) do d[1].Enabled = false end
+        return
+    end
+    for plr, d in pairs(espCache) do
+        local box, label = d[1], d[2]
+        local char = plr.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local pos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+            box.Enabled = onScreen
+            box.Adornee = hrp
+            label.Text = string.format("%s [%s] [%d]", plr.Name, getRole(plr), math.floor((Camera.CFrame.Position - hrp.Position).Magnitude))
+        else
+            box.Enabled = false
+        end
+    end
+end)
+
+Players.PlayerAdded:Connect(refreshESP)
+Players.PlayerRemoving:Connect(function(p)
+    if espCache[p] then
+        for _, i in ipairs(espCache[p]) do i:Destroy() end
+        espCache[p] = nil
+    end
+end)
+refreshESP()
+
+-- ==== KILLAURA ====
+local killAuraActive = false
+local function killAura()
+    local char = LocalPlayer.Character
+    if not char then return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+            local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+            if hrp and hum and hum.Health > 0 then
+                if (hrp.Position - root.Position).Magnitude <= CFG.KillAuraRange then
+                    local tool = char:FindFirstChildOfClass("Tool")
+                    if tool then tool:Activate() end
+                end
+            end
+        end
+    end
+end
+
+-- ==== AIMBOT ====
+local aimbotActive = false
+local function aimbot()
+    local closest, dist = nil, CFG.AimbotFOV
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local sp, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+                if onScreen then
+                    local mp = UserInputService:GetMouseLocation()
+                    local d = (Vector2.new(sp.X, sp.Y) - mp).Magnitude
+                    if d < dist then dist, closest = d, hrp end
+                end
+            end
+        end
+    end
+    if closest then
+        Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, closest.Position), CFG.AimbotSmooth)
+    end
+end
+
+-- ==== MOVEMENT ====
+local function setSpeed(v)
+    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if hum then hum.WalkSpeed = v end
+end
+
+local flyBV, flyBG
+local function fly(on)
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    if on then
+        flyBV = Instance.new("BodyVelocity", hrp)
+        flyBV.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+        flyBV.Velocity = Vector3.zero
+        flyBG = Instance.new("BodyGyro", hrp)
+        flyBG.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+        flyBG.P = 1e4
+    else
+        if flyBV then flyBV:Destroy() end
+        if flyBG then flyBG:Destroy() end
+    end
+end
+
+local function noclip(on)
+    local char = LocalPlayer.Character
+    if not char then return end
+    for _, p in ipairs(char:GetDescendants()) do
+        if p:IsA("BasePart") then p.CanCollide = not on end
+    end
+end
+
+-- ==== UI ROWS ====
+row("ESP", false, function(s) espActive = s end)
+row("KillAura", false, function(s) killAuraActive = s end)
+row("Aimbot", false, function(s) aimbotActive = s end)
+row("GodMode", false, function(s) CFG.GodMode = s end)
+row("Speed", false, function(s) setSpeed(s and CFG.SpeedValue or 16) end)
+row("Fly", false, function(s) fly(s) end)
+row("Noclip", false, function(s) noclip(s) end)
+row("AutoFarm Coins", false, function(s) CFG.AutoFarm = s end)
+
+-- ==== LOOPS ====
+RunService.Heartbeat:Connect(function()
+    if killAuraActive then pcall(killAura) end
+    if aimbotActive then pcall(aimbot) end
+    if CFG.GodMode and LocalPlayer.Character then
+        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then hum.Health = hum.MaxHealth end
+    end
+    if CFG.AutoFarm then
+        for _, o in ipairs(workspace:GetChildren()) do
+            if o.Name == "Coin" or o.Name:lower():find("coin") then
+                local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local v = (o.Position - hrp.Position).Magnitude
+                    if v < 8 then hrp.CFrame = CFrame.new(o.Position) end
+                end
+            end
+        end
+    end
+end)
+
+-- ==== HOTKEY ====
+UserInputService.InputBegan:Connect(function(i, gp)
+    if gp then return end
+    if i.KeyCode == CFG.KeyBind then
+        if main.Visible then closeMenu() else openMenu() end
+    end
+end)
+
+print("[MM2 Dominance] loaded. RightShift or icon tap to toggle.")
