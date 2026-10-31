@@ -1,6 +1,6 @@
 --========================================================--
---   AD Dronefront v2.1 — Defender Focus (Upgraded UI & Aim Filter) --
---   ESP & AIM по независимым фильтрам · Перетаскиваемая иконка    --
+--   AD Dronefront v2.2 — Defender Focus (Optimized & Off)--
+--   ESP & AIM по независимым фильтрам (по умолчанию выкл)   --
 --========================================================--
 
 if _G.__DF2_CLEANUP then pcall(_G.__DF2_CLEANUP) _G.__DF2_CLEANUP = nil end
@@ -36,7 +36,6 @@ local C = {
     cardHov = Color3.fromRGB(36, 34, 52),
     accent = Color3.fromRGB(140, 80, 255),
     accentLight = Color3.fromRGB(175, 120, 255),
-    accentGlow = Color3.fromRGB(100, 50, 210),
     text = Color3.fromRGB(245, 245, 255),
     muted = Color3.fromRGB(135, 133, 155),
     border = Color3.fromRGB(42, 38, 60),
@@ -46,10 +45,10 @@ local C = {
 }
 
 --========================================================--
--- НАСТРОЙКИ
+-- НАСТРОЙКИ (ВЫКЛЮЧЕНО ПО УМОЛЧАНИЮ)
 --========================================================--
 local S = {
-    ESPEnabled = true, ESPMaxDist = 2000,
+    ESPEnabled = false, ESPMaxDist = 2000,
     AimEnabled = false, AimFOV = 200, AimRange = 1500, AimSmooth = 0.4,
     ShowFPS = true, ShowPing = true, ShowWatermark = true,
 }
@@ -64,22 +63,20 @@ local DroneTypes = {
     { id = "other", name = "Другие", keywords = {"drone", "uav", "disruptor", "i-51", "privet"} },
 }
 
--- Раздельные фильтры для ESP и AIM
+-- Все фильтры изначально ВСЕГДА ВЫКЛЮЧЕНЫ (false)
 local ActiveESPFilter = {}
 local ActiveAimFilter = {}
 for _, t in ipairs(DroneTypes) do 
-    ActiveESPFilter[t.id] = true 
-    ActiveAimFilter[t.id] = true
+    ActiveESPFilter[t.id] = false 
+    ActiveAimFilter[t.id] = false
 end
 
 --========================================================--
--- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (GUI CREATION)
+-- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 --========================================================--
 local function Create(class, props) 
     local o = Instance.new(class)
-    for k, v in pairs(props) do 
-        if k ~= "Parent" then o[k] = v end 
-    end
+    for k, v in pairs(props) do if k ~= "Parent" then o[k] = v end end
     o.Parent = props.Parent
     return o 
 end
@@ -87,26 +84,18 @@ local function Corner(p, r) return Create("UICorner", { CornerRadius = r or UDim
 local function Stroke(p, c, th, tr) return Create("UIStroke", { Color = c or C.border, Thickness = th or 1, Transparency = tr or 0.3, Parent = p }) end
 local function Play(o, i, pr) TweenService:Create(o, i, pr):Play() end
 
--- Перетаскивание элементов (Drag System)
+-- Перетаскивание
 local function EnableDragging(frame, handle)
     handle = handle or frame
     local dragging, dragInput, dragStart, startPos
     bind(handle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = frame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
+            dragging = true; dragStart = input.Position; startPos = frame.Position
+            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
         end
     end))
     bind(handle.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
     end))
     bind(UIS.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
@@ -135,80 +124,48 @@ local GUI = Create("ScreenGui", {
 })
 bind(GUI.Destroying:Connect(disconnectAll))
 
---========================================================--
--- УЛУЧШЕННАЯ ИКОНКА (С ПЕРЕТАСКИВАНИЕМ)
---========================================================--
-local IconContainer = Create("Frame", {
-    Size = UDim2.fromOffset(54, 54), Position = UDim2.new(0, 18, 0.5, -27),
-    BackgroundColor3 = C.bg, BackgroundTransparency = 0.1, ZIndex = 100, Parent = GUI
-})
+-- ИКОНКА
+local IconContainer = Create("Frame", { Size = UDim2.fromOffset(54, 54), Position = UDim2.new(0, 18, 0.5, -27), BackgroundColor3 = C.bg, BackgroundTransparency = 0.1, ZIndex = 100, Parent = GUI })
 Corner(IconContainer, UDim.new(0, 16))
 Stroke(IconContainer, C.accent, 1.5, 0.1)
-
-local IconGlow = Create("ImageLabel", {
-    Size = UDim2.new(1, 10, 1, 10), Position = UDim2.fromOffset(-5, -5),
-    BackgroundTransparency = 1, Image = "rbxassetid://5028857472", ImageColor3 = C.accent,
-    ImageTransparency = 0.6, ZIndex = 99, Parent = IconContainer
-})
-
-local IconBtn = Create("TextButton", {
-    Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "",
-    AutoButtonColor = false, ZIndex = 101, Parent = IconContainer
-})
-
-local IconText = Create("TextLabel", {
-    Size = UDim2.new(1, 0, 0.6, 0), Position = UDim2.fromOffset(0, 4), BackgroundTransparency = 1,
-    Text = "AD", TextColor3 = C.accentLight, TextSize = 18, Font = Enum.Font.GothamBlack, ZIndex = 102, Parent = IconContainer
-})
-local IconSub = Create("TextLabel", {
-    Size = UDim2.new(1, 0, 0.3, 0), Position = UDim2.new(0, 0, 0.6, -2), BackgroundTransparency = 1,
-    Text = "DF v2.1", TextColor3 = C.muted, TextSize = 8, Font = Enum.Font.GothamBold, ZIndex = 102, Parent = IconContainer
-})
-
+local IconBtn = Create("TextButton", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 101, Parent = IconContainer })
+Create("TextLabel", { Size = UDim2.new(1, 0, 0.6, 0), Position = UDim2.fromOffset(0, 4), BackgroundTransparency = 1, Text = "AD", TextColor3 = C.accentLight, TextSize = 18, Font = Enum.Font.GothamBlack, ZIndex = 102, Parent = IconContainer })
+Create("TextLabel", { Size = UDim2.new(1, 0, 0.3, 0), Position = UDim2.new(0, 0, 0.6, -2), BackgroundTransparency = 1, Text = "DF v2.2", TextColor3 = C.muted, TextSize = 8, Font = Enum.Font.GothamBold, ZIndex = 102, Parent = IconContainer })
 EnableDragging(IconContainer, IconBtn)
 
---========================================================--
--- ОВЕРЛЕЙ СТАТИСТИКИ
---========================================================--
+-- ОВЕРЛЕЙ
 local OverlayHolder = Create("Frame", { Size = UDim2.fromOffset(170, 56), Position = UDim2.new(1, -182, 0, 14), BackgroundColor3 = C.bg, BackgroundTransparency = 0.15, BorderSizePixel = 0, ZIndex = 90, Parent = GUI })
 Corner(OverlayHolder, UDim.new(0, 10))
 Stroke(OverlayHolder, C.accent, 1, 0.4)
 Create("Frame", { Size = UDim2.new(1, 0, 0, 2), BackgroundColor3 = C.accent, BorderSizePixel = 0, ZIndex = 91, Parent = OverlayHolder })
 local WatermarkLabel = Create("TextLabel", { Size = UDim2.new(1, -12, 0, 16), Position = UDim2.fromOffset(10, 5), BackgroundTransparency = 1, Text = "AD · Dronefront", TextColor3 = C.accentLight, TextSize = 12, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 92, Parent = OverlayHolder })
-local WatermarkSub = Create("TextLabel", { Size = UDim2.new(1, -12, 0, 12), Position = UDim2.fromOffset(10, 20), BackgroundTransparency = 1, Text = "v2.1 · DEFENDER", TextColor3 = C.muted, TextSize = 9, Font = Enum.Font.Gotham, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 92, Parent = OverlayHolder })
+local WatermarkSub = Create("TextLabel", { Size = UDim2.new(1, -12, 0, 12), Position = UDim2.fromOffset(10, 20), BackgroundTransparency = 1, Text = "v2.2 · DEFENDER", TextColor3 = C.muted, TextSize = 9, Font = Enum.Font.Gotham, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 92, Parent = OverlayHolder })
 local StatsLabel = Create("TextLabel", { Size = UDim2.new(1, -12, 0, 16), Position = UDim2.fromOffset(10, 34), BackgroundTransparency = 1, Text = "FPS: -- | Ping: --", TextColor3 = C.text, TextSize = 10, Font = Enum.Font.Code, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 92, Parent = OverlayHolder })
 
---========================================================--
--- ГЛАВНОЕ ОКНО МЕНЮ
---========================================================--
+-- ОКНО
 local Window = Create("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(450, 320), Position = UDim2.new(0.5, 0, 0.5, 0), BackgroundColor3 = C.bg, Visible = false, ClipsDescendants = true, ZIndex = 10, Parent = GUI })
 Corner(Window, UDim.new(0, 14))
 Stroke(Window, C.accent, 1.5, 0.2)
 local WindowScale = Create("UIScale", { Scale = 1, Parent = Window })
 
--- ШАПКА ОКНА (С возможность перетаскивания за шапку)
 local Header = Create("Frame", { Size = UDim2.new(1, 0, 0, 42), BackgroundColor3 = C.panel, BorderSizePixel = 0, ZIndex = 11, Parent = Window })
 Corner(Header, UDim.new(0, 14))
 Create("Frame", { Size = UDim2.new(1, 0, 0, 2), BackgroundColor3 = C.accent, BorderSizePixel = 0, ZIndex = 12, Parent = Header })
-local TitleText = Create("TextLabel", { Size = UDim2.new(1, -100, 1, 0), Position = UDim2.fromOffset(14, 0), BackgroundTransparency = 1, Text = "AD · DRONEFRONT v2.1", TextColor3 = C.text, TextSize = 12, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13, Parent = Header })
-
+Create("TextLabel", { Size = UDim2.new(1, -100, 1, 0), Position = UDim2.fromOffset(14, 0), BackgroundTransparency = 1, Text = "AD · DRONEFRONT v2.2", TextColor3 = C.text, TextSize = 12, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13, Parent = Header })
 local CloseBtn = Create("TextButton", { Size = UDim2.fromOffset(26, 26), Position = UDim2.new(1, -34, 0.5, -13), BackgroundColor3 = C.card, Text = "✕", TextColor3 = C.muted, TextSize = 13, Font = Enum.Font.GothamBold, AutoButtonColor = false, ZIndex = 14, Parent = Header })
 Corner(CloseBtn, UDim.new(0, 8))
 Stroke(CloseBtn, C.border, 1, 0.3)
-
 EnableDragging(Window, Header)
 
--- БОКОВАЯ ПАНЕЛЬ (SIDEBAR)
 local Sidebar = Create("Frame", { Size = UDim2.new(0, 110, 1, -42), Position = UDim2.fromOffset(0, 42), BackgroundColor3 = C.panel, BorderSizePixel = 0, ZIndex = 11, Parent = Window })
 Create("UIPadding", { PaddingTop = UDim.new(0, 8), PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6), PaddingBottom = UDim.new(0, 8), Parent = Sidebar })
 Create("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder, Parent = Sidebar })
 
--- КОНТЕНТ (CONTENT AREA)
 local Content = Create("ScrollingFrame", { Size = UDim2.new(1, -110, 1, -42), Position = UDim2.fromOffset(110, 42), BackgroundColor3 = C.bg2, BorderSizePixel = 0, ScrollBarThickness = 3, ScrollBarImageColor3 = C.accent, ScrollingDirection = Enum.ScrollingDirection.Y, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(), ElasticBehavior = Enum.ElasticBehavior.Always, ZIndex = 11, Parent = Window })
 Create("UIPadding", { PaddingTop = UDim.new(0, 10), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10), Parent = Content })
 Create("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = Content })
 
--- ТАБЫ
+-- ТАБЫ И КОМПОНЕНТЫ
 local Tabs = {}
 local Pages = {}
 
@@ -228,7 +185,7 @@ local function SelectTab(name)
 end
 
 local function CreateTab(name, symbol, order, renderFn)
-    local btn = Create("TextButton", { Name = name .. "Tab", Size = UDim2.new(1, 0, 0, 30), BackgroundColor3 = C.panel, Text = "", AutoButtonColor = false, LayoutOrder = order, ZIndex = 12, Parent = Sidebar })
+    local btn = Create("TextButton", { Size = UDim2.new(1, 0, 0, 30), BackgroundColor3 = C.panel, Text = "", AutoButtonColor = false, LayoutOrder = order, ZIndex = 12, Parent = Sidebar })
     Corner(btn, UDim.new(0, 7))
     local bar = Create("Frame", { Size = UDim2.new(0, 3, 0, 14), Position = UDim2.new(0, 0, 0.5, -7), BackgroundColor3 = C.accent, BorderSizePixel = 0, Visible = false, ZIndex = 13, Parent = btn })
     Corner(bar, UDim.new(1, 0))
@@ -236,20 +193,16 @@ local function CreateTab(name, symbol, order, renderFn)
     local label = Create("TextLabel", { Size = UDim2.new(1, -26, 1, 0), Position = UDim2.fromOffset(24, 0), BackgroundTransparency = 1, Text = name, TextColor3 = C.muted, TextSize = 10, Font = Enum.Font.GothamSemibold, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13, Parent = btn })
     Tabs[name] = { Button = btn, Bar = bar, Icon = icon, Label = label }
     Pages[name] = renderFn
-    local function handle() SelectTab(name) end
-    btn.Activated:Connect(handle)
-    btn.MouseButton1Click:Connect(handle)
+    btn.MouseButton1Click:Connect(function() SelectTab(name) end)
 end
 
--- КОМПОНЕНТЫ ИНТЕРФЕЙСА
 local function SectionTitle(txt) 
     return Create("TextLabel", { Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, Text = string.upper(txt), TextColor3 = C.accentLight, TextSize = 10, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left, Parent = Content }) 
 end
 
 local function InfoCard(txt) 
-    local f = Create("TextLabel", { Size = UDim2.new(1, 0, 0, 28), BackgroundColor3 = C.bg, BorderSizePixel = 0, Text = "  ℹ " .. txt, TextWrapped = true, TextColor3 = C.muted, TextSize = 9, Font = Enum.Font.Gotham, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center, Parent = Content }); 
-    Corner(f, UDim.new(0, 6)); 
-    return f 
+    local f = Create("TextLabel", { Size = UDim2.new(1, 0, 0, 28), BackgroundColor3 = C.bg, BorderSizePixel = 0, Text = "  ℹ " .. txt, TextWrapped = true, TextColor3 = C.muted, TextSize = 9, Font = Enum.Font.Gotham, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center, Parent = Content })
+    Corner(f, UDim.new(0, 6)); return f 
 end
 
 local function ToggleRow(txt, initial, cb)
@@ -257,8 +210,10 @@ local function ToggleRow(txt, initial, cb)
     local b = Create("TextButton", { Size = UDim2.new(1, 0, 0, 32), BackgroundColor3 = C.card, Text = "", AutoButtonColor = false, Parent = Content })
     Corner(b, UDim.new(0, 7)); Stroke(b, C.border, 1, 0.3)
     Create("TextLabel", { Size = UDim2.new(1, -54, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, Text = txt, TextColor3 = C.text, TextSize = 11, Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Left, Parent = b })
-    local sw = Create("Frame", { Size = UDim2.fromOffset(34, 18), Position = UDim2.new(1, -44, 0.5, -9), BackgroundColor3 = state.v and C.accent or Color3.fromRGB(45, 45, 60), BorderSizePixel = 0, Parent = b }); Corner(sw, UDim.new(1, 0))
-    local dot = Create("Frame", { Size = UDim2.fromOffset(12, 12), Position = state.v and UDim2.fromOffset(19, 3) or UDim2.fromOffset(3, 3), BackgroundColor3 = Color3.fromRGB(240, 240, 250), BorderSizePixel = 0, ZIndex = 2, Parent = sw }); Corner(dot, UDim.new(1, 0))
+    local sw = Create("Frame", { Size = UDim2.fromOffset(34, 18), Position = UDim2.new(1, -44, 0.5, -9), BackgroundColor3 = state.v and C.accent or Color3.fromRGB(45, 45, 60), BorderSizePixel = 0, Parent = b })
+    Corner(sw, UDim.new(1, 0))
+    local dot = Create("Frame", { Size = UDim2.fromOffset(12, 12), Position = state.v and UDim2.fromOffset(19, 3) or UDim2.fromOffset(3, 3), BackgroundColor3 = Color3.fromRGB(240, 240, 250), BorderSizePixel = 0, ZIndex = 2, Parent = sw })
+    Corner(dot, UDim.new(1, 0))
     
     local function apply(instant) 
         local col = state.v and C.accent or Color3.fromRGB(45, 45, 60)
@@ -275,9 +230,12 @@ local function SliderRow(txt, initial, min, max, cb)
     Corner(frame, UDim.new(0, 7)); Stroke(frame, C.border, 1, 0.3)
     Create("TextLabel", { Size = UDim2.new(0.65, -10, 0, 16), Position = UDim2.fromOffset(10, 5), BackgroundTransparency = 1, Text = txt, TextColor3 = C.text, TextSize = 11, Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Left, Parent = frame })
     local valueLabel = Create("TextLabel", { Size = UDim2.new(0.35, -10, 0, 16), Position = UDim2.new(0.65, 0, 0, 5), BackgroundTransparency = 1, Text = tostring(math.floor(initial)), TextColor3 = C.accentLight, TextSize = 10, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Right, Parent = frame })
-    local track = Create("Frame", { Size = UDim2.new(1, -20, 0, 6), Position = UDim2.new(0, 10, 0, 30), BackgroundColor3 = Color3.fromRGB(40, 40, 55), BorderSizePixel = 0, Parent = frame }); Corner(track, UDim.new(1, 0))
-    local fill = Create("Frame", { Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = C.accent, BorderSizePixel = 0, Parent = track }); Corner(fill, UDim.new(1, 0))
-    local knob = Create("Frame", { Size = UDim2.fromOffset(14, 14), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, 0, 0.5, 0), BackgroundColor3 = Color3.fromRGB(240, 244, 255), BorderSizePixel = 0, ZIndex = 2, Parent = track }); Corner(knob, UDim.new(1, 0)); Stroke(knob, C.accent, 2, 0)
+    local track = Create("Frame", { Size = UDim2.new(1, -20, 0, 6), Position = UDim2.new(0, 10, 0, 30), BackgroundColor3 = Color3.fromRGB(40, 40, 55), BorderSizePixel = 0, Parent = frame })
+    Corner(track, UDim.new(1, 0))
+    local fill = Create("Frame", { Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = C.accent, BorderSizePixel = 0, Parent = track })
+    Corner(fill, UDim.new(1, 0))
+    local knob = Create("Frame", { Size = UDim2.fromOffset(14, 14), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, 0, 0.5, 0), BackgroundColor3 = Color3.fromRGB(240, 244, 255), BorderSizePixel = 0, ZIndex = 2, Parent = track })
+    Corner(knob, UDim.new(1, 0)); Stroke(knob, C.accent, 2, 0)
     local hitbox = Create("TextButton", { Size = UDim2.new(1, 0, 0, 30), Position = UDim2.new(0, 0, 0, -12), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, Parent = track })
     local value = math.clamp(initial, min, max); local dragging = false
     
@@ -286,21 +244,18 @@ local function SliderRow(txt, initial, min, max, cb)
         if animate then Play(fill, TweenInfo.new(0.1), { Size = UDim2.new(ratio, 0, 1, 0) }); Play(knob, TweenInfo.new(0.1), { Position = UDim2.new(ratio, 0, 0.5, 0) }) else fill.Size = UDim2.new(ratio, 0, 1, 0); knob.Position = UDim2.new(ratio, 0, 0.5, 0) end
         valueLabel.Text = tostring(math.floor(value)) 
     end
-    
     local function setFromX(x) 
         local trackAbs = track.AbsolutePosition; local trackSize = track.AbsoluteSize.X; if trackSize <= 0 then return end
-        local rel = math.clamp((x - trackAbs.X) / trackSize, 0, 1)
-        value = min + rel * (max - min); updateVisual(false); if cb then pcall(cb, value) end 
+        value = min + math.clamp((x - trackAbs.X) / trackSize, 0, 1) * (max - min); updateVisual(false); if cb then pcall(cb, value) end 
     end
-    
     hitbox.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = true; Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(18, 18) }); setFromX(input.Position.X) end end)
-    bind(UIS.InputChanged:Connect(function(input) if not dragging then return end; if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then setFromX(input.Position.X) end end))
-    bind(UIS.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then if dragging then dragging = false; Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(14, 14) }) end end end))
+    bind(UIS.InputChanged:Connect(function(input) if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then setFromX(input.Position.X) end end))
+    bind(UIS.InputEnded:Connect(function(input) if dragging and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then dragging = false; Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(14, 14) }) end end))
     updateVisual(true); return frame
 end
 
 --========================================================--
--- ЛОГИКА ДРОНОВ
+-- ОПТИМИЗИРОВАННАЯ ЛОГИКА ДРОНОВ
 --========================================================--
 local DroneFolder = Create("Folder", { Name = "AD_DF_Drones", Parent = PARENT })
 local DroneESP = {}
@@ -342,7 +297,51 @@ local function removeDroneESP(obj)
     if DroneESP[obj] then for _, o in pairs(DroneESP[obj]) do pcall(function() o:Destroy() end) end; DroneESP[obj] = nil end
 end
 
--- AIM LOCK LOGIC
+-- Оптимизированный цикл ESP (без лагов благодаря таймаутам и батчингу)
+task.spawn(function()
+    while GUI and GUI.Parent do
+        task.wait(1) -- проверяем новые объекты раз в секунду, а не на каждый чих
+        if S.ESPEnabled then
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if getDroneType(obj) and not DroneESP[obj] then
+                    createDroneESP(obj)
+                end
+            end
+            for obj in pairs(DroneESP) do
+                if not obj.Parent or not isDroneESPActive(obj) then
+                    removeDroneESP(obj)
+                end
+            end
+        else
+            for obj in pairs(DroneESP) do removeDroneESP(obj) end
+        end
+    end
+end)
+
+-- Плавный апдейт текста дистанции (каждые 0.2с)
+task.spawn(function()
+    while GUI and GUI.Parent do
+        task.wait(0.2)
+        if S.ESPEnabled then
+            local camPos = Camera.CFrame.Position
+            for obj, data in pairs(DroneESP) do
+                local part = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart")
+                if part then
+                    local dtype = getDroneType(obj) or "?"
+                    local dist = math.floor((part.Position - camPos).Magnitude)
+                    if dist <= S.ESPMaxDist then
+                        data[2].Enabled = true
+                        data[3].Text = string.format("%s · %dm", dtype:upper(), dist)
+                    else
+                        data[2].Enabled = false
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- AIM LOCK
 local function findAimTarget()
     local vp = Camera.ViewportSize; local center = Vector2.new(vp.X / 2, vp.Y / 2); local camPos = Camera.CFrame.Position; local best, bestScore = nil, S.AimFOV
     for _, obj in ipairs(workspace:GetDescendants()) do
@@ -363,29 +362,10 @@ local function findAimTarget()
     return best
 end
 
--- ESP LOOP
-task.spawn(function()
-    while GUI and GUI.Parent do
-        task.wait(0.4)
-        if S.ESPEnabled then
-            for _, obj in ipairs(workspace:GetDescendants()) do if getDroneType(obj) and not DroneESP[obj] then createDroneESP(obj) end end
-            for obj in pairs(DroneESP) do if not obj.Parent or not isDroneESPActive(obj) then removeDroneESP(obj) end end
-            for obj, data in pairs(DroneESP) do
-                local part = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart")
-                if part then
-                    local dtype = getDroneType(obj) or "?"
-                    local dist = math.floor((part.Position - Camera.CFrame.Position).Magnitude)
-                    data[3].Text = string.format("%s · %dm", dtype:upper(), dist)
-                end
-            end
-        else for obj in pairs(DroneESP) do removeDroneESP(obj) end end
-    end
-end)
-
--- FPS & PING TRACKER
+-- FPS & PING
 local lastFPS = 0; local lastPing = 0
-task.spawn(function() while GUI and GUI.Parent do local frames = 0; local startTime = tick(); while tick() - startTime < 1 do RunService.RenderStepped:Wait(); frames = frames + 1 end; lastFPS = frames end end)
-task.spawn(function() while GUI and GUI.Parent do local ok, ping = pcall(function() return LP:GetNetworkPing() end); if ok then lastPing = math.floor(ping * 1000) end; task.wait(0.5) end end)
+task.spawn(function() while GUI and GUI.Parent do local f = 0; local t = tick(); while tick() - t < 1 do RunService.RenderStepped:Wait(); f = f + 1 end; lastFPS = f end end)
+task.spawn(function() while GUI and GUI.Parent do local ok, p = pcall(function() return LP:GetNetworkPing() end); if ok then lastPing = math.floor(p * 1000) end; task.wait(0.5) end end)
 task.spawn(function()
     while GUI and GUI.Parent do
         local parts = {}; if S.ShowFPS then table.insert(parts, "FPS: " .. lastFPS) end; if S.ShowPing then table.insert(parts, "Ping: " .. lastPing) end
@@ -396,7 +376,7 @@ task.spawn(function()
     end
 end)
 
--- AIM RENDER LOOP
+-- AIM LOOP
 bind(RunService.RenderStepped:Connect(function(dt)
     if S.AimEnabled then
         local targetPart = findAimTarget()
@@ -409,18 +389,18 @@ bind(RunService.RenderStepped:Connect(function(dt)
 end))
 
 --========================================================--
--- СТРАНИЦЫ МЕНЮ (PAGES)
+-- СТРАНИЦЫ МЕНЮ
 --========================================================--
 local function RenderESP()
     SectionTitle("ESP — Подсветка дронов")
     ToggleRow("Включить ESP", S.ESPEnabled, function(v) S.ESPEnabled = v end)
     SliderRow("Макс. дистанция", S.ESPMaxDist, 100, 5000, function(v) S.ESPMaxDist = v end)
     
-    SectionTitle("ESP — Фильтр типов")
+    SectionTitle("ESP — Фильтр типов (Все выкл)")
     for _, t in ipairs(DroneTypes) do
         ToggleRow("Подсвечивать: " .. t.name, ActiveESPFilter[t.id], function(v) ActiveESPFilter[t.id] = v end)
     end
-    InfoCard("Выберите типы дронов для отображения сквозь стены.")
+    InfoCard("Включите тумблер нужного дрона, чтобы увидеть его.")
 end
 
 local function RenderAim()
@@ -430,11 +410,11 @@ local function RenderAim()
     SliderRow("Дистанция захвата", S.AimRange, 100, 3000, function(v) S.AimRange = v end)
     SliderRow("Плавность x100", math.floor(S.AimSmooth * 100), 1, 100, function(v) S.AimSmooth = v / 100 end)
 
-    SectionTitle("AIM Bot — Фильтр целям")
+    SectionTitle("AIM Bot — Фильтр целей (Все выкл)")
     for _, t in ipairs(DroneTypes) do
         ToggleRow("AIM: " .. t.name, ActiveAimFilter[t.id], function(v) ActiveAimFilter[t.id] = v end)
     end
-    InfoCard("Аимбот наводится ТОЛЬКО на включенные выше типы.")
+    InfoCard("Аимбот наводится только на активные здесь дроны.")
 end
 
 local function RenderVisuals()
@@ -442,22 +422,19 @@ local function RenderVisuals()
     ToggleRow("Показывать Watermark", S.ShowWatermark, function(v) S.ShowWatermark = v end)
     ToggleRow("Показывать FPS", S.ShowFPS, function(v) S.ShowFPS = v end)
     ToggleRow("Показывать Ping", S.ShowPing, function(v) S.ShowPing = v end)
-    InfoCard("Иконку в левой части можно перетаскивать по экрану!")
+    InfoCard("Иконку можно перетаскивать по экрану мышкой/пальцем.")
 end
 
 CreateTab("ESP", "👁", 1, RenderESP)
 CreateTab("AIM", "🎯", 2, RenderAim)
 CreateTab("Визуалы", "⚙", 3, RenderVisuals)
 
---========================================================--
 -- ОТКРЫТИЕ / ЗАКРЫТИЕ
---========================================================--
 local opened = false
 local function SetOpen(state) 
     opened = state
     if opened then 
-        Window.Visible = true
-        WindowScale.Scale = 0.9
+        Window.Visible = true; WindowScale.Scale = 0.9
         Play(WindowScale, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }) 
     else 
         Play(WindowScale, TweenInfo.new(0.15), { Scale = 0.9 })
@@ -476,4 +453,4 @@ _G.__DF2_CLEANUP = function()
     pcall(function() DroneFolder:Destroy() end)
 end
 
-print("[AD Dronefront v2.1] Успешно загружен — Обновлен дизайн и добавлен фильтр для AIM")
+print("[AD Dronefront v2.2] Загружен: все выключено по умолчанию, лаги устранены.")
