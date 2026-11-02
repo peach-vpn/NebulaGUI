@@ -1,82 +1,119 @@
---[[
-    Criminal Simulator [ALPHA] - Local Utility v5 (Auto Beat + Truck TP)
-    Дизайн: AD MM2 v2.1
-    Функции: Speed, Money, ESP NPC, Anti-AFK, NoClip, Auto-Beat (Loop), TP to Truck
-]]
-
-if _G.__CS_CLEANUP then pcall(_G.__CS_CLEANUP) _G.__CS_CLEANUP = nil end
-
-local Players      = game:GetService("Players")
-local UIS          = game:GetService("UserInputService")
-local RunService   = game:GetService("RunService")
+-- ========================================================
+--  CRIMINAL HUB v38 (RU EXTENDED) 
+--  База: sega1games12-alt + AutoBeat + TP Truck
+-- ========================================================
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local CoreGui      = game:GetService("CoreGui")
-local VirtualUser  = game:GetService("VirtualUser")
-
 local LP = Players.LocalPlayer
-if not LP then return end
-local PlayerGui = LP:WaitForChild("PlayerGui")
+local Camera = Workspace.CurrentCamera
 
-local conns = {}
-local function bind(c) table.insert(conns, c) return c end
-local function disconnectAll()
-    for _, c in ipairs(conns) do pcall(function() c:Disconnect() end) end
-    conns = {}
-end
+-- Локализация (только RU и EN для переключения)
+local LOCALES = {
+    RU = {
+        Title = " КРИМИНАЛ v38",
+        Sub = "by sega1games12-alt + Ext",
+        Move = "🚀 ДВИЖЕНИЕ",
+        Fly = "Fly (Полет)",
+        NoClip = "NoClip (Сквозь стены)",
+        Visual = "👁 ВИЗУАЛЬНЫЕ ФУНКЦИИ",
+        Loot = "Loot ESP (Лут)",
+        Police = "Police ESP (Копы)",
+        Guard = "Guard ESP (Охрана)",
+        Civilian = "Civilian ESP (Мирные)",
+        Actions = "🎯 ДЕЙСТВИЯ (НОВОЕ)",
+        AutoBeat = "Авто-избиение до сна",
+        TpNpc = "ТП к ближайшему NPC",
+        TpTruck = "ТП в грузовик",
+        Settings = "⚙️ НАСТРОЙКИ",
+        Clear = "🗑 Очистить все",
+        Themes = "🎨 ЦВЕТОВЫЕ ТЕМЫ",
+        Lang = "🌐 ЯЗЫК",
+        Gold = "🥇 Золотая",
+        Red = "🔥 Красная",
+        Blue = "💙 Синяя",
+        Green = "💚 Зеленая",
+        Rainbow = "🌈 Радужная",
+        BeatRange = "Радиус избиения: ",
+        SleepTime = "Время сна: "
+    },
+    EN = {
+        Title = " CRIMINAL v38",
+        Sub = "by sega1games12-alt + Ext",
+        Move = "🚀 MOVEMENT",
+        Fly = "Fly",
+        NoClip = "NoClip (Walls)",
+        Visual = "👁 VISUALS",
+        Loot = "Loot ESP",
+        Police = "Police ESP",
+        Guard = "Guard ESP",
+        Civilian = "Civilian ESP",
+        Actions = "🎯 ACTIONS (NEW)",
+        AutoBeat = "Auto-Beat to Sleep",
+        TpNpc = "TP to Nearest NPC",
+        TpTruck = "TP to Truck",
+        Settings = "⚙️ SETTINGS",
+        Clear = "🗑 Clear All",
+        Themes = "🎨 THEMES",
+        Lang = "🌐 LANGUAGE",
+        Gold = "🥇 Gold",
+        Red = "🔥 Red",
+        Blue = "💙 Blue",
+        Green = "💚 Green",
+        Rainbow = "🌈 Rainbow",
+        BeatRange = "Beat Range: ",
+        SleepTime = "Sleep Time: "
+    }
+}
+local CurrentLang = "RU"
 
---========================================================--
--- COLORS
---========================================================--
-local C = {
-    bg      = Color3.fromRGB(12, 12, 18),
-    bg2     = Color3.fromRGB(18, 18, 26),
-    panel   = Color3.fromRGB(22, 22, 32),
-    card    = Color3.fromRGB(28, 27, 40),
-    cardHov = Color3.fromRGB(38, 36, 55),
-    accent  = Color3.fromRGB(153, 91, 255),
-    accent2 = Color3.fromRGB(190, 140, 255),
-    accent3 = Color3.fromRGB(120, 70, 220),
-    text    = Color3.fromRGB(245, 245, 255),
-    muted   = Color3.fromRGB(145, 143, 163),
-    border  = Color3.fromRGB(45, 42, 62),
-    green   = Color3.fromRGB(94, 225, 151),
-    red     = Color3.fromRGB(255, 90, 90),
-    yellow  = Color3.fromRGB(255, 200, 60),
+local COLORS = {
+    Loot = Color3.fromRGB(255, 215, 0), Safe = Color3.fromRGB(255, 50, 50),
+    Police = Color3.fromRGB(0, 100, 255), Guard = Color3.fromRGB(255, 0, 0),
+    Civilian = Color3.fromRGB(0, 255, 0), Bg = Color3.fromRGB(20, 20, 25),
+    Panel = Color3.fromRGB(30, 30, 35), Button = Color3.fromRGB(45, 45, 55),
+}
+local CurrentAccent = Color3.fromRGB(255, 215, 0)
+local IsRainbow = false
+local FOLDERS = { Police = "Police", Guard = "Guards", Civilian = "Npcs" }
+local enabled = { Loot = false, Police = false, Guard = false, Civilian = false, Fly = false, NoClip = false, AutoBeat = false }
+local active = {}; local lootMarks = {}  
+
+-- Настройки для избиения
+local BeatRange = 50
+local SleepDuration = 5
+local isBeating = false
+local sleepingNPCs = {}
+
+local LOOT_NAMES = {
+    ["CashBag"] = true, ["GoldBar"] = true, ["DiamondNecklace"] = true, ["Handbag"] = true,
+    ["SeizedCash"] = true, ["TaserItem"] = true, ["CashBox"] = true, ["PoliceRadio"] = true,
+    ["PoliceBadge"] = true, ["Ring"] = true, ["RingBox"] = true, ["Wallet"] = true,
+    ["Watch"] = true, ["Necklace"] = true, ["Valuables"] = true, ["Item"] = true
 }
 
---========================================================--
--- SETTINGS
---========================================================--
-local S = {
-    SpeedBoost = false,
-    SpeedValue = 60,
-    ESPNPC = false,
-    AntiAFK = true,
-    NoClip = false,
-    AutoBeat = false,
-    BeatRange = 50,
-    SleepDuration = 5,
-    TruckKeyword = "truck", -- Имя объекта грузовика (измени если нужно)
-}
-
---========================================================--
--- HELPERS
---========================================================--
-local function Create(class, props)
-    local o = Instance.new(class)
-    local p = props.Parent
-    for k, v in pairs(props) do if k ~= "Parent" then o[k] = v end end
-    o.Parent = p
-    return o
+if getgenv().CrimHubStop then pcall(getgenv().CrimHubStop) end
+local running = true
+local pg = LP:WaitForChild("PlayerGui")
+for _, name in ipairs({"CrimHubV34","CrimHubV35","CrimHubV36","CrimHubV37","CrimHubV38"}) do
+    if pg:FindFirstChild(name) then pg[name]:Destroy() end
 end
-local function Corner(p, r) return Create("UICorner", { CornerRadius = r or UDim.new(0, 8), Parent = p }) end
-local function Stroke(p, c, th, tr) return Create("UIStroke", { Color = c or C.border, Thickness = th or 1, Transparency = tr or 0.3, Parent = p }) end
-local function Play(o, i, pr) TweenService:Create(o, i, pr):Play() end
+for _, v in ipairs(Workspace:GetDescendants()) do
+    if v.Name == "CrimESP" or v.Name == "CrimMark" then v:Destroy() end
+end
 
-local function guiParent()
-    if gethui then local ok,h = pcall(gethui) if ok and h then return h end end
-    if CoreGui then return CoreGui end
-    return PlayerGui
+local sg = Instance.new("ScreenGui")
+sg.Name = "CrimHubV38"
+sg.ResetOnSpawn = false
+sg.Parent = pg
+
+-- ========================================================
+--  ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+-- ========================================================
+local function getRoot(model)
+    return model and (model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("UpperTorso") or model:FindFirstChild("Torso"))
 end
 
 local function isPlayerCharacter(model)
@@ -86,40 +123,17 @@ local function isPlayerCharacter(model)
     return false
 end
 
-local function getRoot(model)
-    return model and (model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("UpperTorso") or model:FindFirstChild("Torso"))
-end
-
-local function getNPCsInRange(range)
-    local char = LP.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    if not root then return {} end
-    local list = {}
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and not isPlayerCharacter(obj) then
-            local npcRoot = getRoot(obj)
-            if npcRoot and (npcRoot.Position - root.Position).Magnitude <= range then
-                table.insert(list, obj)
-            end
-        end
-    end
-    return list
-end
-
 local function findNearestNPC(range)
     local char = LP.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     if not root then return nil end
     local best, bestD = nil, math.huge
-    for _, obj in ipairs(workspace:GetDescendants()) do
+    for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and not isPlayerCharacter(obj) then
             local npcRoot = getRoot(obj)
             if npcRoot then
                 local d = (npcRoot.Position - root.Position).Magnitude
-                if d <= range and d < bestD then
-                    bestD = d
-                    best = obj
-                end
+                if d <= range and d < bestD then bestD = d; best = obj end
             end
         end
     end
@@ -127,8 +141,8 @@ local function findNearestNPC(range)
 end
 
 local function findTruck()
-    local keywords = {S.TruckKeyword, "van", "getaway", "car", "vehicle"}
-    for _, obj in ipairs(workspace:GetDescendants()) do
+    local keywords = {"truck", "van", "getaway", "car", "vehicle"}
+    for _, obj in ipairs(Workspace:GetDescendants()) do
         if (obj:IsA("Model") or obj:IsA("BasePart")) then
             local n = string.lower(obj.Name)
             for _, kw in ipairs(keywords) do
@@ -139,147 +153,19 @@ local function findTruck()
     return nil
 end
 
---========================================================--
--- NO CLIP
---========================================================--
-local noclipConnection = nil
-local function applyNoClip(state)
-    if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
-    if not state then
-        local char = LP.Character
-        if char then
-            for _, d in ipairs(char:GetDescendants()) do
-                if d:IsA("BasePart") then pcall(function() d.CanCollide = true end) end
-            end
-        end
-        return
-    end
-    noclipConnection = RunService.Stepped:Connect(function()
-        local char = LP.Character
-        if char then
-            for _, d in ipairs(char:GetDescendants()) do
-                if d:IsA("BasePart") and d.CanCollide then pcall(function() d.CanCollide = false end) end
-            end
-        end
-    end)
-end
-
---========================================================--
--- SPEED
---========================================================--
-local speedConnection = nil
-local function applySpeedBoost(state, value)
-    if speedConnection then speedConnection:Disconnect() speedConnection = nil end
-    if not state then return end
-    speedConnection = RunService.Stepped:Connect(function()
-        local char = LP.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if hum and hum.WalkSpeed ~= value then
-            hum.WalkSpeed = value
-        end
-    end)
-end
-
---========================================================--
--- ANTI-AFK
---========================================================--
-bind(LP.Idled:Connect(function()
-    if S.AntiAFK then
-        VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new())
-    end
-end))
-
---========================================================--
--- MONEY
---========================================================--
-local moneyValue = nil
-local moneyConn = nil
-
-local function getMoneyValue()
-    local leaderstats = LP:FindFirstChild("leaderstats")
-    if not leaderstats then return nil end
-    local names = {"Money", "Cash", "Деньги", "Coins", "Balance"}
-    for _, name in ipairs(names) do
-        local val = leaderstats:FindFirstChild(name)
-        if val and (val:IsA("IntValue") or val:IsA("NumberValue") or val:IsA("StringValue")) then
-            return val
-        end
-    end
-    return nil
-end
-
-local function bindMoney()
-    if moneyConn then moneyConn:Disconnect() moneyConn = nil end
-    moneyValue = getMoneyValue()
-    if moneyValue then
-        MoneyLabel.Text = "💰 " .. tostring(moneyValue.Value)
-        moneyConn = moneyValue:GetPropertyChangedSignal("Value"):Connect(function()
-            MoneyLabel.Text = "💰 " .. tostring(moneyValue.Value)
-        end)
-    else
-        MoneyLabel.Text = "💰 (нет leaderstats)"
-    end
-end
-
---========================================================--
--- ESP NPC
---========================================================--
-local espFolder = Create("Folder", { Name = "CS_ESP", Parent = guiParent() })
-local npcHighlights = {}
-
-local function clearNPCESP()
-    for _, hl in pairs(npcHighlights) do
-        pcall(function() hl:Destroy() end)
-    end
-    npcHighlights = {}
-end
-
-local function updateNPCESP()
-    clearNPCESP()
-    if not S.ESPNPC then return end
-    local npcs = getNPCsInRange(500)
-    for _, npc in ipairs(npcs) do
-        local hl = Create("Highlight", {
-            Adornee = npc,
-            FillColor = Color3.fromRGB(255, 60, 60),
-            FillTransparency = 0.5,
-            OutlineColor = Color3.fromRGB(255, 255, 255),
-            OutlineTransparency = 0.1,
-            DepthMode = Enum.HighlightDepthMode.AlwaysOnTop,
-            Parent = espFolder,
-        })
-        table.insert(npcHighlights, hl)
-    end
-end
-
---========================================================--
--- BEAT & SLEEP LOGIC
---========================================================--
-local sleepingNPCs = {}
-local activeBeating = false
-
 local function createHitEffect(position)
-    local part = Create("Part", {
-        Size = Vector3.new(1, 1, 1),
-        CFrame = CFrame.new(position),
-        Anchored = true,
-        CanCollide = false,
-        Transparency = 0,
-        Color = Color3.fromRGB(255, 50, 50),
-        Material = Enum.Material.Neon,
-        Parent = workspace,
-    })
-    Create("PointLight", {
-        Color = Color3.fromRGB(255, 50, 50),
-        Range = 6,
-        Brightness = 3,
-        Parent = part,
-    })
-    TweenService:Create(part, TweenInfo.new(0.4), {
-        Size = Vector3.new(3, 3, 3),
-        Transparency = 1,
-    }):Play()
+    local part = Instance.new("Part")
+    part.Size = Vector3.new(1, 1, 1)
+    part.CFrame = CFrame.new(position)
+    part.Anchored = true
+    part.CanCollide = false
+    part.Color = Color3.fromRGB(255, 50, 50)
+    part.Material = Enum.Material.Neon
+    part.Parent = Workspace
+    local light = Instance.new("PointLight", part)
+    light.Color = Color3.fromRGB(255, 50, 50)
+    light.Range = 6
+    TweenService:Create(part, TweenInfo.new(0.4), {Size = Vector3.new(3, 3, 3), Transparency = 1}):Play()
     task.delay(0.5, function() pcall(function() part:Destroy() end) end)
 end
 
@@ -287,32 +173,18 @@ local function putToSleep(npc)
     if sleepingNPCs[npc] then return end
     local hum = npc:FindFirstChildOfClass("Humanoid")
     if not hum then return end
-
-    sleepingNPCs[npc] = {
-        WalkSpeed = hum.WalkSpeed,
-        JumpPower = hum.JumpPower,
-    }
-
-    hum.WalkSpeed = 0
-    hum.JumpPower = 0
-    hum.PlatformStand = true
-
-    for _, track in ipairs(hum:GetPlayingAnimationTracks()) do
-        track:Stop()
-    end
+    sleepingNPCs[npc] = { WalkSpeed = hum.WalkSpeed, JumpPower = hum.JumpPower }
+    hum.WalkSpeed = 0; hum.JumpPower = 0; hum.PlatformStand = true
+    for _, track in ipairs(hum:GetPlayingAnimationTracks()) do track:Stop() end
     for _, part in ipairs(npc:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.Transparency = math.min(part.Transparency + 0.5, 0.9)
-        end
+        if part:IsA("BasePart") then part.Transparency = math.min(part.Transparency + 0.5, 0.9) end
     end
-
     pcall(function()
         local animator = hum:FindFirstChildOfClass("Animator")
         if animator then
             local anim = Instance.new("Animation")
-            anim.AnimationId = "rbxassetid://180436148" -- fall
-            local track = animator:LoadAnimation(anim)
-            track:Play()
+            anim.AnimationId = "rbxassetid://180436148" -- Fall
+            animator:LoadAnimation(anim):Play()
         end
     end)
 end
@@ -321,596 +193,538 @@ local function wakeNPC(npc)
     local saved = sleepingNPCs[npc]
     if not saved then return end
     local hum = npc:FindFirstChildOfClass("Humanoid")
-    if hum then
-        hum.WalkSpeed = saved.WalkSpeed
-        hum.JumpPower = saved.JumpPower
-        hum.PlatformStand = false
-    end
+    if hum then hum.WalkSpeed = saved.WalkSpeed; hum.JumpPower = saved.JumpPower; hum.PlatformStand = false end
     for _, part in ipairs(npc:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.Transparency = math.max(part.Transparency - 0.5, 0)
-        end
+        if part:IsA("BasePart") then part.Transparency = math.max(part.Transparency - 0.5, 0) end
     end
     sleepingNPCs[npc] = nil
 end
 
--- Асинхронный процесс избиения
 local function beatNPCSequence(npc)
-    if activeBeating then return end
-    activeBeating = true
-
+    if isBeating or not npc then return end
+    isBeating = true
     local char = LP.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     local npcRoot = getRoot(npc)
-    
-    if not hrp or not hum or not npcRoot then 
-        activeBeating = false
-        return 
-    end
+    if not hrp or not hum or not npcRoot then isBeating = false; return end
 
     -- ТП к NPC
-    pcall(function()
-        hrp.CFrame = CFrame.new(npcRoot.Position + Vector3.new(0, 1, -2))
-    end)
-    task.wait(0.3) -- Ждем прогрузки
+    pcall(function() hrp.CFrame = CFrame.new(npcRoot.Position + Vector3.new(0, 1, -2)) end)
+    task.wait(0.3)
 
     -- 5 Ударов
     for i = 1, 5 do
         if not npc.Parent then break end
-        local pos = npcRoot.Position + Vector3.new(math.random(-1,1), 1, math.random(-1,1))
-        createHitEffect(pos)
-        
+        createHitEffect(npcRoot.Position + Vector3.new(math.random(-1,1), 1, math.random(-1,1)))
         pcall(function()
             local animator = hum:FindFirstChildOfClass("Animator")
             if animator then
                 local anim = Instance.new("Animation")
-                anim.AnimationId = "rbxassetid://129967390" -- punch
-                local track = animator:LoadAnimation(anim)
-                track:Play()
+                anim.AnimationId = "rbxassetid://129967390" -- Punch
+                animator:LoadAnimation(anim):Play()
             end
         end)
-        
-        task.wait(0.2) -- Интервал между ударами
+        task.wait(0.2)
     end
 
-    -- Усыпляем
     putToSleep(npc)
-    
-    -- Ждем, пока NPC спит
-    task.wait(S.SleepDuration)
-    
-    -- Будим
-    if sleepingNPCs[npc] then
-        wakeNPC(npc)
-    end
-
-    activeBeating = false
+    task.wait(SleepDuration)
+    if sleepingNPCs[npc] then wakeNPC(npc) end
+    isBeating = false
 end
 
--- Цикл авто-избиения
-local autoBeatTask = nil
-local function startAutoBeat()
-    if autoBeatTask then return end
-    autoBeatTask = task.spawn(function()
-        while GUI and GUI.Parent and S.AutoBeat do
-            if not activeBeating then
-                local npc = findNearestNPC(S.BeatRange)
-                if npc then
-                    beatNPCSequence(npc)
+-- ========================================================
+--  ESP ЛОГИКА
+-- ========================================================
+local function addHL(obj, kind)
+    local hl = obj:FindFirstChild("CrimESP")
+    if not hl then
+        hl = Instance.new("Highlight"); hl.Name = "CrimESP"; hl.Adornee = obj
+        hl.FillTransparency = 0.5; hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop; hl.Parent = obj
+    end
+    hl.FillColor = COLORS[kind]; hl.OutlineColor = COLORS[kind]
+    active[obj] = { hl = hl, kind = kind }
+end
+
+local function removeKind(kind)
+    for obj, rec in pairs(active) do
+        if rec.kind == kind then if rec.hl then rec.hl:Destroy() end; active[obj] = nil end
+    end
+end
+
+local function inCharacter(obj)
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Character and obj:IsDescendantOf(p.Character) then return true end
+    end
+    return false
+end
+
+local function hasMark(obj)
+    if lootMarks[obj] then return true end
+    local parent = obj.Parent
+    while parent and parent ~= Workspace do
+        if lootMarks[parent] then return true end
+        if (parent:IsA("Model") or parent:IsA("BasePart")) and LOOT_NAMES[parent.Name] then return true end
+        parent = parent.Parent
+    end
+    return false
+end
+
+local function markLoot(obj, isSafe)
+    if not obj.Parent or inCharacter(obj) or hasMark(obj) then return end
+    local color = isSafe and COLORS.Safe or COLORS.Loot
+    local hl = obj:FindFirstChild("CrimESP")
+    if not hl then
+        hl = Instance.new("Highlight"); hl.Name = "CrimESP"; hl.Adornee = obj
+        hl.FillTransparency = 0.4; hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop; hl.Parent = obj
+    end
+    hl.OutlineColor = color; hl.FillColor = color
+    local part = obj:IsA("BasePart") and obj or obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart", true)
+    local bb
+    if part then
+        bb = Instance.new("BillboardGui"); bb.Name = "CrimMark"; bb.Adornee = part
+        bb.AlwaysOnTop = true; bb.Size = UDim2.new(0, 100, 0, 20); bb.StudsOffset = Vector3.new(0, 2, 0); bb.Parent = sg
+        local t = Instance.new("TextLabel"); t.Size = UDim2.new(1, 0, 1, 0); t.BackgroundTransparency = 1
+        t.Font = Enum.Font.GothamBold; t.TextSize = 12; t.TextColor3 = color; t.TextStrokeTransparency = 0.5
+        t.Text = "◆ " .. obj.Name; t.Parent = bb
+    end
+    lootMarks[obj] = {hl = hl, bb = bb}
+end
+
+local function isLoot(d)
+    if not (d:IsA("Model") or d:IsA("BasePart")) then return false, false end
+    local name = d.Name
+    if name == "SafeDialing" or name:find("Safe") then return true, true end
+    if LOOT_NAMES[name] then return true, false end
+    return false, false
+end
+
+local function scanLoot()
+    for _, d in ipairs(Workspace:GetDescendants()) do
+        local isL, isSafe = isLoot(d)
+        if isL then markLoot(d, isSafe) end
+    end
+end
+
+local lootConn = nil
+local function setLoot(on)
+    if lootConn then lootConn:Disconnect(); lootConn = nil end
+    if on then
+        scanLoot()
+        lootConn = Workspace.DescendantAdded:Connect(function(d)
+            if enabled.Loot then
+                local isL, isSafe = isLoot(d)
+                if isL then task.delay(0.2, function() markLoot(d, isSafe) end) end
+            end
+        end)
+    else
+        for obj, rec in pairs(lootMarks) do
+            if rec.hl then rec.hl:Destroy() end; if rec.bb then rec.bb:Destroy() end; lootMarks[obj] = nil
+        end
+    end
+end
+
+local function clearAll()
+    for obj, rec in pairs(active) do if rec.hl then rec.hl:Destroy() end; active[obj] = nil end
+    for _, v in ipairs(Workspace:GetDescendants()) do if v.Name == "CrimESP" then v:Destroy() end end
+    setLoot(false)
+end
+
+getgenv().CrimHubStop = function() running = false; pcall(clearAll) end
+
+task.spawn(function()
+    while running and task.wait(0.5) do
+        pcall(function()
+            for obj, rec in pairs(lootMarks) do
+                if not obj:IsDescendantOf(Workspace) or inCharacter(obj) then
+                    if rec.hl then rec.hl:Destroy() end; if rec.bb then rec.bb:Destroy() end; lootMarks[obj] = nil
                 end
             end
-            task.wait(0.5)
-        end
-    end)
-end
-
---========================================================--
--- GUI
---========================================================--
-local PARENT = guiParent()
-local old = PARENT:FindFirstChild("CS_v5")
-if old then old:Destroy() end
-
-local GUI = Create("ScreenGui", {
-    Name = "CS_v5", ResetOnSpawn = false, IgnoreGuiInset = true,
-    DisplayOrder = 2147483647, ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-    Parent = PARENT
-})
-bind(GUI.Destroying:Connect(disconnectAll))
-
-local Icon = Create("TextButton", {
-    Size = UDim2.fromOffset(48, 48),
-    Position = UDim2.new(0, 14, 0.5, -24),
-    BackgroundColor3 = C.bg,
-    Text = "CS",
-    TextColor3 = C.accent2,
-    TextSize = 14,
-    Font = Enum.Font.GothamBlack,
-    AutoButtonColor = false,
-    ZIndex = 100,
-    Parent = GUI
-})
-Corner(Icon, UDim.new(1, 0))
-Stroke(Icon, C.accent, 2, 0.2)
-
-local Window = Create("Frame", {
-    Name = "Window",
-    AnchorPoint = Vector2.new(0.5, 0.5),
-    Size = UDim2.fromOffset(300, 450),
-    Position = UDim2.new(0.5, 0, 0.5, 0),
-    BackgroundColor3 = C.bg,
-    Visible = false,
-    ClipsDescendants = true,
-    ZIndex = 10,
-    Parent = GUI
-})
-Corner(Window, UDim.new(0, 12))
-Stroke(Window, C.accent, 1.5, 0.2)
-local WindowScale = Create("UIScale", { Scale = 1, Parent = Window })
-
-local Header = Create("Frame", {
-    Size = UDim2.new(1, 0, 0, 40),
-    BackgroundColor3 = C.panel,
-    BorderSizePixel = 0,
-    ZIndex = 11,
-    Parent = Window
-})
-Corner(Header, UDim.new(0, 12))
-Create("Frame", {
-    Size = UDim2.new(1, 0, 0, 2),
-    BackgroundColor3 = C.accent,
-    BorderSizePixel = 0,
-    ZIndex = 12,
-    Parent = Header
-})
-
-Create("TextLabel", {
-    Size = UDim2.new(1, -100, 1, 0),
-    Position = UDim2.fromOffset(12, 0),
-    BackgroundTransparency = 1,
-    Text = "Criminal Sim v5",
-    TextColor3 = C.text,
-    TextSize = 12,
-    Font = Enum.Font.GothamBold,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    ZIndex = 13,
-    Parent = Header
-})
-
-local CloseBtn = Create("TextButton", {
-    Size = UDim2.fromOffset(24, 24),
-    Position = UDim2.new(1, -30, 0, 8),
-    BackgroundColor3 = C.card,
-    Text = "X",
-    TextColor3 = C.text,
-    TextSize = 12,
-    Font = Enum.Font.GothamBold,
-    AutoButtonColor = false,
-    ZIndex = 14,
-    Parent = Header
-})
-Corner(CloseBtn, UDim.new(0, 6))
-Stroke(CloseBtn, C.border, 1, 0.3)
-
-local MoneyLabel = Create("TextLabel", {
-    Size = UDim2.new(1, -24, 0, 20),
-    Position = UDim2.fromOffset(12, 42),
-    BackgroundTransparency = 1,
-    Text = "💰 загрузка...",
-    TextColor3 = C.yellow,
-    TextSize = 12,
-    Font = Enum.Font.GothamBold,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    ZIndex = 13,
-    Parent = Window
-})
-
-local Content = Create("ScrollingFrame", {
-    Size = UDim2.new(1, 0, 1, -70),
-    Position = UDim2.fromOffset(0, 66),
-    BackgroundColor3 = C.bg2,
-    BorderSizePixel = 0,
-    ScrollBarThickness = 3,
-    ScrollBarImageColor3 = C.accent,
-    AutomaticCanvasSize = Enum.AutomaticSize.Y,
-    CanvasSize = UDim2.new(),
-    ZIndex = 11,
-    Parent = Window
-})
-Create("UIPadding", {
-    PaddingTop = UDim.new(0, 8),
-    PaddingLeft = UDim.new(0, 8),
-    PaddingRight = UDim.new(0, 8),
-    PaddingBottom = UDim.new(0, 8),
-    Parent = Content
-})
-Create("UIListLayout", {
-    Padding = UDim.new(0, 6),
-    SortOrder = Enum.SortOrder.LayoutOrder,
-    Parent = Content
-})
-
-local function SectionTitle(txt)
-    return Create("TextLabel", {
-        Size = UDim2.new(1, 0, 0, 18),
-        BackgroundTransparency = 1,
-        Text = txt,
-        TextColor3 = C.accent2,
-        TextSize = 10,
-        Font = Enum.Font.GothamBold,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Parent = Content
-    })
-end
-
-local function InfoCard(txt)
-    local f = Create("TextLabel", {
-        Size = UDim2.new(1, 0, 0, 45),
-        BackgroundColor3 = C.bg,
-        BorderSizePixel = 0,
-        Text = "   " .. txt,
-        TextWrapped = true,
-        TextColor3 = C.muted,
-        TextSize = 9,
-        Font = Enum.Font.Gotham,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextYAlignment = Enum.TextYAlignment.Center,
-        Parent = Content
-    })
-    Corner(f, UDim.new(0, 6))
-    return f
-end
-
-local function ToggleRow(txt, initial, cb)
-    local state = { v = initial }
-    local b = Create("TextButton", {
-        Size = UDim2.new(1, 0, 0, 30),
-        BackgroundColor3 = C.card,
-        Text = "",
-        AutoButtonColor = false,
-        Parent = Content
-    })
-    Corner(b, UDim.new(0, 7))
-    Stroke(b, C.border, 1, 0.3)
-
-    Create("TextLabel", {
-        Size = UDim2.new(1, -54, 1, 0),
-        Position = UDim2.fromOffset(10, 0),
-        BackgroundTransparency = 1,
-        Text = txt,
-        TextColor3 = C.text,
-        TextSize = 11,
-        Font = Enum.Font.GothamMedium,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Parent = b
-    })
-
-    local sw = Create("Frame", {
-        Size = UDim2.fromOffset(34, 18),
-        Position = UDim2.new(1, -44, 0.5, -9),
-        BackgroundColor3 = state.v and C.accent or Color3.fromRGB(45, 45, 60),
-        BorderSizePixel = 0,
-        Parent = b
-    })
-    Corner(sw, UDim.new(1, 0))
-
-    local dot = Create("Frame", {
-        Size = UDim2.fromOffset(12, 12),
-        Position = state.v and UDim2.fromOffset(20, 3) or UDim2.fromOffset(3, 3),
-        BackgroundColor3 = Color3.fromRGB(240, 240, 250),
-        BorderSizePixel = 0,
-        ZIndex = 2,
-        Parent = sw
-    })
-    Corner(dot, UDim.new(1, 0))
-
-    local function apply(instant)
-        local col = state.v and C.accent or Color3.fromRGB(45, 45, 60)
-        local pos = state.v and UDim2.fromOffset(20, 3) or UDim2.fromOffset(3, 3)
-        if instant then
-            sw.BackgroundColor3 = col
-            dot.Position = pos
-        else
-            Play(sw, TweenInfo.new(0.18), { BackgroundColor3 = col })
-            Play(dot, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Position = pos })
-        end
+            for kind, fname in pairs(FOLDERS) do
+                if enabled[kind] then
+                    local f = Workspace:FindFirstChild(fname)
+                    if f then
+                        for _, npc in ipairs(f:GetChildren()) do
+                            if npc:IsA("Model") and npc:FindFirstChild("Humanoid") then addHL(npc, kind) end
+                        end
+                    end
+                end
+            end
+        end)
     end
-    apply(true)
+end)
 
-    b.MouseButton1Click:Connect(function()
-        state.v = not state.v
-        apply(false)
-        if cb then pcall(cb, state.v) end
-    end)
-    return b
+-- ========================================================
+--  ДВИЖЕНИЕ
+-- ========================================================
+local flyConnection = nil
+local flyBodyVel = nil
+local flyBodyGyro = nil
+local noclipConnection = nil
+
+local function toggleFly(on)
+    local char = LP.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if not hrp or not hum then return end
+
+    if on then
+        hum.PlatformStand = true
+        if not flyBodyVel then
+            flyBodyVel = Instance.new("BodyVelocity", hrp)
+            flyBodyVel.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+            flyBodyVel.Velocity = Vector3.zero
+        end
+        if not flyBodyGyro then
+            flyBodyGyro = Instance.new("BodyGyro", hrp)
+            flyBodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+            flyBodyGyro.P = 1e4
+            flyBodyGyro.CFrame = hrp.CFrame
+        end
+        if flyConnection then flyConnection:Disconnect() end
+        flyConnection = RunService.RenderStepped:Connect(function()
+            if not enabled.Fly or not hrp.Parent then return end
+            local camCF = Camera.CFrame
+            local dir = Vector3.zero
+            if UIS:IsKeyDown(Enum.KeyCode.W) then dir = dir + camCF.LookVector end
+            if UIS:IsKeyDown(Enum.KeyCode.S) then dir = dir - camCF.LookVector end
+            if UIS:IsKeyDown(Enum.KeyCode.D) then dir = dir + camCF.RightVector end
+            if UIS:IsKeyDown(Enum.KeyCode.A) then dir = dir - camCF.RightVector end
+            if UIS:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0, 1, 0) end
+            if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then dir = dir - Vector3.new(0, 1, 0) end
+            flyBodyVel.Velocity = dir * 50
+            flyBodyGyro.CFrame = camCF
+        end)
+    else
+        if flyConnection then flyConnection:Disconnect(); flyConnection = nil end
+        if flyBodyVel then flyBodyVel:Destroy(); flyBodyVel = nil end
+        if flyBodyGyro then flyBodyGyro:Destroy(); flyBodyGyro = nil end
+        if hum then hum.PlatformStand = false end
+    end
 end
 
-local function SliderRow(txt, initial, min, max, cb)
-    local frame = Create("Frame", {
-        Size = UDim2.new(1, 0, 0, 44),
-        BackgroundColor3 = C.card,
-        BorderSizePixel = 0,
-        Parent = Content
-    })
-    Corner(frame, UDim.new(0, 7))
-    Stroke(frame, C.border, 1, 0.3)
-
-    Create("TextLabel", {
-        Size = UDim2.new(0.65, -10, 0, 16),
-        Position = UDim2.fromOffset(10, 4),
-        BackgroundTransparency = 1,
-        Text = txt,
-        TextColor3 = C.text,
-        TextSize = 11,
-        Font = Enum.Font.GothamMedium,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Parent = frame
-    })
-
-    local valueLabel = Create("TextLabel", {
-        Size = UDim2.new(0.35, -10, 0, 16),
-        Position = UDim2.new(0.65, 0, 0, 4),
-        BackgroundTransparency = 1,
-        Text = tostring(math.floor(initial)),
-        TextColor3 = C.accent2,
-        TextSize = 10,
-        Font = Enum.Font.GothamBold,
-        TextXAlignment = Enum.TextXAlignment.Right,
-        Parent = frame
-    })
-
-    local track = Create("Frame", {
-        Size = UDim2.new(1, -20, 0, 6),
-        Position = UDim2.new(0, 10, 0, 28),
-        BackgroundColor3 = Color3.fromRGB(40, 40, 55),
-        BorderSizePixel = 0,
-        Parent = frame
-    })
-    Corner(track, UDim.new(1, 0))
-
-    local fill = Create("Frame", {
-        Size = UDim2.new(0, 0, 1, 0),
-        BackgroundColor3 = C.accent,
-        BorderSizePixel = 0,
-        Parent = track
-    })
-    Corner(fill, UDim.new(1, 0))
-
-    local knob = Create("Frame", {
-        Size = UDim2.fromOffset(14, 14),
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.new(0, 0, 0.5, 0),
-        BackgroundColor3 = Color3.fromRGB(240, 244, 255),
-        BorderSizePixel = 0,
-        ZIndex = 2,
-        Parent = track
-    })
-    Corner(knob, UDim.new(1, 0))
-    Stroke(knob, C.accent, 2, 0)
-
-    local hitbox = Create("TextButton", {
-        Size = UDim2.new(1, 0, 0, 30),
-        Position = UDim2.new(0, 0, 0, -12),
-        BackgroundTransparency = 1,
-        Text = "",
-        AutoButtonColor = false,
-        Parent = track
-    })
-
-    local value = math.clamp(initial, min, max)
-    local dragging = false
-
-    local function updateVisual(animate)
-        local ratio = (value - min) / math.max(max - min, 1)
-        if animate then
-            Play(fill, TweenInfo.new(0.1), { Size = UDim2.new(ratio, 0, 1, 0) })
-            Play(knob, TweenInfo.new(0.1), { Position = UDim2.new(ratio, 0, 0.5, 0) })
-        else
-            fill.Size = UDim2.new(ratio, 0, 1, 0)
-            knob.Position = UDim2.new(ratio, 0, 0.5, 0)
-        end
-        valueLabel.Text = tostring(math.floor(value))
-    end
-
-    local function setFromX(x)
-        local trackAbs = track.AbsolutePosition
-        local trackSize = track.AbsoluteSize.X
-        if trackSize <= 0 then return end
-        local rel = math.clamp((x - trackAbs.X) / trackSize, 0, 1)
-        value = min + rel * (max - min)
-        updateVisual(false)
-        if cb then pcall(cb, value) end
-    end
-
-    hitbox.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(20, 20) })
-            setFromX(input.Position.X)
-        end
-    end)
-    bind(UIS.InputChanged:Connect(function(input)
-        if not dragging then return end
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            setFromX(input.Position.X)
-        end
-    end))
-    bind(UIS.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            if dragging then
-                dragging = false
-                Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(14, 14) })
+local function toggleNoclip(on)
+    if on then
+        if noclipConnection then noclipConnection:Disconnect() end
+        noclipConnection = RunService.Stepped:Connect(function()
+            if not enabled.NoClip then return end
+            local char = LP.Character
+            if char then
+                for _, part in ipairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CanCollide = false end
+                end
+            end
+        end)
+    else
+        if noclipConnection then noclipConnection:Disconnect(); noclipConnection = nil end
+        local char = LP.Character
+        if char then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then part.CanCollide = true end
             end
         end
-    end))
-    updateVisual(true)
-    return frame
+    end
 end
 
-local function ActionRow(txt, cb)
-    local b = Create("TextButton", {
-        Size = UDim2.new(1, 0, 0, 30),
-        BackgroundColor3 = C.card,
-        Text = "",
-        AutoButtonColor = false,
-        Parent = Content
-    })
-    Corner(b, UDim.new(0, 7))
-    Stroke(b, C.border, 1, 0.3)
+-- ========================================================
+--  GUI ИНТЕРФЕЙС
+-- ========================================================
+local ThemeElements = {}
+local function RegisterTheme(obj, prop)
+    table.insert(ThemeElements, {obj = obj, prop = prop})
+    obj[prop] = CurrentAccent
+end
 
-    Create("TextLabel", {
-        Size = UDim2.new(1, -30, 1, 0),
-        Position = UDim2.fromOffset(10, 0),
-        BackgroundTransparency = 1,
-        Text = txt,
-        TextColor3 = C.text,
-        TextSize = 11,
-        Font = Enum.Font.GothamMedium,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Parent = b
-    })
-    Create("TextLabel", {
-        Size = UDim2.fromOffset(16, 30),
-        Position = UDim2.new(1, -24, 0, 0),
-        BackgroundTransparency = 1,
-        Text = ">",
-        TextColor3 = C.accent,
-        TextSize = 13,
-        Font = Enum.Font.GothamBold,
-        Parent = b
-    })
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 240, 0, 0)
+MainFrame.AutomaticSize = Enum.AutomaticSize.Y
+MainFrame.Position = UDim2.new(0, 30, 0, 100)
+MainFrame.BackgroundColor3 = COLORS.Bg
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Parent = sg
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+local MainStroke = Instance.new("UIStroke", MainFrame)
+MainStroke.Thickness = 1.5
+RegisterTheme(MainStroke, "Color")
 
-    b.MouseEnter:Connect(function() Play(b, TweenInfo.new(0.15), { BackgroundColor3 = C.cardHov }) end)
-    b.MouseLeave:Connect(function() Play(b, TweenInfo.new(0.15), { BackgroundColor3 = C.card }) end)
-    b.MouseButton1Click:Connect(function()
-        Play(b, TweenInfo.new(0.08), { BackgroundColor3 = C.accent })
-        task.delay(0.1, function() Play(b, TweenInfo.new(0.15), { BackgroundColor3 = C.card }) end)
-        pcall(cb)
+local dragging, dragInput, dragStart, startPos
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true; dragStart = input.Position; startPos = MainFrame.Position
+        input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+    end
+end)
+MainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+end)
+UIS.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+local originalSizeY = 0
+task.delay(0.1, function()
+    originalSizeY = MainFrame.AbsoluteSize.Y
+    TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 240, 0, originalSizeY)}):Play()
+end)
+
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1, 0, 0, 45)
+TopBar.BackgroundColor3 = COLORS.Panel
+TopBar.BorderSizePixel = 0
+TopBar.Parent = MainFrame
+Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 10)
+local fixCorner = Instance.new("Frame")
+fixCorner.Size = UDim2.new(1, 0, 0.5, 0); fixCorner.Position = UDim2.new(0, 0, 0.5, 0)
+fixCorner.BackgroundColor3 = COLORS.Panel; fixCorner.BorderSizePixel = 0; fixCorner.Parent = TopBar
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -60, 0.6, 0); Title.Position = UDim2.new(0, 10, 0, 2)
+Title.BackgroundTransparency = 1; Title.Font = Enum.Font.GothamBlack; Title.TextSize = 13
+Title.TextXAlignment = Enum.TextXAlignment.Left; Title.Parent = TopBar
+RegisterTheme(Title, "TextColor3")
+
+local SubTitle = Instance.new("TextLabel")
+SubTitle.Size = UDim2.new(1, -60, 0.4, 0); SubTitle.Position = UDim2.new(0, 10, 0.6, 0)
+SubTitle.BackgroundTransparency = 1; SubTitle.Font = Enum.Font.Gotham; SubTitle.TextSize = 10
+SubTitle.TextColor3 = Color3.fromRGB(150, 150, 160); SubTitle.TextXAlignment = Enum.TextXAlignment.Left; SubTitle.Parent = TopBar
+
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Size = UDim2.new(0, 25, 0, 25); MinimizeBtn.Position = UDim2.new(1, -30, 0, 10)
+MinimizeBtn.BackgroundColor3 = COLORS.Button; MinimizeBtn.Text = "—"
+MinimizeBtn.TextColor3 = Color3.new(1,1,1); MinimizeBtn.Font = Enum.Font.GothamBold; MinimizeBtn.Parent = TopBar
+Instance.new("UICorner", MinimizeBtn).CornerRadius = UDim.new(0, 5)
+
+local isMinimized = false
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1, 0, 0, 0); Content.AutomaticSize = Enum.AutomaticSize.Y
+Content.Position = UDim2.new(0, 0, 0, 45); Content.BackgroundTransparency = 1; Content.Parent = MainFrame
+Instance.new("UICorner", Content).CornerRadius = UDim.new(0, 10)
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder; UIListLayout.Padding = UDim.new(0, 5); UIListLayout.Parent = Content
+
+local UIPadding = Instance.new("UIPadding")
+UIPadding.PaddingTop = UDim.new(0, 10); UIPadding.PaddingBottom = UDim.new(0, 10)
+UIPadding.PaddingLeft = UDim.new(0, 10); UIPadding.PaddingRight = UDim.new(0, 10); UIPadding.Parent = Content
+
+MinimizeBtn.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    if isMinimized then
+        TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 240, 0, 45)}):Play()
+        MinimizeBtn.Text = "+"; Content.Visible = false
+    else
+        TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 240, 0, originalSizeY)}):Play()
+        MinimizeBtn.Text = "—"; Content.Visible = true
+    end
+end)
+
+local buttons = {}
+local labelsList = {}
+local themeBtns = {}
+
+local function makeLabel(text, key)
+    local l = Instance.new("TextLabel")
+    l.Size = UDim2.new(1, 0, 0, 20); l.BackgroundTransparency = 1
+    l.Font = Enum.Font.GothamBold; l.TextSize = 11
+    l.TextColor3 = Color3.fromRGB(120, 120, 130); l.TextXAlignment = Enum.TextXAlignment.Left
+    l.Text = text; l.Parent = Content
+    local p = Instance.new("UIPadding"); p.PaddingTop = UDim.new(0, 5); p.Parent = l
+    if key then table.insert(labelsList, {label = l, key = key}) end
+    return l
+end
+
+local function makeBtn(text, key, onClick)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(1, 0, 0, 28); b.BackgroundColor3 = COLORS.Button
+    b.TextColor3 = Color3.fromRGB(200, 200, 200); b.Font = Enum.Font.GothamBold
+    b.TextSize = 12; b.Text = text; b.TextXAlignment = Enum.TextXAlignment.Left
+    b.Parent = Content
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+    local padding = Instance.new("UIPadding"); padding.PaddingLeft = UDim.new(0, 10); padding.Parent = b
+    b.MouseEnter:Connect(function() TweenService:Create(b, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(60, 60, 75)}):Play() end)
+    b.MouseLeave:Connect(function()
+        if not b:GetAttribute("Active") then TweenService:Create(b, TweenInfo.new(0.15), {BackgroundColor3 = COLORS.Button}):Play() end
     end)
+    b.MouseButton1Click:Connect(function() onClick(b) end)
+    if key then table.insert(labelsList, {label = b, key = key, isBtn = true}) end
     return b
 end
 
--- Fill menu
-SectionTitle("MOVEMENT")
-ToggleRow("Speed Boost", S.SpeedBoost, function(v)
-    S.SpeedBoost = v
-    applySpeedBoost(v, S.SpeedValue)
-end)
-SliderRow("Speed Value", S.SpeedValue, 16, 200, function(v)
-    S.SpeedValue = v
-    if S.SpeedBoost then applySpeedBoost(true, v) end
-end)
-ToggleRow("NoClip", S.NoClip, function(v)
-    S.NoClip = v
-    applyNoClip(v)
-end)
+local function makeToggle(labelBase, kind, onToggle, isFly)
+    local b
+    local thisThemeRef = nil 
+    b = makeBtn("○ " .. labelBase, nil, function()
+        enabled[kind] = not enabled[kind]
+        b:SetAttribute("Active", enabled[kind])
+        local langData = LOCALES[CurrentLang]
+        local translatedText = isFly and langData.Fly or langData.NoClip
+        if kind == "Loot" then translatedText = langData.Loot
+        elseif kind == "Police" then translatedText = langData.Police
+        elseif kind == "Guard" then translatedText = langData.Guard
+        elseif kind == "Civilian" then translatedText = langData.Civilian
+        elseif kind == "AutoBeat" then translatedText = langData.AutoBeat end
 
-SectionTitle("NPC COMBO")
-ToggleRow("Auto-Beat (Цикл)", S.AutoBeat, function(v)
-    S.AutoBeat = v
-    if v then startAutoBeat() end
-end)
-SliderRow("Beat Range", S.BeatRange, 10, 150, function(v) S.BeatRange = v end)
-SliderRow("Sleep Time", S.SleepDuration, 2, 30, function(v) S.SleepDuration = v end)
-ActionRow("Ударить 1 раз", function()
-    local npc = findNearestNPC(S.BeatRange)
-    if npc then beatNPCSequence(npc) end
-end)
+        if enabled[kind] then
+            b.Text = "● " .. translatedText
+            table.insert(ThemeElements, {obj = b, prop = "TextColor3"})
+            thisThemeRef = ThemeElements[#ThemeElements] 
+            b.TextColor3 = CurrentAccent
+            TweenService:Create(b, TweenInfo.new(0.15), {BackgroundColor3 = COLORS.Panel}):Play()
+        else
+            b.Text = "○ " .. translatedText
+            b.TextColor3 = Color3.fromRGB(200, 200, 200)
+            TweenService:Create(b, TweenInfo.new(0.15), {BackgroundColor3 = COLORS.Button}):Play()
+            if thisThemeRef then
+                for i, v in ipairs(ThemeElements) do
+                    if v == thisThemeRef then table.remove(ThemeElements, i); break end
+                end
+                thisThemeRef = nil
+            end
+        end
+        if onToggle then onToggle(enabled[kind]) end
+        if kind == "Loot" then setLoot(enabled[kind]) elseif not enabled[kind] then removeKind(kind) end
+    end)
+    b:SetAttribute("LangKey", kind)
+    buttons[kind] = { btn = b, label = labelBase }
+end
 
-SectionTitle("TELEPORTS")
-ActionRow("ТП к ближайшему NPC", function()
-    local npc = findNearestNPC(S.BeatRange)
-    local npcRoot = npc and getRoot(npc)
-    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-    if npcRoot and hrp then
-        hrp.CFrame = CFrame.new(npcRoot.Position + Vector3.new(0, 1, -3))
+local function UpdateLanguage()
+    local L = LOCALES[CurrentLang]
+    Title.Text = L.Title; SubTitle.Text = L.Sub
+    for _, item in ipairs(labelsList) do if item.key then item.label.Text = L[item.key] end end
+    for _, kind in ipairs({"Loot", "Police", "Guard", "Civilian"}) do
+        local b = buttons[kind].btn
+        local translatedText = L[kind]
+        if b:GetAttribute("Active") then b.Text = "● " .. translatedText else b.Text = "○ " .. translatedText end
+    end
+    for _, kind in ipairs({"Fly", "NoClip", "AutoBeat"}) do
+        if buttons[kind] then
+            local b = buttons[kind].btn
+            local translatedText = L[kind]
+            if b:GetAttribute("Active") then b.Text = "● " .. translatedText else b.Text = "○ " .. translatedText end
+        end
+    end
+    local themeKeys = {"Gold", "Red", "Blue", "Green", "Rainbow"}
+    for i, theme in ipairs(themeBtns) do theme.btn.Text = L[themeKeys[i]] end
+end
+
+-- ========================================================
+--  ЗАПОЛНЕНИЕ МЕНЮ
+-- ========================================================
+makeLabel(LOCALES[CurrentLang].Move, "Move")
+makeToggle("Fly", "Fly", toggleFly, true)
+makeToggle("NoClip", "NoClip", toggleNoClip, false)
+
+makeLabel(LOCALES[CurrentLang].Visual, "Visual")
+makeToggle("Loot ESP", "Loot")
+makeToggle("Police ESP", "Police")
+makeToggle("Guard ESP", "Guard")
+makeToggle("Civilian ESP", "Civilian")
+
+-- НОВЫЙ РАЗДЕЛ: ДЕЙСТВИЯ
+makeLabel(LOCALES[CurrentLang].Actions, "Actions")
+makeToggle("Авто-избиение", "AutoBeat", function(on)
+    if on then
+        task.spawn(function()
+            while enabled.AutoBeat and running do
+                if not isBeating then
+                    local npc = findNearestNPC(BeatRange)
+                    if npc then beatNPCSequence(npc) end
+                end
+                task.wait(0.5)
+            end
+        end)
     end
 end)
-ActionRow("ТП в грузовик", function()
+makeBtn(LOCALES[CurrentLang].TpNpc, "TpNpc", function()
+    local npc = findNearestNPC(BeatRange)
+    local npcRoot = npc and getRoot(npc)
+    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if npcRoot and hrp then hrp.CFrame = CFrame.new(npcRoot.Position + Vector3.new(0, 1, -3)) end
+end)
+makeBtn(LOCALES[CurrentLang].TpTruck, "TpTruck", function()
     local truck = findTruck()
     local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
     local truckPart = truck and (truck:IsA("BasePart") and truck or truck:FindFirstChildWhichIsA("BasePart"))
-    if truckPart and hrp then
-        hrp.CFrame = CFrame.new(truckPart.Position + Vector3.new(0, 3, 0))
-    else
-        print("[CS v5] Грузовик не найден. Проверь имя в настройках.")
-    end
+    if truckPart and hrp then hrp.CFrame = CFrame.new(truckPart.Position + Vector3.new(0, 3, 0)) end
 end)
-InfoCard("Если ТП в грузовик не работает, проверь имя объекта в Workspace (Truck, Van, Getaway).")
 
-SectionTitle("MISC")
-ToggleRow("Anti-AFK", S.AntiAFK, function(v) S.AntiAFK = v end)
-
--- Open/close
-local opened = false
-local function SetOpen(state)
-    opened = state
-    if opened then
-        Window.Visible = true
-        WindowScale.Scale = 0.9
-        Play(WindowScale, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
-    else
-        Play(WindowScale, TweenInfo.new(0.15), { Scale = 0.9 })
-        task.delay(0.15, function() Window.Visible = false end)
+makeLabel(LOCALES[CurrentLang].Settings, "Settings")
+makeBtn(LOCALES[CurrentLang].Clear, "Clear", function()
+    clearAll()
+    for kind, info in pairs(buttons) do
+        enabled[kind] = false
+        info.btn:SetAttribute("Active", false)
+        info.btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+        info.btn.BackgroundColor3 = COLORS.Button
     end
+    for i = #ThemeElements, 1, -1 do
+        if ThemeElements[i].obj:IsA("TextButton") then table.remove(ThemeElements, i) end
+    end
+    UpdateLanguage() 
+end)
+
+makeLabel(LOCALES[CurrentLang].Themes, "Themes")
+local Themes = {
+    {Key = "Gold", Color = Color3.fromRGB(255, 215, 0)},
+    {Key = "Red", Color = Color3.fromRGB(255, 50, 50)},
+    {Key = "Blue", Color = Color3.fromRGB(0, 150, 255)},
+    {Key = "Green", Color = Color3.fromRGB(0, 255, 100)},
+    {Key = "Rainbow", Color = "Rainbow"}
+}
+for i, theme in ipairs(Themes) do
+    local b = makeBtn(LOCALES[CurrentLang][theme.Key], nil, function()
+        if theme.Color == "Rainbow" then IsRainbow = true
+        else
+            IsRainbow = false; CurrentAccent = theme.Color
+            for _, item in ipairs(ThemeElements) do
+                if item.obj and item.obj.Parent then item.obj[item.prop] = CurrentAccent end
+            end
+        end
+    end)
+    table.insert(themeBtns, {btn = b, key = theme.Key})
 end
 
-Icon.MouseButton1Click:Connect(function() SetOpen(not opened) end)
-CloseBtn.MouseButton1Click:Connect(function() SetOpen(false) end)
+makeLabel(LOCALES[CurrentLang].Lang, "Lang")
+local LangFrame = Instance.new("Frame")
+LangFrame.Size = UDim2.new(1, 0, 0, 28); LangFrame.BackgroundTransparency = 1; LangFrame.Parent = Content
 
--- Drag
-local dragging = false
-local dragStart, startPos
-Header.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = Window.Position
-    end
-end)
-bind(UIS.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - dragStart
-        Window.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end))
-bind(UIS.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = false
-    end
-end))
-
---========================================================--
--- INIT
---========================================================--
-applySpeedBoost(S.SpeedBoost, S.SpeedValue)
-applyNoClip(S.NoClip)
-bindMoney()
-
-task.spawn(function()
-    while GUI and GUI.Parent do
-        task.wait(2)
-        if S.ESPNPC then updateNPCESP() end
-        if not moneyValue or not moneyValue.Parent then bindMoney() end
-    end
-end)
-
-bind(LP.CharacterAdded:Connect(function()
-    task.wait(0.5)
-    if S.SpeedBoost then applySpeedBoost(true, S.SpeedValue) end
-    if S.NoClip then applyNoClip(true) end
-    bindMoney()
-end))
-
-_G.__CS_CLEANUP = function()
-    disconnectAll()
-    if noclipConnection then noclipConnection:Disconnect() end
-    if speedConnection then speedConnection:Disconnect() end
-    if moneyConn then moneyConn:Disconnect() end
-    clearNPCESP()
-    pcall(function() GUI:Destroy() end)
-    pcall(function() espFolder:Destroy() end)
+local function makeLangBtn(text, langCode, xPos)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(0.45, 0, 1, 0); b.Position = UDim2.new(xPos, 0, 0, 0)
+    b.BackgroundColor3 = COLORS.Button; b.TextColor3 = Color3.new(1,1,1)
+    b.Font = Enum.Font.GothamBold; b.TextSize = 12; b.Text = text; b.Parent = LangFrame
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+    b.MouseButton1Click:Connect(function() CurrentLang = langCode; UpdateLanguage() end)
+    return b
 end
+makeLangBtn("🇷🇺 RU", "RU", 0)
+makeLangBtn("🇬🇧 EN", "EN", 0.5)
 
-print("[CriminalSim v5] Auto-Beat Loop | TP Truck | Speed | Money | ESP | NoClip")
+UpdateLanguage()
+
+RunService.RenderStepped:Connect(function()
+    if IsRainbow then
+        CurrentAccent = Color3.fromHSV((tick() * 0.2) % 1, 1, 1)
+        for _, item in ipairs(ThemeElements) do
+            if item.obj and item.obj.Parent then item.obj[item.prop] = CurrentAccent end
+        end
+    end
+end)
+
+-- Unlock mouse
+local unlocked = false
+RunService:BindToRenderStep("MouseUnlocker", Enum.RenderPriority.Camera.Value + 1, function()
+    if unlocked then UIS.MouseBehavior = Enum.MouseBehavior.Default end
+end)
+UIS.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.V then unlocked = not unlocked end
+end)
+
+print("🚔 Criminal Hub v38 (RU EXTENDED) loaded")
