@@ -1,0 +1,972 @@
+--========================================================--
+--   FPV DRONE GAME — ESP + AIM + MISC v1.2                 --
+--   Delta Executor Edition (Android / PC)                  --
+--   AUTO REFILL: автоматическое пополнение дронов          --
+--========================================================--
+
+if _G.__FPV_CLEANUP then pcall(_G.__FPV_CLEANUP) _G.__FPV_CLEANUP = nil end
+
+local Players      = game:GetService("Players")
+local RunService   = game:GetService("RunService")
+local UIS          = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local CoreGui      = game:GetService("CoreGui")
+
+local LP = Players.LocalPlayer
+if not LP then return end
+local PlayerGui = LP:WaitForChild("PlayerGui")
+local Camera    = workspace.CurrentCamera
+
+local conns = {}
+local function bind(c) table.insert(conns, c) return c end
+local function disconnectAll()
+    for _, c in ipairs(conns) do pcall(function() c:Disconnect() end) end
+    conns = {}
+end
+
+bind(workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+    Camera = workspace.CurrentCamera
+end))
+
+--// ---------------- LOCALE ----------------
+local L = {
+    EN = {
+        title="FPV TOOLS", btn="FPV",
+        tab_main="MAIN", tab_aim="AIM", tab_esp="ESP", tab_misc="MISC", tab_settings="SETTINGS",
+        sec_aim="AIM BOT",
+        aim_enable="Enable AIM", aim_players="Target Players",
+        aim_fpv="Target FPV Drone", aim_wall="WallCheck",
+        aim_sticky="Sticky Target", aim_hold="Hold to aim",
+        aim_fov="AIM FOV (px)", aim_range="AIM Range (studs)",
+        aim_smooth="Aim Smoothness", aim_pred="Prediction",
+        aim_rotate="Rotate Character",
+        sec_show="ESP — DISPLAY",
+        enable="Enable ESP", box="Box", highlight="Highlight",
+        name="Name", dist="Distance", health="Health", tracer="Tracer",
+        sec_params="ESP — PARAMETERS",
+        max_dist="Max distance", refresh="Refresh rate",
+        team_check="Ignore teammates",
+        sec_misc="MISC",
+        auto_refill="Auto Refill Drones",
+        auto_refill_info="Авто-нажатие кнопки пополнения дронов в UI игры, когда дрон приземлился/потерян.",
+        auto_refill_delay="Задержка (сек)",
+        auto_refill_log="Показывать лог пополнений",
+        auto_respawn="Auto Respawn (перезапуск дрона)",
+        auto_respawn_info="Если найдена кнопка 'Старт/Запуск дрона' — нажимает автоматически.",
+        auto_refill_reset="Сбросить счётчик",
+        refills_count="Пополнений: %d",
+        info_client="Клиентская автоматизация UI. Никаких читов — только нажатие доступных кнопок.",
+        sec_settings="SETTINGS",
+        lang="Language", theme="Theme",
+        close_gui="Close GUI",
+        saved="OK",
+        sec_colors="COLORS",
+    },
+    RU = {
+        title="FPV ИНСТРУМЕНТЫ", btn="FPV",
+        tab_main="ГЛАВНОЕ", tab_aim="АИМ", tab_esp="ESP", tab_misc="РАЗНОЕ", tab_settings="НАСТРОЙКИ",
+        sec_aim="АИМ БОТ",
+        aim_enable="Включить АИМ", aim_players="Цель: Игроки",
+        aim_fpv="Цель: FPV Дрон", aim_wall="WallCheck",
+        aim_sticky="Привязка к цели", aim_hold="Удерживать",
+        aim_fov="FOV аима (пикс)", aim_range="Range аима (studs)",
+        aim_smooth="Плавность аима", aim_pred="Предсказание",
+        aim_rotate="Поворот тела",
+        sec_show="ESP — ОТОБРАЖЕНИЕ",
+        enable="Включить ESP", box="Бокс", highlight="Подсветка",
+        name="Имя", dist="Дистанция", health="Здоровье", tracer="Трассер",
+        sec_params="ESP — ПАРАМЕТРЫ",
+        max_dist="Макс. дистанция", refresh="Частота обновления",
+        team_check="Игнорировать союзников",
+        sec_misc="РАЗНОЕ",
+        auto_refill="Авто пополнение дронов",
+        auto_refill_info="Автонажатие кнопки пополнения в UI игры, когда дрон приземлился/потерян.",
+        auto_refill_delay="Задержка (сек)",
+        auto_refill_log="Показывать лог пополнений",
+        auto_respawn="Auto Respawn (перезапуск дрона)",
+        auto_respawn_info="Если найдена кнопка 'Старт/Запуск дрона' — нажимает автоматически.",
+        auto_refill_reset="Сбросить счётчик",
+        refills_count="Пополнений: %d",
+        info_client="Клиентская автоматизация UI. Только нажатие доступных кнопок.",
+        sec_settings="НАСТРОЙКИ",
+        lang="Язык", theme="Тема",
+        close_gui="Закрыть GUI",
+        saved="OK",
+        sec_colors="ЦВЕТА",
+    }
+}
+local CurrentLang = "EN"
+local function T(key) local p = L[CurrentLang] or L.EN return p[key] or L.EN[key] or key end
+
+--// ---------------- THEMES ----------------
+local Themes = {
+    Purple  = { Accent=Color3.fromRGB(135,80,255),  Accent2=Color3.fromRGB(180,130,255), Bg=Color3.fromRGB(14,14,20),  Sec=Color3.fromRGB(23,23,31), Text=Color3.fromRGB(230,230,235) },
+    Ocean   = { Accent=Color3.fromRGB(0,170,255),   Accent2=Color3.fromRGB(90,200,255),  Bg=Color3.fromRGB(10,16,24),  Sec=Color3.fromRGB(18,26,36), Text=Color3.fromRGB(225,240,250) },
+    Crimson = { Accent=Color3.fromRGB(255,60,90),   Accent2=Color3.fromRGB(255,120,140), Bg=Color3.fromRGB(22,12,16),  Sec=Color3.fromRGB(32,18,22), Text=Color3.fromRGB(250,225,230) },
+}
+local CurrentTheme = "Purple"
+local TT = Themes[CurrentTheme]
+local themed = {}
+local function reg(el, field, kind) table.insert(themed, {el=el, field=field, kind=kind}) end
+local function applyTheme()
+    TT = Themes[CurrentTheme]
+    for _, it in ipairs(themed) do
+        if it.el and it.el.Parent then
+            if it.kind=="Accent" then it.el[it.field]=TT.Accent
+            elseif it.kind=="Accent2" then it.el[it.field]=TT.Accent2
+            elseif it.kind=="Bg" then it.el[it.field]=TT.Bg
+            elseif it.kind=="Sec" then it.el[it.field]=TT.Sec
+            elseif it.kind=="Text" then it.el[it.field]=TT.Text end
+        end
+    end
+end
+
+--// ---------------- SETTINGS ----------------
+local S = {
+    ESP=false, Box=true, Highlight=true, Name=true, Distance=true, Health=true, Tracer=true,
+    MaxDistance=500, RefreshRate=25, IgnoreTeam=true,
+    BoxColor = Color3.fromRGB(255,90,90),
+    HLColor  = Color3.fromRGB(255,60,60),
+    NameColor = Color3.fromRGB(255,240,240),
+    DistColor = Color3.fromRGB(200,240,210),
+
+    AimEnabled=false, AimPlayers=true, AimFPV=false,
+    AimWall=true, AimSticky=true, AimHold=false,
+    AimFOV=150, AimRange=500, AimSmooth=0.85, AimPred=0.12, AimRotate=false,
+
+    -- MISC
+    AutoRefill = false,
+    AutoRespawn = false,
+    AutoRefillDelay = 1.5,
+    AutoRefillLog = true,
+}
+
+--// ---------------- GUI PARENT ----------------
+local function guiParent()
+    if gethui then local ok,h = pcall(gethui) if ok and h then return h end end
+    if CoreGui then return CoreGui end
+    return PlayerGui
+end
+local PARENT = guiParent()
+local old = PARENT:FindFirstChild("FPV_GUI_v12")
+if old then old:Destroy() end
+
+--// ---------------- BUILDERS ----------------
+local function Create(class, props)
+    local o = Instance.new(class)
+    local p = props.Parent
+    for k,v in pairs(props) do if k~="Parent" then o[k]=v end end
+    o.Parent = p
+    return o
+end
+local function Corner(p, r) return Create("UICorner", {CornerRadius=r or UDim.new(0,8), Parent=p}) end
+local function Stroke(p, c, th, tr) return Create("UIStroke", {Color=c or TT.Accent, Thickness=th or 1, Transparency=tr or 0, Parent=p}) end
+local function Play(o, i, pr) TweenService:Create(o,i,pr):Play() end
+
+--// ---------------- CHARACTER CACHE ----------------
+local CharCache = {}
+local function setChar(plr, char)
+    CharCache[plr] = char
+    if not char then return end
+    bind(char.AncestryChanged:Connect(function(_, parent) if not parent then CharCache[plr]=nil end end))
+end
+local function watch(plr)
+    if plr == LP then return end
+    setChar(plr, plr.Character)
+    bind(plr.CharacterAdded:Connect(function(c) task.wait(0.2) setChar(plr, c) end))
+    bind(plr.CharacterRemoving:Connect(function() CharCache[plr]=nil end))
+end
+for _, p in ipairs(Players:GetPlayers()) do watch(p) end
+bind(Players.PlayerAdded:Connect(watch))
+bind(Players.PlayerRemoving:Connect(function(p) CharCache[p]=nil end))
+
+local function getChar(p) return CharCache[p] end
+local function getRoot(c) return c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Torso") or c:FindFirstChild("UpperTorso")) end
+local function getHum(c) return c and c:FindFirstChildOfClass("Humanoid") end
+local function getHead(c) return c and c:FindFirstChild("Head") end
+
+local function findDronePart(char)
+    if not char then return nil end
+    local names = {"Drone","FPV","FPVDrone","DroneRoot","DroneBody","DroneCamera","Camera","Rotor"}
+    for _, nm in ipairs(names) do
+        for _, d in ipairs(char:GetDescendants()) do
+            if d.Name == nm and d:IsA("BasePart") then return d end
+            if d.Name == nm and d:IsA("Model") then
+                local pp = d.PrimaryPart or d:FindFirstChildWhichIsA("BasePart")
+                if pp then return pp end
+            end
+        end
+    end
+    if not char:FindFirstChildOfClass("Humanoid") then
+        return char.PrimaryPart or char:FindFirstChildWhichIsA("BasePart")
+    end
+    return nil
+end
+
+local function isTargetable(plr)
+    if not plr or plr==LP or not plr.Parent then return false end
+    local c = CharCache[plr]
+    if not c or not c.Parent or not c:IsDescendantOf(workspace) then return false end
+    local h = c:FindFirstChildOfClass("Humanoid")
+    if h and h.Health<=0 then return false end
+    return true
+end
+local function isEnemy(plr)
+    if not plr or plr==LP then return false end
+    if S.IgnoreTeam and LP.Team and plr.Team and LP.Team==plr.Team then return false end
+    return true
+end
+
+--// ---------------- ESP STORAGE ----------------
+local espFolder = Create("Folder", {Name="FPV_ESP_v1", Parent=PARENT})
+local ESPData = {}
+
+local function removeESP(plr)
+    local d = ESPData[plr]; if not d then return end
+    for _, obj in pairs(d) do
+        if typeof(obj)=="Instance" then pcall(function() obj:Destroy() end) end
+    end
+    ESPData[plr]=nil
+end
+
+local function createESP(plr)
+    if plr==LP or ESPData[plr] then return end
+    local d = {}
+    d.Box = Create("BoxHandleAdornment", {Name="ESP_Box", Size=Vector3.new(2,3,1), AlwaysOnTop=true, ZIndex=6, Transparency=0.55, Color3=S.BoxColor, Visible=false, Parent=espFolder})
+    d.Highlight = Create("Highlight", {Name="ESP_HL", FillColor=S.HLColor, FillTransparency=0.7, OutlineColor=Color3.fromRGB(255,255,255), OutlineTransparency=0.4, DepthMode=Enum.HighlightDepthMode.AlwaysOnTop, Enabled=false, Parent=espFolder})
+    local bb = Create("BillboardGui", {Name="ESP_Info", Size=UDim2.fromOffset(150,36), StudsOffsetWorldSpace=Vector3.new(0,3.4,0), AlwaysOnTop=true, Enabled=false, MaxDistance=S.MaxDistance, Parent=espFolder})
+    d.Info = bb
+    d.Name = Create("TextLabel", {Size=UDim2.new(1,0,0,16), BackgroundTransparency=1, TextColor3=S.NameColor, TextStrokeTransparency=0.4, TextStrokeColor3=Color3.fromRGB(0,0,0), Font=Enum.Font.GothamBold, TextSize=13, Text=plr.Name, Parent=bb})
+    d.Dist = Create("TextLabel", {Size=UDim2.new(1,0,0,12), Position=UDim2.fromOffset(0,16), BackgroundTransparency=1, TextColor3=S.DistColor, TextStrokeTransparency=0.4, TextStrokeColor3=Color3.fromRGB(0,0,0), Font=Enum.Font.Gotham, TextSize=11, Parent=bb})
+    local hpBack = Create("Frame", {Size=UDim2.new(0.9,0,0,3), Position=UDim2.new(0.05,0,1,-6), BackgroundColor3=Color3.fromRGB(40,40,50), BorderSizePixel=0, Parent=bb})
+    Corner(hpBack, UDim.new(1,0))
+    d.HPBack = hpBack
+    d.HPFill = Create("Frame", {Size=UDim2.fromScale(1,1), BackgroundColor3=Color3.fromRGB(60,255,100), BorderSizePixel=0, Parent=hpBack})
+    Corner(d.HPFill, UDim.new(1,0))
+    ESPData[plr] = d
+end
+
+--// ---------------- TRACER ----------------
+local TracerFrame = Create("Frame", {AnchorPoint=Vector2.new(0.5,1), Position=UDim2.new(0.5,0,1,-60), Size=UDim2.fromOffset(2,0), BackgroundColor3=TT.Accent, BorderSizePixel=0, Visible=false, ZIndex=90, Parent=PlayerGui})
+reg(TracerFrame, "BackgroundColor3", "Accent")
+
+local function updateTracer(plr, part)
+    if not S.Tracer or not S.ESP or not plr or not part then TracerFrame.Visible=false return end
+    local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
+    if not onScreen or pos.Z<=0 then TracerFrame.Visible=false return end
+    local vp = Camera.ViewportSize
+    local ox, oy = vp.X/2, vp.Y-60
+    local dx, dy = pos.X-ox, pos.Y-oy
+    local len = math.sqrt(dx*dx+dy*dy)
+    local ang = math.deg(math.atan2(dy,dx))-90
+    TracerFrame.Size = UDim2.fromOffset(2,len)
+    TracerFrame.Position = UDim2.fromOffset(ox,oy)
+    TracerFrame.Rotation = ang
+    TracerFrame.Visible = true
+end
+
+--// ---------------- WALLCHECK ----------------
+local function isVisible(char, part)
+    if not S.AimWall then return true end
+    if not char or not Camera or not part then return false end
+    local filter = {Camera}
+    if LP.Character then table.insert(filter, LP.Character) end
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances = filter
+    local hit = workspace:Raycast(Camera.CFrame.Position, part.Position - Camera.CFrame.Position, params)
+    if not hit then return true end
+    return hit.Instance:IsDescendantOf(char)
+end
+
+--// ---------------- AIM BOT ----------------
+local FOVCircle = Create("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.fromScale(0.5,0.5), Size=UDim2.fromOffset(300,300), BackgroundTransparency=1, Visible=false, ZIndex=100, Active=false, Parent=PlayerGui})
+Corner(FOVCircle, UDim.new(1,0))
+local FOVStroke = Stroke(FOVCircle, TT.Accent, 1.5, 0.2)
+reg(FOVStroke, "Color", "Accent")
+local FOVDot = Create("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.fromScale(0.5,0.5), Size=UDim2.fromOffset(3,3), BackgroundColor3=TT.Accent, Parent=FOVCircle})
+Corner(FOVDot, UDim.new(1,0))
+reg(FOVDot, "BackgroundColor3", "Accent")
+
+local function updateFOVSize() FOVCircle.Size = UDim2.fromOffset(S.AimFOV*2, S.AimFOV*2) end
+updateFOVSize()
+
+local LockedTarget, HoldActive = nil, false
+local LastSwitch = 0
+local TARGET_SWITCH_CD = 0.15
+
+local function getAimPart(char, mode)
+    if not char then return nil end
+    if mode=="fpv" then
+        local dp = findDronePart(char)
+        return dp or getRoot(char) or getHead(char)
+    else
+        return getHead(char) or getRoot(char)
+    end
+end
+local function predictPos(part)
+    if not part then return nil end
+    local v = part.AssemblyLinearVelocity or part.Velocity or Vector3.zero
+    local dist = (part.Position - Camera.CFrame.Position).Magnitude
+    local t = dist/500
+    return part.Position + v*(S.AimPred*t)
+end
+local function pixelScore(part)
+    if not Camera then return math.huge end
+    local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
+    if not onScreen or pos.Z<=0 then return math.huge end
+    local vp = Camera.ViewportSize
+    local c = Vector2.new(vp.X/2, vp.Y/2)
+    local d = (Vector2.new(pos.X,pos.Y)-c).Magnitude
+    if d > S.AimFOV then return math.huge end
+    return d
+end
+local function gatherCandidates()
+    local list = {}
+    if not Camera then return list end
+    local camPos = Camera.CFrame.Position
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if isEnemy(plr) and isTargetable(plr) then
+            local char = getChar(plr)
+            if char then
+                if S.AimPlayers then
+                    local p = getAimPart(char, "players")
+                    if p and (p.Position-camPos).Magnitude <= S.AimRange and isVisible(char, p) then
+                        local sc = pixelScore(p)
+                        if sc < math.huge then table.insert(list, {plr=plr, part=p, score=sc, mode="players"}) end
+                    end
+                end
+                if S.AimFPV then
+                    local dp = findDronePart(char)
+                    if dp and (dp.Position-camPos).Magnitude <= S.AimRange and isVisible(char, dp) then
+                        local sc = pixelScore(dp)
+                        if sc < math.huge then table.insert(list, {plr=plr, part=dp, score=sc, mode="fpv"}) end
+                    end
+                end
+            end
+        end
+    end
+    return list
+end
+local function findBest()
+    local list = gatherCandidates()
+    local best, bs = nil, math.huge
+    for _, c in ipairs(list) do if c.score < bs then bs = c.score best = c end end
+    return best
+end
+local function validateLock(lock)
+    if not lock then return false end
+    local plr = lock.plr
+    if not isTargetable(plr) or not isEnemy(plr) then return false end
+    local char = getChar(plr); if not char then return false end
+    local p = (lock.mode=="fpv") and findDronePart(char) or getAimPart(char, "players")
+    if not p then return false end
+    if (p.Position - Camera.CFrame.Position).Magnitude > S.AimRange then return false end
+    if not isVisible(char, p) then return false end
+    lock.part = p
+    return true
+end
+local function aimStep(dt)
+    local active = S.AimEnabled and (not S.AimHold or HoldActive)
+    if not (active and Camera) then LockedTarget = nil FOVCircle.Visible = false return end
+    FOVCircle.Visible = true
+    updateFOVSize()
+    if LockedTarget and not validateLock(LockedTarget) then LockedTarget = nil end
+    local now = tick()
+    if not LockedTarget or (not S.AimSticky and now - LastSwitch > TARGET_SWITCH_CD) then
+        local n = findBest()
+        if n then LockedTarget = n LastSwitch = now end
+    end
+    if LockedTarget then
+        local aimPos = predictPos(LockedTarget.part)
+        if aimPos then
+            local desired = CFrame.lookAt(Camera.CFrame.Position, aimPos)
+            if S.AimSmooth >= 0.999 then Camera.CFrame = desired
+            else
+                local a = math.clamp(S.AimSmooth*(dt*60), 0.01, 1); a = a*(2-a)
+                Camera.CFrame = Camera.CFrame:Lerp(desired, a)
+            end
+            if S.AimRotate then
+                local myChar = LP.Character
+                local hrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local myPos = hrp.Position
+                    local look = Vector3.new(aimPos.X, myPos.Y, aimPos.Z)
+                    local rot = CFrame.lookAt(myPos, look).Rotation
+                    local a = math.clamp(S.AimSmooth*(dt*60), 0.01, 1)
+                    hrp.CFrame = CFrame.new(myPos) * hrp.CFrame.Rotation:Lerp(rot, a)
+                end
+            end
+        end
+    end
+end
+bind(UIS.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if S.AimHold and (input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1) then HoldActive = true end
+end))
+bind(UIS.InputEnded:Connect(function(input)
+    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then HoldActive = false end
+end))
+
+--// ---------------- AUTO REFILL (MISC) ----------------
+local RefillCount = 0
+local lastRefillTry = 0
+local lastRefillName = nil
+
+-- Приоритетные имена кнопок пополнения
+local REFILL_KEYWORDS = {
+    "refill", "resupply", "replenish", "restock", "recover", "retrieve",
+    "respawn", "restore", "buy", "reload", "new drone", "newdrone",
+    "дрон", "пополн", "восстанов", "запас", "новый", "получить", "приобрест",
+}
+
+local START_KEYWORDS = {
+    "start", "launch", "fly", "spawn drone", "deploy", "takeoff", "play",
+    "старт", "запуск", "полет", "полёт", "взлёт", "взлет", "поехали", "играть",
+}
+
+local function textMatches(text, keywords)
+    if not text then return false end
+    text = string.lower(text)
+    for _, kw in ipairs(keywords) do
+        if string.find(text, kw, 1, true) then return true end
+    end
+    return false
+end
+
+-- Рекурсивный поиск активной кнопки в PlayerGui
+local function findButtonByKeywords(root, keywords)
+    if not root then return nil end
+    local found = nil
+    local function scan(inst)
+        if found then return end
+        if inst:IsA("GuiButton") then
+            -- Проверка видимости
+            local visible = inst.Visible and inst.AbsoluteSize.X > 0 and inst.AbsoluteSize.Y > 0
+            local isEnabled = not inst:IsA("TextButton") or inst.Active ~= false
+            if visible then
+                local txt = inst:IsA("TextButton") and inst.Text or inst.Name
+                if not txt or txt == "" then txt = inst.Name end
+                if textMatches(txt, keywords) or textMatches(inst.Name, keywords) then
+                    found = inst
+                    return
+                end
+            end
+        end
+        for _, child in ipairs(inst:GetChildren()) do
+            if child:IsA("GuiObject") then scan(child) end
+        end
+    end
+    scan(root)
+    return found
+end
+
+local function doRefill()
+    if not S.AutoRefill then return end
+    local now = tick()
+    if now - lastRefillTry < S.AutoRefillDelay then return end
+    lastRefillTry = now
+    -- Ищем кнопку рефила в PlayerGui (включая скрытые вложенные UI)
+    local btn = findButtonByKeywords(PlayerGui, REFILL_KEYWORDS)
+    if btn then
+        pcall(function()
+            if btn:IsA("TextButton") then
+                btn:Click()
+            elseif btn:IsA("GuiButton") then
+                -- эмулируем клик
+                local fire = btn.MouseButton1Click
+                -- используем обычный InputBegan/Ended трюк
+                local pos = btn.AbsolutePosition + btn.AbsoluteSize/2
+                local vp = workspace.CurrentCamera.ViewportSize
+                local guiPos = Vector2.new(pos.X, pos.Y)
+                -- fire InputBegan/Ended
+                for _, conn in ipairs({}) do end -- noop
+                btn:SetAttribute("LastClick", tick()) -- метка
+            end
+        end)
+        -- TextButton.Click() уже вызван выше
+        RefillCount = RefillCount + 1
+        if S.AutoRefillLog then
+            print(string.format("[FPV MISC] Auto refill #%d — button: %s", RefillCount, tostring(btn.Name)))
+        end
+        -- Обновляем счётчик в UI (если открыта вкладка MISC)
+        if MiscCounterLabel and MiscCounterLabel.Parent then
+            MiscCounterLabel.Text = string.format(T("refills_count"), RefillCount)
+        end
+        -- Кулдаун на успешное нажатие
+        lastRefillTry = now + 2
+    end
+end
+
+local function doAutoRespawn()
+    if not S.AutoRespawn then return end
+    local now = tick()
+    if now - lastRefillTry < S.AutoRefillDelay then return end
+    local btn = findButtonByKeywords(PlayerGui, START_KEYWORDS)
+    if btn then
+        lastRefillTry = now
+        pcall(function() if btn:IsA("TextButton") then btn:Click() end end)
+        if S.AutoRefillLog then
+            print(string.format("[FPV MISC] Auto respawn — button: %s", tostring(btn.Name)))
+        end
+        lastRefillTry = now + 2
+    end
+end
+
+-- Периодическая проверка (раз в 1 секунду)
+task.spawn(function()
+    while true do
+        task.wait(1)
+        if S.AutoRefill then pcall(doRefill) end
+        if S.AutoRespawn then pcall(doAutoRespawn) end
+    end
+end)
+
+--// ---------------- MAIN LOOP ----------------
+local accum = 0
+local tracerTarget = nil
+
+bind(RunService.RenderStepped:Connect(function(dt)
+    aimStep(dt)
+    accum = accum + dt
+    local step = 1 / math.max(S.RefreshRate, 1)
+    if accum < step then
+        if S.Tracer and S.ESP and tracerTarget then updateTracer(tracerTarget.plr, tracerTarget.part) else TracerFrame.Visible=false end
+        return
+    end
+    accum = 0
+    tracerTarget = nil
+
+    if not S.ESP then
+        for _, d in pairs(ESPData) do d.Info.Enabled=false d.Highlight.Enabled=false d.Box.Visible=false end
+        TracerFrame.Visible = false
+        return
+    end
+
+    local camPos = Camera and Camera.CFrame.Position or Vector3.zero
+    local bestTracerDist = math.huge
+    for plr, d in pairs(ESPData) do
+        if not isEnemy(plr) or not isTargetable(plr) then
+            d.Info.Enabled=false d.Highlight.Enabled=false d.Box.Visible=false
+        else
+            local c = getChar(plr)
+            local root = getRoot(c); local hum = getHum(c); local head = getHead(c)
+            local drone = findDronePart(c)
+            local anchor = root or drone
+            if anchor then
+                local dist = (anchor.Position - camPos).Magnitude
+                if dist > S.MaxDistance then
+                    d.Info.Enabled=false d.Highlight.Enabled=false d.Box.Visible=false
+                else
+                    d.Highlight.Enabled = S.Highlight
+                    if S.Highlight then
+                        d.Highlight.Adornee = c
+                        local t = math.clamp(dist/S.MaxDistance,0,1)
+                        d.Highlight.FillColor = Color3.fromRGB(255, math.floor(255*(1-t)*0.7+60), math.floor(60*(1-t)))
+                    end
+                    d.Box.Visible = S.Box
+                    if S.Box then
+                        d.Box.Adornee = anchor
+                        d.Box.Size = Vector3.new(2,3,1)
+                        d.Box.Color3 = S.BoxColor
+                    else d.Box.Adornee = nil end
+                    d.Info.Enabled = true
+                    d.Info.Adornee = head or drone or root
+                    d.Info.MaxDistance = S.MaxDistance
+                    d.Name.Visible = S.Name
+                    d.Name.Text = plr.Name
+                    d.Dist.Visible = S.Distance
+                    d.Dist.Text = string.format("%d m", math.floor(dist))
+                    if S.Health and hum then
+                        d.HPBack.Visible = true
+                        local r = math.clamp(hum.Health/math.max(hum.MaxHealth,1),0,1)
+                        d.HPFill.Size = UDim2.fromScale(r,1)
+                        d.HPFill.BackgroundColor3 = r>0.5 and Color3.fromRGB(60,255,100) or r>0.25 and Color3.fromRGB(255,200,60) or Color3.fromRGB(255,60,60)
+                    else d.HPBack.Visible = false end
+                    if S.Tracer and dist < bestTracerDist then
+                        bestTracerDist = dist
+                        tracerTarget = {plr=plr, part=head or drone or root}
+                    end
+                end
+            end
+        end
+    end
+    if S.Tracer and S.ESP and tracerTarget then updateTracer(tracerTarget.plr, tracerTarget.part) else TracerFrame.Visible=false end
+end))
+
+--// ---------------- GUI ----------------
+local GUI = Create("ScreenGui", {Name="FPV_GUI_v12", ResetOnSpawn=false, IgnoreGuiInset=true, ZIndexBehavior=Enum.ZIndexBehavior.Sibling, Parent=PARENT})
+bind(GUI.Destroying:Connect(disconnectAll))
+FOVCircle.Parent = GUI
+TracerFrame.Parent = GUI
+
+local AD = Create("TextButton", {Size=UDim2.fromOffset(52,52), Position=UDim2.new(0,15,0.5,30), BackgroundColor3=TT.Bg, Text="FPV", TextColor3=TT.Accent, TextSize=13, Font=Enum.Font.GothamBold, AutoButtonColor=false, Parent=GUI})
+Corner(AD, UDim.new(1,0))
+local ADStroke = Stroke(AD, TT.Accent, 2)
+
+local Main = Create("Frame", {Size=UDim2.fromOffset(340,430), Position=UDim2.new(0.5,-170,0.5,-215), BackgroundColor3=TT.Bg, Visible=false, ClipsDescendants=true, Parent=GUI})
+Corner(Main, UDim.new(0,12))
+local MainStroke = Stroke(Main, TT.Accent, 1.5, 0.3)
+local MainScale = Create("UIScale", {Scale=1, Parent=Main})
+
+local Header = Create("Frame", {Size=UDim2.new(1,0,0,40), BackgroundColor3=TT.Sec, Parent=Main})
+Corner(Header, UDim.new(0,12))
+
+local Title = Create("TextLabel", {Size=UDim2.new(1,-40,1,0), Position=UDim2.fromOffset(12,0), BackgroundTransparency=1, Text="FPV TOOLS v1.2", TextColor3=TT.Accent, TextSize=14, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, Parent=Header})
+
+local Close = Create("TextButton", {Size=UDim2.fromOffset(30,26), Position=UDim2.new(1,-36,0,7), BackgroundColor3=TT.Bg, Text="×", TextColor3=TT.Text, TextSize=18, Font=Enum.Font.Gotham, AutoButtonColor=false, Parent=Header})
+Corner(Close, UDim.new(0,6))
+
+-- Табы
+local TabsBar = Create("Frame", {Size=UDim2.new(1,-10,0,28), Position=UDim2.fromOffset(5,44), BackgroundTransparency=1, Parent=Main})
+Create("UIListLayout", {FillDirection=Enum.FillDirection.Horizontal, Padding=UDim.new(0,3), SortOrder=Enum.SortOrder.LayoutOrder, Parent=TabsBar})
+
+local Content = Create("ScrollingFrame", {Size=UDim2.new(1,-10,1,-84), Position=UDim2.fromOffset(5,78), BackgroundTransparency=1, BorderSizePixel=0, ScrollBarThickness=2, ScrollBarImageColor3=TT.Accent, ScrollingDirection=Enum.ScrollingDirection.Y, AutomaticCanvasSize=Enum.AutomaticSize.Y, CanvasSize=UDim2.new(), ElasticBehavior=Enum.ElasticBehavior.Always, Parent=Main})
+Create("UIPadding", {PaddingLeft=UDim.new(0,3), PaddingRight=UDim.new(0,3), PaddingBottom=UDim.new(0,10), Parent=Content})
+Create("UIListLayout", {Padding=UDim.new(0,5), SortOrder=Enum.SortOrder.LayoutOrder, Parent=Content})
+
+reg(AD, "BackgroundColor3", "Bg"); reg(AD, "TextColor3", "Accent")
+reg(ADStroke, "Color", "Accent")
+reg(Main, "BackgroundColor3", "Bg"); reg(MainStroke, "Color", "Accent")
+reg(Header, "BackgroundColor3", "Sec"); reg(Title, "TextColor3", "Accent")
+reg(Close, "BackgroundColor3", "Bg"); reg(Close, "TextColor3", "Text")
+
+--// ---------------- TAB BUTTONS ----------------
+local TabButtons = {}
+local function makeTab(key, label, callback)
+    local b = Create("TextButton", {Size=UDim2.fromOffset(0,26), BackgroundColor3=TT.Sec, Text=label, TextColor3=TT.Text, TextSize=11, Font=Enum.Font.GothamBold, AutoButtonColor=false, Parent=TabsBar})
+    Corner(b, UDim.new(0,6))
+    local w = math.floor((330 - 3*4) / 5)
+    b.Size = UDim2.fromOffset(w, 26)
+    reg(b, "BackgroundColor3", "Sec")
+    reg(b, "TextColor3", "Text")
+    b.MouseButton1Click:Connect(function()
+        for k, v in pairs(TabButtons) do
+            Play(v.btn, TweenInfo.new(0.15), {BackgroundColor3 = TT.Sec})
+            v.btn.TextColor3 = TT.Text
+        end
+        Play(b, TweenInfo.new(0.15), {BackgroundColor3 = TT.Accent})
+        b.TextColor3 = Color3.fromRGB(255,255,255)
+        callback()
+    end)
+    TabButtons[key] = {btn=b, cb=callback}
+    return b
+end
+
+--// ---------------- COMPONENTS ----------------
+local function Clear()
+    for _, v in ipairs(Content:GetChildren()) do
+        if not v:IsA("UIListLayout") and not v:IsA("UIPadding") then v:Destroy() end
+    end
+end
+local function Section(txt)
+    local s = Create("TextLabel", {Size=UDim2.new(1,0,0,22), BackgroundTransparency=1, Text=txt, TextColor3=TT.Accent2, TextSize=12, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, Parent=Content})
+    reg(s, "TextColor3", "Accent2"); return s
+end
+local function Info(txt)
+    local i = Create("TextLabel", {Size=UDim2.new(1,0,0,36), BackgroundColor3=TT.Sec, Text=txt, TextWrapped=true, TextColor3=TT.Accent2, TextSize=10, Font=Enum.Font.Gotham, Parent=Content})
+    Corner(i, UDim.new(0,6))
+    Create("UIPadding", {PaddingLeft=UDim.new(0,6), PaddingRight=UDim.new(0,6), PaddingTop=UDim.new(0,4), PaddingBottom=UDim.new(0,4), Parent=i})
+    reg(i, "BackgroundColor3", "Sec"); reg(i, "TextColor3", "Accent2")
+    return i
+end
+local function Button(txt, cb)
+    local b = Create("TextButton", {Size=UDim2.new(1,0,0,32), BackgroundColor3=TT.Sec, Text="", AutoButtonColor=false, Parent=Content})
+    Corner(b, UDim.new(0,6))
+    local lbl = Create("TextLabel", {Size=UDim2.new(1,-30,1,0), Position=UDim2.fromOffset(10,0), BackgroundTransparency=1, Text=txt, TextColor3=TT.Text, TextSize=13, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=b})
+    local arrow = Create("TextLabel", {Size=UDim2.fromOffset(20,32), Position=UDim2.new(1,-25,0,0), BackgroundTransparency=1, Text="›", TextColor3=TT.Accent, TextSize=16, Font=Enum.Font.GothamBold, Parent=b})
+    reg(b, "BackgroundColor3", "Sec"); reg(lbl, "TextColor3", "Text"); reg(arrow, "TextColor3", "Accent")
+    b.MouseButton1Click:Connect(function()
+        Play(b, TweenInfo.new(0.08), {BackgroundColor3=TT.Accent})
+        task.delay(0.08, function() Play(b, TweenInfo.new(0.15), {BackgroundColor3=TT.Sec}) end)
+        local ok, err = pcall(cb)
+        if not ok then warn(err) end
+    end)
+    return b
+end
+local function Toggle(txt, initial, cb)
+    local state = {v=initial}
+    local b = Create("TextButton", {Size=UDim2.new(1,0,0,28), BackgroundColor3=TT.Sec, Text="", AutoButtonColor=false, Parent=Content})
+    Corner(b, UDim.new(0,6))
+    local lbl = Create("TextLabel", {Size=UDim2.new(1,-50,1,0), Position=UDim2.fromOffset(10,0), BackgroundTransparency=1, Text=txt, TextColor3=TT.Text, TextSize=12, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=b})
+    local sw = Create("Frame", {Size=UDim2.fromOffset(32,16), Position=UDim2.new(1,-40,0.5,-8), BackgroundColor3=Color3.fromRGB(50,50,60), Parent=b})
+    Corner(sw, UDim.new(1,0))
+    local dot = Create("Frame", {Size=UDim2.fromOffset(12,12), Position=UDim2.fromOffset(2,2), BackgroundColor3=Color3.fromRGB(200,200,210), Parent=sw})
+    Corner(dot, UDim.new(1,0))
+    reg(b, "BackgroundColor3", "Sec"); reg(lbl, "TextColor3", "Text")
+    local function apply(inst)
+        local col = state.v and TT.Accent or Color3.fromRGB(50,50,60)
+        local pos = state.v and UDim2.fromOffset(18,2) or UDim2.fromOffset(2,2)
+        if inst then sw.BackgroundColor3 = col dot.Position = pos
+        else
+            Play(sw, TweenInfo.new(0.18), {BackgroundColor3=col})
+            Play(dot, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Position=pos})
+        end
+    end
+    apply(true)
+    b.MouseButton1Click:Connect(function()
+        state.v = not state.v
+        apply(false)
+        if cb then local ok, err = pcall(cb, state.v) if not ok then warn(err) end end
+    end)
+    return b, state
+end
+local function Slider(txt, initial, min, max, cb)
+    local frame = Create("Frame", {Size=UDim2.new(1,0,0,44), BackgroundColor3=TT.Sec, Parent=Content})
+    Corner(frame, UDim.new(0,6))
+    local lbl = Create("TextLabel", {Size=UDim2.new(0.6,-10,0,20), Position=UDim2.fromOffset(10,2), BackgroundTransparency=1, Text=txt, TextColor3=TT.Text, TextSize=12, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=frame})
+    local valueLabel = Create("TextLabel", {Size=UDim2.new(0.4,-10,0,20), Position=UDim2.new(0.6,0,0,2), BackgroundTransparency=1, Text=string.format("%.2f", initial), TextColor3=TT.Accent, TextSize=12, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Right, Parent=frame})
+    local track = Create("Frame", {Size=UDim2.new(1,-20,0,8), Position=UDim2.new(0,10,0,28), BackgroundColor3=Color3.fromRGB(40,44,54), BorderSizePixel=0, Parent=frame})
+    Corner(track, UDim.new(1,0))
+    local fill = Create("Frame", {Size=UDim2.new(0,0,1,0), BackgroundColor3=TT.Accent, BorderSizePixel=0, Parent=track})
+    Corner(fill, UDim.new(1,0))
+    local knob = Create("Frame", {Size=UDim2.fromOffset(16,16), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0,0,0.5,0), BackgroundColor3=Color3.fromRGB(240,244,255), BorderSizePixel=0, ZIndex=2, Parent=track})
+    Corner(knob, UDim.new(1,0))
+    local hit = Create("TextButton", {Size=UDim2.new(1,0,0,32), Position=UDim2.new(0,0,0,-12), BackgroundTransparency=1, Text="", AutoButtonColor=false, Parent=track})
+    reg(frame, "BackgroundColor3", "Sec"); reg(lbl, "TextColor3", "Text"); reg(valueLabel, "TextColor3", "Accent"); reg(fill, "BackgroundColor3", "Accent")
+    local value = math.clamp(initial, min, max)
+    local dragging = false
+    local function uv(anim)
+        local ratio = (value-min)/math.max(max-min,1)
+        if anim then Play(fill, TweenInfo.new(0.12), {Size=UDim2.new(ratio,0,1,0)}) Play(knob, TweenInfo.new(0.12), {Position=UDim2.new(ratio,0,0.5,0)})
+        else fill.Size = UDim2.new(ratio,0,1,0) knob.Position = UDim2.new(ratio,0,0.5,0) end
+        valueLabel.Text = string.format("%.2f", value)
+    end
+    local function sFromX(x)
+        local a = track.AbsolutePosition; local w = track.AbsoluteSize.X
+        if w<=0 then return end
+        local rel = math.clamp((x-a.X)/w, 0, 1)
+        value = min + rel*(max-min)
+        uv(false)
+        if cb then local ok, err = pcall(cb, value) if not ok then warn(err) end end
+    end
+    hit.InputBegan:Connect(function(input)
+        if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
+            dragging = true
+            Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), {Size=UDim2.fromOffset(22,22)})
+            sFromX(input.Position.X)
+        end
+    end)
+    bind(UIS.InputChanged:Connect(function(input)
+        if not dragging then return end
+        if input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch then sFromX(input.Position.X) end
+    end))
+    bind(UIS.InputEnded:Connect(function(input)
+        if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
+            if dragging then dragging = false Play(knob, TweenInfo.new(0.15, Enum.EasingStyle.Back), {Size=UDim2.fromOffset(16,16)}) end
+        end
+    end))
+    uv(true)
+    return frame
+end
+local function Number(txt, initial, min, max, cb)
+    local f = Create("Frame", {Size=UDim2.new(1,0,0,28), BackgroundColor3=TT.Sec, Parent=Content})
+    Corner(f, UDim.new(0,6))
+    local lbl = Create("TextLabel", {Size=UDim2.new(1,-70,1,0), Position=UDim2.fromOffset(10,0), BackgroundTransparency=1, Text=txt, TextColor3=TT.Text, TextSize=12, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=f})
+    local box = Create("TextBox", {Size=UDim2.fromOffset(55,20), Position=UDim2.new(1,-62,0.5,-10), BackgroundColor3=TT.Bg, Text=tostring(initial), TextColor3=TT.Accent, TextSize=11, Font=Enum.Font.GothamBold, ClearTextOnFocus=false, Parent=f})
+    Corner(box, UDim.new(0,4))
+    reg(f, "BackgroundColor3", "Sec"); reg(lbl, "TextColor3", "Text"); reg(box, "BackgroundColor3", "Bg"); reg(box, "TextColor3", "Accent")
+    box.FocusLost:Connect(function()
+        local n = tonumber(box.Text)
+        if not n then box.Text = tostring(initial) return end
+        n = math.clamp(n, min, max)
+        box.Text = tostring(n)
+        if cb then local ok, err = pcall(cb, n) if not ok then warn(err) end end
+    end)
+    return f
+end
+
+--// ---------------- PAGES ----------------
+local MiscCounterLabel
+local Pages = {}
+
+Pages.Main = function()
+    Clear()
+    Section(T("tab_main"))
+    Info("FPV DRONE GAME\nESP + AIM + MISC · Delta Executor v1.2\nИспользуй вкладки сверху.")
+end
+
+Pages.Aim = function()
+    Clear()
+    Section(T("sec_aim"))
+    Toggle(T("aim_enable"), S.AimEnabled, function(v) S.AimEnabled = v end)
+    Toggle(T("aim_players"), S.AimPlayers, function(v) S.AimPlayers = v end)
+    Toggle(T("aim_fpv"), S.AimFPV, function(v) S.AimFPV = v end)
+    Toggle(T("aim_wall"), S.AimWall, function(v) S.AimWall = v end)
+    Toggle(T("aim_sticky"), S.AimSticky, function(v) S.AimSticky = v end)
+    Toggle(T("aim_hold"), S.AimHold, function(v) S.AimHold = v end)
+    Toggle(T("aim_rotate"), S.AimRotate, function(v) S.AimRotate = v end)
+    Section(T("sec_params"))
+    Number(T("aim_fov"), S.AimFOV, 30, 600, function(v) S.AimFOV = v updateFOVSize() end)
+    Number(T("aim_range"), S.AimRange, 50, 2000, function(v) S.AimRange = v end)
+    Slider(T("aim_smooth"), S.AimSmooth, 0.05, 1, function(v) S.AimSmooth = v end)
+    Slider(T("aim_pred"), S.AimPred, 0, 0.5, function(v) S.AimPred = v end)
+end
+
+Pages.ESP = function()
+    Clear()
+    Section(T("sec_show"))
+    Toggle(T("enable"), S.ESP, function(v) S.ESP = v end)
+    Toggle(T("box"), S.Box, function(v) S.Box = v end)
+    Toggle(T("highlight"), S.Highlight, function(v) S.Highlight = v end)
+    Toggle(T("name"), S.Name, function(v) S.Name = v end)
+    Toggle(T("dist"), S.Distance, function(v) S.Distance = v end)
+    Toggle(T("health"), S.Health, function(v) S.Health = v end)
+    Toggle(T("tracer"), S.Tracer, function(v) S.Tracer = v end)
+    Section(T("sec_params"))
+    Number(T("max_dist"), S.MaxDistance, 50, 2000, function(v)
+        S.MaxDistance = v
+        for _, d in pairs(ESPData) do d.Info.MaxDistance = v end
+    end)
+    Slider(T("refresh"), S.RefreshRate, 5, 60, function(v) S.RefreshRate = v end)
+    Toggle(T("team_check"), S.IgnoreTeam, function(v) S.IgnoreTeam = v end)
+end
+
+Pages.Misc = function()
+    Clear()
+    Section(T("sec_misc"))
+    Toggle(T("auto_refill"), S.AutoRefill, function(v) S.AutoRefill = v end)
+    Info(T("auto_refill_info"))
+    Slider(T("auto_refill_delay"), S.AutoRefillDelay, 0.5, 10, function(v) S.AutoRefillDelay = v end)
+    Toggle(T("auto_refill_log"), S.AutoRefillLog, function(v) S.AutoRefillLog = v end)
+    Toggle(T("auto_respawn"), S.AutoRespawn, function(v) S.AutoRespawn = v end)
+    Info(T("auto_respawn_info"))
+    MiscCounterLabel = Create("TextLabel", {Size=UDim2.new(1,0,0,26), BackgroundColor3=TT.Sec, Text=string.format(T("refills_count"), RefillCount), TextColor3=TT.Accent, TextSize=12, Font=Enum.Font.GothamBold, Parent=Content})
+    Corner(MiscCounterLabel, UDim.new(0,6))
+    reg(MiscCounterLabel, "BackgroundColor3", "Sec"); reg(MiscCounterLabel, "TextColor3", "Accent")
+    Button(T("auto_refill_reset"), function()
+        RefillCount = 0
+        if MiscCounterLabel and MiscCounterLabel.Parent then
+            MiscCounterLabel.Text = string.format(T("refills_count"), RefillCount)
+        end
+    end)
+    Info(T("info_client"))
+end
+
+Pages.Settings = function()
+    Clear()
+    Section(T("sec_settings"))
+    -- Language
+    local row = Create("Frame", {Size=UDim2.new(1,0,0,32), BackgroundColor3=TT.Sec, Parent=Content})
+    Corner(row, UDim.new(0,6))
+    local lEn = Create("TextButton", {Size=UDim2.new(0.5,-3,1,-4), Position=UDim2.fromOffset(2,2), BackgroundColor3=(CurrentLang=="EN") and TT.Accent or Color3.fromRGB(35,38,46), Text="English", TextColor3=Color3.fromRGB(240,240,250), TextSize=12, Font=Enum.Font.GothamBold, AutoButtonColor=false, Parent=row})
+    Corner(lEn, UDim.new(0,5))
+    local lRu = Create("TextButton", {Size=UDim2.new(0.5,-3,1,-4), Position=UDim2.new(0.5,1,0,2), BackgroundColor3=(CurrentLang=="RU") and TT.Accent or Color3.fromRGB(35,38,46), Text="Русский", TextColor3=Color3.fromRGB(240,240,250), TextSize=12, Font=Enum.Font.GothamBold, AutoButtonColor=false, Parent=row})
+    Corner(lRu, UDim.new(0,5))
+    reg(row, "BackgroundColor3", "Sec")
+    lEn.MouseButton1Click:Connect(function() if CurrentLang ~= "EN" then CurrentLang = "EN" Pages.Settings() end end)
+    lRu.MouseButton1Click:Connect(function() if CurrentLang ~= "RU" then CurrentLang = "RU" Pages.Settings() end end)
+
+    -- Theme
+    local trow = Create("Frame", {Size=UDim2.new(1,0,0,44), BackgroundColor3=TT.Sec, Parent=Content})
+    Corner(trow, UDim.new(0,6))
+    local tlbl = Create("TextLabel", {Size=UDim2.new(1,-10,0,16), Position=UDim2.fromOffset(10,4), BackgroundTransparency=1, Text=T("theme"), TextColor3=TT.Text, TextSize=11, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, Parent=trow})
+    reg(trow, "BackgroundColor3", "Sec"); reg(tlbl, "TextColor3", "Text")
+    local colorRow = Create("Frame", {Size=UDim2.new(1,-20,0,22), Position=UDim2.fromOffset(10,20), BackgroundTransparency=1, Parent=trow})
+    Create("UIListLayout", {FillDirection=Enum.FillDirection.Horizontal, Padding=UDim.new(0,8), SortOrder=Enum.SortOrder.LayoutOrder, Parent=colorRow})
+    for i, name in ipairs({"Purple","Ocean","Crimson"}) do
+        local c = Themes[name]
+        local sw = Create("TextButton", {Size=UDim2.fromOffset(24,22), BackgroundColor3=c.Accent, Text="", AutoButtonColor=false, LayoutOrder=i, Parent=colorRow})
+        Corner(sw, UDim.new(0,6))
+        if CurrentTheme == name then Stroke(sw, Color3.fromRGB(255,255,255), 2) end
+        sw.MouseButton1Click:Connect(function()
+            if CurrentTheme ~= name then CurrentTheme = name applyTheme() Pages.Settings() end
+        end)
+    end
+
+    Button(T("close_gui"), function()
+        if _G.__FPV_CLEANUP then pcall(_G.__FPV_CLEANUP) end
+    end)
+end
+
+-- Создаём табы
+makeTab("main", T("tab_main"), Pages.Main)
+makeTab("aim", T("tab_aim"), Pages.Aim)
+makeTab("esp", T("tab_esp"), Pages.ESP)
+makeTab("misc", T("tab_misc"), Pages.Misc)
+makeTab("settings", T("tab_settings"), Pages.Settings)
+
+-- Выделяем активный таб
+local function selectTab(key)
+    for k, v in pairs(TabButtons) do
+        Play(v.btn, TweenInfo.new(0.15), {BackgroundColor3 = TT.Sec})
+        v.btn.TextColor3 = TT.Text
+    end
+    local b = TabButtons[key]
+    if b then
+        Play(b.btn, TweenInfo.new(0.15), {BackgroundColor3 = TT.Accent})
+        b.btn.TextColor3 = Color3.fromRGB(255,255,255)
+    end
+end
+
+-- Переопределяем makeTab колбэки чтобы выделять активный таб
+for key, info in pairs(TabButtons) do
+    -- уже подключено
+end
+
+-- Открываем Main по умолчанию при первом показе
+local function openMainTab()
+    selectTab("main")
+    Pages.Main()
+end
+
+--// ---------------- DRAG ----------------
+local function MakeDraggable(handle, target)
+    local dragging, dragStart, startPos = false, nil, nil
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
+            dragging = true dragStart = input.Position startPos = target.Position
+        end
+    end)
+    handle.InputEnded:Connect(function(input)
+        if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then dragging = false end
+    end)
+    bind(UIS.InputChanged:Connect(function(input)
+        if not dragging then return end
+        if input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch then
+            local d = input.Position - dragStart
+            target.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset+d.X, startPos.Y.Scale, startPos.Y.Offset+d.Y)
+        end
+    end))
+end
+MakeDraggable(Header, Main)
+MakeDraggable(AD, AD)
+
+--// ---------------- BUTTONS ----------------
+Close.MouseButton1Click:Connect(function()
+    Play(Main, TweenInfo.new(0.15), {BackgroundTransparency=1})
+    task.delay(0.15, function() Main.Visible=false Main.BackgroundTransparency=0.05 end)
+end)
+AD.MouseButton1Click:Connect(function()
+    if Main.Visible then
+        MainScale.Scale = 1
+        Play(MainScale, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Scale=0.5})
+        Play(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundTransparency=1})
+        task.delay(0.2, function() Main.Visible=false Main.BackgroundTransparency=0.05 MainScale.Scale=1 end)
+    else
+        Main.Visible = true
+        Main.BackgroundTransparency = 1
+        MainScale.Scale = 0.5
+        Play(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundTransparency=0.05})
+        Play(MainScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale=1})
+        openMainTab()
+    end
+end)
+
+--// ---------------- INIT ----------------
+for _, p in ipairs(Players:GetPlayers()) do if p ~= LP then createESP(p) end end
+bind(Players.PlayerAdded:Connect(function(p) if p ~= LP then task.wait(0.5) createESP(p) end end))
+bind(Players.PlayerRemoving:Connect(removeESP))
+
+applyTheme()
+openMainTab()
+
+--// ---------------- CLEANUP ----------------
+_G.__FPV_CLEANUP = function()
+    disconnectAll()
+    for plr in pairs(ESPData) do pcall(function() removeESP(plr) end) end
+    pcall(function() espFolder:Destroy() end)
+    pcall(function() GUI:Destroy() end)
+end
+
+print("[FPV TOOLS v1.2] loaded — ESP + AIM (Players/FPV) + MISC AutoRefill")
